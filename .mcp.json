@@ -4,6 +4,15 @@
       "command": "C:\\Program Files\\nodejs\\npx.cmd",
       "args": ["-y", "@playwright/mcp@latest"],
       "env": { "PATH": "C:\\Program Files\\nodejs;${PATH}" }
+    },
+    "blender": {
+      "command": "C:\\Users\\admin\\.local\\bin\\uvx.exe",
+      "args": ["--python", "3.11", "mcp-for-blender"],
+      "env": {
+        "DISABLE_TELEMETRY": "true",
+        "BLENDER_MCP_SAFE_MODE": "1",
+        "UV_PYTHON_PREFERENCE": "only-managed"
+      }
     }
   }
 }
