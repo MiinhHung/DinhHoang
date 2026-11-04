@@ -21,5 +21,9 @@ export default {
   },
 
   // Giới hạn năm sinh hợp lệ (âm lịch).
-  birthYear: { min: 1920, maxAgeOffset: 6 }
+  birthYear: { min: 1920, maxAgeOffset: 6 },
+
+  // Lễ hoa đăng chung mỗi tối (giờ trên máy người chơi): bắt đầu lúc `hour` giờ, kéo dài `minutes` phút.
+  // Thả hoa đăng trong giờ lễ được thưởng `bonus` công đức, mỗi ngày một lần.
+  festival: { hour: 20, minutes: 30, bonus: 10 }
 };

@@ -523,6 +523,34 @@ const taskList = st => `<ul class="tasks">${TASKS.map(t => {
 }).join("")}</ul><p class="note">Làm đủ 5 việc trong ngày: thưởng thêm ${ALL_DONE_BONUS} công đức.</p>`;
 const bindTaskGo = () => sheetBody.querySelectorAll("[data-goto]").forEach(b => b.addEventListener("click", () => goTo(b.dataset.goto)));
 
+// ---------- Lễ hoa đăng chung ----------
+// Mỗi tối vào giờ cấu hình (config.festival), chuông ngân, Ao Sen dần kín hoa đăng, đèn trời bay lên.
+// Trước giờ lễ một tiếng thì HUD đếm ngược; thả hoa đăng trong giờ lễ được thưởng công đức (mỗi ngày một lần).
+const FEST = { hour: 20, minutes: 30, bonus: 10, ...config.festival };
+let festOn = false;
+function festivalState() {
+  const h = world.hour(), end = FEST.hour + FEST.minutes / 60;
+  let wait = FEST.hour - h;
+  if (wait < 0) wait += 24;
+  return { on: h >= FEST.hour && h < end, waitMin: Math.ceil(wait * 60), leftMin: Math.ceil((end - h) * 60) };
+}
+function checkFestival() {
+  if (!world || !entered) return;
+  const st = festivalState(), el = $("#fest");
+  el.textContent = st.on ? `🏮 Lễ hoa đăng · còn ${st.leftMin} phút` : `🏮 Lễ hoa đăng sau ${st.waitMin} phút`;
+  el.classList.toggle("hidden", !st.on && st.waitMin > 60);
+  el.classList.toggle("live", st.on);
+  if (st.on === festOn) return;
+  festOn = st.on;
+  world.festival(st.on);
+  if (st.on) {
+    audio.bell(147, 0.6);
+    setTimeout(() => audio.bell(98, 0.55), 1100);
+    toastSeq(["🏮 Lễ hoa đăng chung đã bắt đầu", "Ra Ao Sen ở tầng 1 thả một chiếc hoa đăng nhé"]);
+    track("festival_start");
+  }
+}
+
 // ---------- Các điểm trong sân ----------
 function talkDaoSi() {
   ++flow;
@@ -536,6 +564,7 @@ function talkDaoSi() {
   openSheet(`<div class="npc-head"><div class="npc-ava">道</div><div><h2>Lão Đạo Sĩ</h2><p class="sub">${esc(withName(greets[dayIdx(greets.length)]))}</p></div></div>
     ${st.visits <= 1 && !st.pts ? `<p class="sub">${esc(d.newcomer)}</p>` : ""}
     <div class="teach"><span class="lv">Lời dạy hôm nay</span><blockquote>${esc(teach.text)}</blockquote><cite>— ${esc(teach.src)}</cite><p>${esc(teach.giang)}</p></div>
+    <p class="sub">🏮 Mỗi tối ${FEST.hour}:00 có lễ hoa đăng chung ở Ao Sen, thả một chiếc được thêm ${FEST.bonus} công đức.</p>
     <h4>Việc lành hôm nay</h4>${allDone ? `<p class="sub">${esc(withName(d.allDone))}</p>` : ""}${taskList(st)}
     <div class="btn-row"><button class="btn primary" id="b-ledger">📜 Mở Sổ Công Đức</button></div>${ent}`, true);
   bindTaskGo();
@@ -573,6 +602,10 @@ function ritualHoaDang() {
     buzz(30);
     if (wish) showHint(`“${wish}” đã theo hoa đăng trôi đi…`, 4500);
     gain("hoadang");
+    if (festOn) {
+      const res = progress.festivalBonus(FEST.bonus);
+      if (res) announce(res, `+${res.gained} công đức · Lễ hoa đăng chung 🏮`);
+    }
   });
 }
 
@@ -835,6 +868,8 @@ function enter() {
   $("#hud").classList.remove("hidden");
   world.enter({ name: me.name || "Thí chủ", color: me.color });
   const firstVisit = progress.visit();
+  checkFestival();
+  setInterval(checkFestival, 15000);
   const ribbons = progress.state().ribbons;
   if (ribbons) world.fx.ribbon(ribbons, false);
   updateMerit();
@@ -859,6 +894,7 @@ function enter() {
 function setupHud() {
   $("#btn-act").addEventListener("click", () => openRitual(near));
   $("#merit").addEventListener("click", openLedger);
+  $("#fest").addEventListener("click", () => goTo("ao-sen"));
   $("#btn-map").addEventListener("click", () => openModal("map"));
   $("#btn-home").addEventListener("click", () => goTo("tam-thanh"));
   $("#btn-sound").addEventListener("click", () => {

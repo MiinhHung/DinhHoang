@@ -1019,6 +1019,7 @@ export async function createWorld(container, hooks = {}) {
   pondLabel.position.set(POND.x, 2.6, POND.z);
   scene.add(pondLabel);
   const hoaDang = [];
+  let festivalOn = false, festivalSpawn = 0;
   ["vang", "sen", "trang"].forEach((c, i) => addHoaDang(c, i * 2.1, false));
 
   const bellTower = makeBellTower(models.chuong);
@@ -1036,12 +1037,54 @@ export async function createWorld(container, hooks = {}) {
   daoSi.group.userData.zone = "dao-si";
   let daoNod = -1;
 
+  // ---------- Lễ hoa đăng chung: hoa đăng tự thả dần kín ao, đèn trời bay lên ----------
+  const skyLanterns = [];
+  {
+    const paper = new THREE.MeshBasicMaterial({ color: 0xffb04a, toneMapped: false });
+    const halo = new THREE.SpriteMaterial({ map: tex.glow, color: 0xffa040, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+    for (let i = 0; i < 28; i++) {
+      const g = new THREE.Group();
+      g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.24, 0.55, 8), paper));
+      const h = new THREE.Sprite(halo);
+      h.scale.setScalar(1.6);
+      g.add(h);
+      g.visible = false;
+      scene.add(g);
+      skyLanterns.push({ g, x: 0, y: 0, z: 0, v: 0.5 + Math.random() * 0.5, seed: Math.random() * 9 });
+    }
+  }
+  const respawnSky = (s, spread = 1) => {
+    s.x = POND.x + (Math.random() - 0.5) * 14 * spread;
+    s.z = POND.z + (Math.random() - 0.5) * 10 * spread;
+    s.y = Math.random() * 6 * spread;
+  };
+  function setFestival(on) {
+    if (on === festivalOn) return;
+    festivalOn = on;
+    skyLanterns.forEach((s, i) => { s.g.visible = on; respawnSky(s, 1); s.y = -i * 1.2; });
+  }
+  function updateFestival(dt, t) {
+    if (!festivalOn) return;
+    festivalSpawn -= dt;
+    if (festivalSpawn <= 0 && hoaDang.length < 50) {
+      festivalSpawn = 1.4 + Math.random();
+      addHoaDang(["sen", "vang", "trang"][Math.floor(Math.random() * 3)], Math.random() * Math.PI * 2, true);
+    }
+    for (const s of skyLanterns) {
+      s.y += s.v * dt;
+      if (s.y > 70) respawnSky(s, 1);
+      const y = Math.max(0, s.y);
+      s.g.position.set(s.x + Math.sin(t * 0.3 + s.seed) * y * 0.05, 1 + y, s.z + Math.cos(t * 0.25 + s.seed) * y * 0.05 - y * 0.15);
+      s.g.visible = s.y > 0;
+    }
+  }
+
   function addHoaDang(color, angle, fresh) {
     const g = makeHoaDang(color, tex.glow);
     const item = { g, a: angle ?? Math.PI / 2, r: fresh ? POND_R : 0.9 + Math.random() * 1.2, speed: (0.05 + Math.random() * 0.05) * (Math.random() < 0.5 ? -1 : 1), seed: Math.random() * 9, born: fresh ? 0 : 1 };
     scene.add(g);
     hoaDang.push(item);
-    if (hoaDang.length > 24) scene.remove(hoaDang.shift().g);
+    if (hoaDang.length > (festivalOn ? 60 : 24)) scene.remove(hoaDang.shift().g);
   }
   function addRibbon(fresh) {
     const a = Math.random() * Math.PI * 2, r = 0.9 + Math.random() * 0.7, x = Math.cos(a) * r, z = Math.sin(a) * r;
@@ -1406,6 +1449,7 @@ export async function createWorld(container, hooks = {}) {
     bagua.userData.ring.material.opacity = 0.2 + spinBoost * 0.6 + (zone === "boc-dich" ? 0.15 : 0);
     banners.forEach(b => b.userData.wave(t));
     waterMats.update(dt);
+    updateFestival(dt, t);
     waterMats.setLight(waterLight);
     foams.forEach(f => f.update(t));
     driftClouds(dt);
@@ -1695,6 +1739,9 @@ export async function createWorld(container, hooks = {}) {
       camYawWant = yawToward(pos, FOCUS[z]);
     },
     // Giờ trong ngày (0–24) để xem thử cảnh ngày/đêm; null = theo giờ máy.
+    // Giờ đang dùng trong game (giờ máy, hoặc giờ đặt bằng ?gio=).
+    hour() { const d = new Date(); return hourOverride ?? d.getHours() + d.getMinutes() / 60; },
+    festival: setFestival,
     setHour(h) { hourOverride = Number.isFinite(h) ? ((h % 24) + 24) % 24 : null; applySky(); },
     bow() { bowT = 0; },
     getState() { return { x: +pos.x.toFixed(2), z: +pos.z.toFixed(2), ry: +yaw.toFixed(2) }; },
