@@ -888,15 +888,25 @@ export async function createWorld(container, hooks = {}) {
   const effects = [];
   const remotes = new Map();
   let spinBoost = 0;
+  // Camera xoay quanh nhân vật: camYaw = 0 là đứng phía nam nhìn về chính điện.
+  // Kéo chuột / vuốt để xoay, lăn chuột / chụm hai ngón để phóng to thu nhỏ.
+  const PITCH_MIN = 0.22, PITCH_MAX = 1.15, ZOOM_MIN = 0.55, ZOOM_MAX = 1.5;
+  let camYaw = 0, camYawWant = 0, camPitch = 0.6, camPitchWant = 0.6, camDist = 14.5, zoom = 1, zoomWant = 1;
 
   function fitCamera() {
     const a = W() / H();
     camera.aspect = a;
     camera.fov = a < 0.8 ? 62 : 55;
-    camOff.set(0, a < 0.8 ? 10.5 : 8.2, a < 0.8 ? 14.5 : 12);
+    camDist = a < 0.8 ? 17.9 : 14.5;
     camera.updateProjectionMatrix();
     renderer.setSize(W(), H());
   }
+  function updateCamOff() {
+    const d = camDist * zoom, flat = Math.cos(camPitch) * d;
+    camOff.set(Math.sin(camYaw) * flat, Math.sin(camPitch) * d, Math.cos(camYaw) * flat);
+  }
+  // Hướng camera nhìn tới để đặt camera ra sau lưng khi tới một điện.
+  const yawToward = (from, to) => Math.atan2(from.x - to.x, from.z - to.z);
   fitCamera();
   addEventListener("resize", fitCamera);
 
@@ -932,6 +942,9 @@ export async function createWorld(container, hooks = {}) {
     if (len > 0.12) {
       target = null;
       if (len > 1) { mx /= len; mz /= len; len = 1; }
+      // Phím và cần điều khiển đi theo hướng camera đang nhìn.
+      const c = Math.cos(camYaw), s = Math.sin(camYaw);
+      [mx, mz] = [mx * c + mz * s, -mx * s + mz * c];
     } else if (target && !paused) {
       const dx = target.x - pos.x, dz = target.z - pos.z, dd = Math.hypot(dx, dz);
       if (dd < 0.25) { target = null; len = 0; }
@@ -973,11 +986,19 @@ export async function createWorld(container, hooks = {}) {
       return;
     }
     gate.visible = camera.position.z < 27;
+    // Góc xoay và độ xa làm mượt riêng, điểm bám theo nhân vật làm mượt riêng,
+    // để khi xoay nhanh camera đi vòng quanh nhân vật chứ không cắt ngang qua.
+    const ka = 1 - Math.exp(-dt * 12);
+    camYaw = angleLerp(camYaw, camYawWant, ka);
+    camPitch += (camPitchWant - camPitch) * ka;
+    zoom += (zoomWant - zoom) * (1 - Math.exp(-dt * 8));
+    updateCamOff();
     const k = 1 - Math.exp(-dt * 3.5);
-    camWant.copy(pos).add(camOff);
-    camera.position.lerp(camWant, k);
-    lookWant.set(pos.x, 1.3, pos.z - 2.5);
+    lookWant.set(pos.x - Math.sin(camYaw) * 2.5, 1.3, pos.z - Math.cos(camYaw) * 2.5);
     look.lerp(lookWant, k);
+    camWant.copy(look).add(camOff);
+    camWant.y = Math.max(1.2, camWant.y);
+    camera.position.copy(camWant);
     camera.lookAt(look);
   }
 
@@ -1138,12 +1159,55 @@ export async function createWorld(container, hooks = {}) {
   // ---------- Chạm để đi ----------
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), plane = new THREE.Plane(V(0, 1, 0), 0), hit = V();
   const clickables = [...Object.values(halls), ...Object.values(burners), bagua, bellTower, pond, toHong, kimTien, daoSi.group];
-  let down = null;
-  renderer.domElement.addEventListener("pointerdown", e => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
-  renderer.domElement.addEventListener("pointerup", e => {
-    if (!down || !entered || paused) return;
-    const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), quick = performance.now() - down.t < 450;
+  // Một ngón / chuột: chạm nhanh để đi, kéo để xoay góc nhìn. Hai ngón: chụm để phóng to thu nhỏ.
+  const cv = renderer.domElement, ptrs = new Map(), ROT = 0.006;
+  const clampPitch = p => Math.min(PITCH_MAX, Math.max(PITCH_MIN, p));
+  const clampZoom = z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+  const pinchDist = () => { const [a, b] = [...ptrs.values()]; return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0; };
+  let down = null, dragging = false, pinch = 0;
+  cv.addEventListener("contextmenu", e => e.preventDefault());
+  cv.addEventListener("pointerdown", e => {
+    cv.setPointerCapture?.(e.pointerId);
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 1) { down = { x: e.clientX, y: e.clientY, t: performance.now(), button: e.button }; dragging = false; }
+    else { down = null; pinch = pinchDist(); }
+  });
+  cv.addEventListener("pointermove", e => {
+    const p = ptrs.get(e.pointerId);
+    if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    p.x = e.clientX; p.y = e.clientY;
+    if (!entered) return;
+    if (ptrs.size >= 2) {
+      const d = pinchDist();
+      if (pinch > 0 && d > 0) zoomWant = clampZoom(zoomWant * pinch / d);
+      pinch = d;
+      return;
+    }
+    if (down && !dragging && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) { dragging = true; cv.classList.add("dragging"); }
+    if (dragging) {
+      camYawWant -= dx * ROT;
+      camPitchWant = clampPitch(camPitchWant + dy * ROT * 0.7);
+    }
+  });
+  const release = e => {
+    ptrs.delete(e.pointerId);
+    if (ptrs.size < 2) pinch = 0;
+    if (!ptrs.size) cv.classList.remove("dragging");
+  };
+  cv.addEventListener("pointercancel", e => { release(e); down = null; });
+  cv.addEventListener("wheel", e => {
+    if (!entered) return;
+    e.preventDefault();
+    zoomWant = clampZoom(zoomWant * Math.exp(e.deltaY * 0.0012));
+  }, { passive: false });
+  cv.addEventListener("pointerup", e => {
+    release(e);
+    const tap = down && !dragging && down.button === 0;
+    const d = down;
     down = null;
+    if (!tap || !entered || paused) return;
+    const moved = Math.hypot(e.clientX - d.x, e.clientY - d.y), quick = performance.now() - d.t < 450;
     if (moved > 12 || !quick) return;
     const r = renderer.domElement.getBoundingClientRect();
     ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
@@ -1189,6 +1253,8 @@ export async function createWorld(container, hooks = {}) {
       scene.add(player.group);
       pos.copy(SPAWN);
       yaw = wantYaw = Math.PI;
+      camYaw = camYawWant = 0;
+      look.set(pos.x, 1.3, pos.z - 2.5);
       entered = true;
       hooks.onZone?.(zone);
     },
@@ -1199,11 +1265,20 @@ export async function createWorld(container, hooks = {}) {
       pos.copy(s);
       if (z === "boc-dich") pos.z += 2.5;
       target = null;
-      if (FOCUS[z]) yaw = wantYaw = faceYaw(z);
-      camera.position.copy(pos).add(camOff);
-      look.set(pos.x, 1.3, pos.z - 2.5);
+      if (FOCUS[z]) {
+        yaw = wantYaw = faceYaw(z);
+        camYaw = camYawWant = yawToward(pos, FOCUS[z]);
+      }
+      updateCamOff();
+      look.set(pos.x - Math.sin(camYaw) * 2.5, 1.3, pos.z - Math.cos(camYaw) * 2.5);
+      camera.position.copy(look).add(camOff);
     },
-    face(z) { if (FOCUS[z]) wantYaw = faceYaw(z); },
+    // Quay nhân vật về phía điện và đưa camera ra sau lưng để thấy rõ nghi lễ.
+    face(z) {
+      if (!FOCUS[z]) return;
+      wantYaw = faceYaw(z);
+      camYawWant = yawToward(pos, FOCUS[z]);
+    },
     // Giờ trong ngày (0–24) để xem thử cảnh ngày/đêm; null = theo giờ máy.
     setHour(h) { hourOverride = Number.isFinite(h) ? ((h % 24) + 24) % 24 : null; applySky(); },
     bow() { bowT = 0; },

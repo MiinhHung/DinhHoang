@@ -88,5 +88,6 @@ assets/           Icon và ảnh xem trước khi chia sẻ (og.png)
 ## Điều khiển
 
 - Điện thoại: kéo cần điều khiển góc trái, hoặc chạm xuống sân để đi tới đó.
-- Máy tính: W A S D / phím mũi tên, hoặc bấm chuột xuống sân; phím **E** để vào nghi lễ khi đứng trước điện.
+- Máy tính: W A S D / phím mũi tên (đi theo hướng camera), hoặc bấm chuột xuống sân; giữ chuột kéo để xoay góc nhìn, lăn chuột để phóng to/thu nhỏ; phím **E** để vào nghi lễ khi đứng trước điện.
+- Điện thoại: vuốt một ngón trên màn hình để xoay góc nhìn, chụm/mở hai ngón để phóng to/thu nhỏ.
 - Nút 🗺 để đi nhanh tới các điện, ⛩ về Chính Điện, 🔊 bật/tắt âm thanh.

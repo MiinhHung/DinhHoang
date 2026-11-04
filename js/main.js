@@ -800,7 +800,7 @@ function enter() {
     setTimeout(() => veil(() => { world.teleport(deepZone); openRitual(deepZone); }), 700);
   } else if (firstVisit) {
     showHint("Lão Đạo Sĩ đang đứng chờ ngay bên phải — bấm nút để hỏi chuyện", 6000);
-    setTimeout(() => !sheetOpen() && showHint(isTouch ? "Kéo cần điều khiển hoặc chạm xuống sân để đi" : "Dùng W A S D / phím mũi tên, hoặc bấm xuống sân để đi", 5200), 6500);
+    setTimeout(() => !sheetOpen() && showHint(isTouch ? "Cần điều khiển để đi · vuốt màn hình để xoay góc nhìn · chụm hai ngón để phóng to" : "W A S D để đi · kéo chuột để xoay góc nhìn · lăn chuột để phóng to", 5200), 6500);
   } else {
     const left = TASKS.filter(t => !progress.state().done.includes(t.id)).length;
     showHint(left ? `Hôm nay còn ${left} việc lành chưa làm — mở 📜 để xem` : "Hôm nay thí chủ đã đủ việc lành. Cứ thong thả dạo đình.", 5200);
