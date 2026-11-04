@@ -4,7 +4,7 @@ import { createWorld, ZONES } from "./world.js";
 import * as audio from "./audio.js";
 import { loadContent, content, session, validYear, readLove, readWealth, readIching, tossLine, tamThanhBlessing, loveStatuses, TRIGRAM_NAME } from "./oracle.js";
 import { yearInfo, gioAm, ngayVN } from "./lunar.js";
-import { drawCharm } from "./charm.js";
+import { drawCharm, drawMoment } from "./charm.js";
 import { canvasBlob, saveBlob, shareBlob, shareText, shareUrl, facebookUrl, copyText, fileName } from "./share.js";
 import { initAnalytics, track } from "./analytics.js";
 import { connectOnline } from "./online.js";
@@ -361,7 +361,7 @@ function bows(id, offer) {
         const r = { kind: "tam-thanh", blessing: tamThanhBlessing(), profile: { name: me.name }, stamp: `${offer} · Giờ ${gioAm()} · ngày ${ngayVN()}` };
         track("reading_done", { kind: "tam-thanh", offer });
         afterReading(r, "huong");
-        showResult(r, id);
+        reveal(r, id, "tam-thanh");
       }, 900);
     }
   });
@@ -421,7 +421,7 @@ function shakeStep(id, z, prof, offer = "") {
     z === "tai-than" ? audio.coins(8) : audio.chime();
     world.fx.burst(z);
     rain(RAIN[z]);
-    showResult(r, id);
+    reveal(r, id, z);
   });
 }
 
@@ -477,7 +477,7 @@ function tossStep(id, prof) {
         audio.bell(174, 0.5);
         world.fx.burst("boc-dich");
         rain(RAIN["boc-dich"], 14);
-        showResult(r, id);
+        reveal(r, id, "boc-dich");
       }, 900);
     }, 720);
   });
@@ -642,6 +642,19 @@ function openLedger() {
   track("ledger_open");
 }
 
+// ---------- Khoảnh khắc ----------
+// Ẩn bảng và HUD, để camera lia cận cảnh vái lạy rồi chụp lại; sau đó mới hiện kết quả kèm ảnh chụp.
+async function reveal(r, id, z) {
+  let shot = null;
+  if (world?.moment) {
+    document.body.classList.add("cine");
+    sheet.classList.add("enter");
+    try { shot = await world.moment(z); } catch (e) { console.warn(e); }
+    document.body.classList.remove("cine");
+  }
+  showResult(r, id, false, shot);
+}
+
 // ---------- Kết quả ----------
 const hexHtml = lines => `<div class="hexa">${lines.map(l => `<div class="ln show${l.moving ? " mv" : ""}">${l.yang ? "<i></i>" : "<i></i><i></i>"}</div>`).join("")}</div>`;
 
@@ -659,7 +672,7 @@ function lotHtml(r) {
     <h3>${esc(c.ten)}</h3><div class="poem">${(c.tho || []).map(esc).join("<br>")}</div></div>`;
 }
 
-function showResult(r, id, replay = false) {
+function showResult(r, id, replay = false, shot = null) {
   if (id !== flow) return;
   const p = r.profile || {};
   const who = r.yi ? `${esc(p.name)} · ${esc(r.yi.canchi)} · mệnh ${esc(r.yi.menh)}` : p.chudeLabel ? `Hỏi về ${esc(p.chudeLabel.toLowerCase())}` : "";
@@ -679,6 +692,9 @@ function showResult(r, id, replay = false) {
     <p class="note" id="charm-note">Đang vẽ lá bùa…</p>
     <div class="btn-row"><button class="btn primary" id="b-save" disabled>⬇ Lưu lá bùa</button><button class="btn primary" id="b-share" disabled>↗ Chia sẻ</button></div>
     <div class="share-list"><button class="btn" id="b-fb">Facebook</button><button class="btn" id="b-copy">Chép lời chia sẻ</button></div>
+    ${shot ? `<h4 class="moment-h">📸 Ảnh khoảnh khắc</h4>
+    <img class="charm-preview" id="moment" alt="Ảnh khoảnh khắc rút quẻ" hidden>
+    <div class="btn-row"><button class="btn primary" id="m-save" disabled>⬇ Lưu ảnh</button><button class="btn primary" id="m-share" disabled>↗ Chia sẻ ảnh</button></div>` : ""}
     ${secret}
     <div class="btn-row">${r.kind === "tam-thanh" ? "" : `<button class="btn ghost" id="b-again">${r.kind === "boc-dich" ? "Gieo quẻ khác" : "Rút quẻ khác"}</button>`}
       <button class="btn ghost" id="b-next">Sang ${esc(ZONES[nextZone].name)}</button></div>${ent}`, true);
@@ -729,6 +745,33 @@ function showResult(r, id, replay = false) {
     toast(ok ? "Đã chép lời chia sẻ" : "Trình duyệt chưa cho chép, bạn thử chọn và sao chép thủ công nhé.");
     if (ok) { unlock(); gain("chiase"); track("charm_share", { kind: r.kind, method: "copy" }); }
   });
+  if (shot) {
+    let mblob = null;
+    drawMoment(shot, r, config).then(async cv => {
+      mblob = await canvasBlob(cv);
+      if (id !== flow || !mblob) return;
+      const img = $("#moment");
+      img.src = URL.createObjectURL(mblob);
+      img.hidden = false;
+      $("#m-save").disabled = false;
+      $("#m-share").disabled = false;
+    }).catch(e => console.warn("Không vẽ được ảnh khoảnh khắc", e));
+    $("#m-save").addEventListener("click", () => {
+      if (!mblob) return;
+      saveBlob(mblob, fileName(r).replace("bua-", "khoanh-khac-"));
+      unlock();
+      track("moment_save", { kind: r.kind });
+      toast("Đã lưu ảnh khoảnh khắc 📸");
+    });
+    $("#m-share").addEventListener("click", async () => {
+      const res = await shareBlob(mblob, r, config);
+      if (res === "cancelled") return;
+      unlock();
+      gain("chiase");
+      track("moment_share", { kind: r.kind, method: res });
+      if (res === "copied") toast("Đã tải ảnh và chép lời chia sẻ — dán vào nơi bạn muốn đăng nhé.");
+    });
+  }
   $("#b-again")?.addEventListener("click", () => openRitual(r.kind));
   $("#b-next").addEventListener("click", () => goTo(nextZone));
 }

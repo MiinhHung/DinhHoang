@@ -1306,6 +1306,42 @@ export async function createWorld(container, hooks = {}) {
     if (n !== near) { near = n; hooks.onNear?.(n); }
   }
 
+  // ---------- Khoảnh khắc: camera lia cận khi rút được quẻ rồi chụp lại khung hình ----------
+  // Camera đi từ chỗ đang đứng tới sau lưng chếch bên nhân vật, thấp ngang vai, nhìn về điện/tượng;
+  // nhân vật vái, khói hương bốc lên; cuối đoạn chụp canvas (ngay sau khi vẽ) và trả về ảnh.
+  let cine = null, captureReq = null;
+  function moment(z, ms = 2800) {
+    return new Promise(resolve => {
+      const f = FOCUS[z] || pos, gy = groundY(pos.x, pos.z), room = hallInterior(pos.x, pos.z);
+      const dir = V(f.x - pos.x, 0, f.z - pos.z);
+      if (dir.lengthSq() < 1e-4) dir.set(0, 0, -1);
+      dir.normalize();
+      const side = V(-dir.z, 0, dir.x);
+      const to = pos.clone().addScaledVector(dir, -3.4).addScaledVector(side, 0.55).setY(gy + 1.9);
+      if (room) {
+        to.x = Math.min(room.x1, Math.max(room.x0, to.x));
+        to.z = Math.min(room.z1, Math.max(room.z0, to.z));
+      }
+      const lookTo = pos.clone().addScaledVector(dir, 5).setY(gy + (room ? 2.4 : 1.3));
+      cine = { t: 0, ms, from: camera.position.clone(), to, lookFrom: look.clone(), lookTo, resolve };
+      // Ẩn nhãn tên trên đầu khi camera áp sát.
+      player.group.children.forEach(o => { if (o.isSprite) o.visible = false; });
+      const s = smokes.find(x => x.zone === z);
+      if (s) s.boost = 1;
+    });
+  }
+  function updateCine(dt) {
+    cine.t += dt * 1000;
+    const k = Math.min(1, cine.t / cine.ms), e = k * k * (3 - 2 * k);
+    camera.position.lerpVectors(cine.from, cine.to, e);
+    look.lerpVectors(cine.lookFrom, cine.lookTo, e);
+    camera.lookAt(look);
+    // Bắt đầu vái trước khi chụp nửa giây để ảnh chụp đúng lúc cúi sâu nhất.
+    const bowAt = cine.ms - 500;
+    if (cine.t >= bowAt && cine.t - dt * 1000 < bowAt) bowT = 0;
+    if (k >= 1 && !captureReq) captureReq = cine.resolve;
+  }
+
   function updateCamera(dt, t) {
     if (!entered) {
       // Trước khi vào đình: bay vòng quanh cả ngọn núi.
@@ -1314,6 +1350,7 @@ export async function createWorld(container, hooks = {}) {
       camera.lookAt(0, 8, 20);
       return;
     }
+    if (cine) { updateCine(dt); return; }
     // Ẩn tam quan khi nó chắn giữa camera và nhân vật đã đi vào trong sân.
     gate.visible = !(camera.position.z > GATE_Z - 0.5 && pos.z < GATE_Z - 0.5);
     // Góc xoay và độ xa làm mượt riêng, điểm bám theo nhân vật làm mượt riêng,
@@ -1611,6 +1648,14 @@ export async function createWorld(container, hooks = {}) {
     updateRemotes(dt);
     night.update(t);
     night.render();
+    // Chụp ngay sau khi vẽ (cùng khung hình) nên không cần preserveDrawingBuffer.
+    if (captureReq) {
+      const done = captureReq;
+      captureReq = null;
+      cine = null;
+      player.group.children.forEach(o => { if (o.isSprite) o.visible = true; });
+      try { renderer.domElement.toBlob(b => done(b), "image/jpeg", 0.92); } catch { done(null); }
+    }
   });
 
   const faceYaw = z => Math.atan2(FOCUS[z].x - pos.x, FOCUS[z].z - pos.z);
@@ -1643,6 +1688,7 @@ export async function createWorld(container, hooks = {}) {
       camera.position.copy(look).add(camOff);
     },
     // Quay nhân vật về phía điện và đưa camera ra sau lưng để thấy rõ nghi lễ.
+    moment,
     face(z) {
       if (!FOCUS[z]) return;
       wantYaw = faceYaw(z);

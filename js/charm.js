@@ -171,3 +171,57 @@ export async function drawCharm(r, cfg) {
   seal(g, W / 2, 1770, t.ink);
   return cv;
 }
+
+// Thiệp "khoảnh khắc": ảnh chụp trong game lúc rút quẻ, phủ khung vàng, tên điện, tên quẻ, tên người chơi.
+// shot: Blob ảnh chụp canvas. Trả về canvas 1080×1920.
+export async function drawMoment(shot, r, cfg) {
+  await fontsReady();
+  const t = THEME[r.kind] || THEME["tam-thanh"];
+  const img = await createImageBitmap(shot);
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const g = cv.getContext("2d");
+  // Ảnh phủ kín khung, cắt giữa.
+  const k = Math.max(W / img.width, H / img.height), iw = img.width * k, ih = img.height * k;
+  g.drawImage(img, (W - iw) / 2, (H - ih) / 2, iw, ih);
+  // Dải tối trên và dưới để chữ dễ đọc.
+  let gr = g.createLinearGradient(0, 0, 0, 520);
+  gr.addColorStop(0, "rgba(10,6,20,.78)"); gr.addColorStop(1, "rgba(10,6,20,0)");
+  g.fillStyle = gr; g.fillRect(0, 0, W, 520);
+  gr = g.createLinearGradient(0, H - 900, 0, H);
+  gr.addColorStop(0, "rgba(10,6,20,0)"); gr.addColorStop(0.45, "rgba(10,6,20,.72)"); gr.addColorStop(1, "rgba(10,6,20,.92)");
+  g.fillStyle = gr; g.fillRect(0, H - 900, W, 900);
+  // Khung vàng đôi.
+  g.strokeStyle = "#e7b75a"; g.lineWidth = 8; g.strokeRect(36, 36, W - 72, H - 72);
+  g.lineWidth = 2; g.strokeRect(56, 56, W - 112, H - 112);
+
+  g.textAlign = "center"; g.textBaseline = "alphabetic";
+  g.fillStyle = "#f7d98b"; g.font = `700 40px ${SERIF}`;
+  g.fillText(t.from, W / 2, 300);
+  g.fillStyle = "#e7b75a"; g.fillRect(W / 2 - 110, 324, 220, 3);
+
+  const p = r.profile || {};
+  let y = 1330;
+  const sub = [t.title, r.card?.lv, r.no ? `số ${r.no}` : r.card?.so ? `quẻ ${r.card.so}` : ""].filter(Boolean).join(" · ");
+  g.fillStyle = "#f7d98b"; g.font = `700 32px ${SERIF}`;
+  g.fillText(sub.toUpperCase(), W / 2, y);
+  y += 86;
+  g.fillStyle = "#ffffff"; g.font = `700 72px ${SERIF}`;
+  g.shadowColor = "rgba(0,0,0,.6)"; g.shadowBlur = 12;
+  wrap(g, r.card?.ten || "Tâm an vạn sự an", 860).slice(0, 2).forEach(l => { g.fillText(l, W / 2, y); y += 84; });
+  g.font = `italic 40px ${SERIF}`; g.fillStyle = "#f4ead6";
+  wrap(g, r.blessing, 860).slice(0, 2).forEach(l => { g.fillText(l, W / 2, y); y += 56; });
+  g.shadowBlur = 0;
+  const who = p.name?.trim() ? `Thí chủ ${p.name.trim()}` : "Một thí chủ hữu duyên";
+  g.fillStyle = "#f7d98b"; g.font = `700 40px ${SERIF}`;
+  g.fillText(who, W / 2, 1610, 820);
+  g.globalAlpha = 0.8; g.fillStyle = "#f4ead6"; g.font = `28px ${SERIF}`;
+  if (r.stamp) g.fillText(r.stamp, W / 2, 1656, 860);
+  let host = cfg.siteUrl || location.host;
+  try { host = new URL(cfg.siteUrl || location.href).host || host; } catch { /* giữ nguyên */ }
+  g.font = `26px ${SERIF}`;
+  g.fillText(`${cfg.siteName}${host ? " · " + host : ""} · Chỉ mang tính giải trí`, W / 2, 1700, W - 200);
+  g.globalAlpha = 1;
+  seal(g, W - 170, 230, t.ink);
+  return cv;
+}

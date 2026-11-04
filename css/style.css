@@ -262,3 +262,7 @@ h1 span { font-style: italic; font-weight: 400; color: var(--text); }
 .hist li { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.04); }
 .hist li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hist li small { color: var(--muted); font-size: 11px; }
+
+/* Khoảnh khắc rút quẻ: ẩn HUD để camera lia cận, ảnh chụp hiện dưới lá bùa */
+body.cine #hud, body.cine .zone-banner, body.cine .toast, body.cine .hint { opacity: 0 !important; pointer-events: none; transition: opacity .4s; }
+.moment-h { margin: 22px 0 6px; text-align: center; font-size: 14px; letter-spacing: .6px; text-transform: uppercase; color: var(--accent); }
