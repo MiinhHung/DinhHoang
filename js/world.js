@@ -1245,13 +1245,14 @@ export async function createWorld(container, hooks = {}) {
     const k = 1 - Math.exp(-dt * 3.5);
     const gy = groundY(pos.x, pos.z);
     // Trong điện nhìn cao hơn để thấy trọn tượng thần và trần.
-    lookWant.set(pos.x - Math.sin(camYaw) * 2.5 * (1 - indoor * 0.6), 1.3 + gy + indoor * 1.8, pos.z - Math.cos(camYaw) * 2.5 * (1 - indoor * 0.6));
+    lookWant.set(pos.x - Math.sin(camYaw) * 2.5 * (1 - indoor * 0.6), 1.3 + gy + indoor * (room?.lookUp ?? 1.8), pos.z - Math.cos(camYaw) * 2.5 * (1 - indoor * 0.6));
     look.lerp(lookWant, k);
     camWant.copy(look).add(camOff);
     if (room) {
       camWant.x = Math.min(room.x1, Math.max(room.x0, camWant.x));
       camWant.z = Math.min(room.z1, Math.max(room.z0, camWant.z));
-      camWant.y = Math.min(room.ceil - 0.6, camWant.y);
+      // Camera ngang tầm điểm nhìn (không cao quá để khỏi chúc xuống, mất đầu tượng).
+      camWant.y = Math.min(room.ceil - 0.6, look.y + (room.lookUp > 2 ? 0.6 : 1.6), Math.max(room.camMin, camWant.y));
     }
     // Không để camera chui xuống sườn núi.
     camWant.y = Math.max(terrainY(camWant.x, camWant.z) + 1.2, gy + 1.2, camWant.y);

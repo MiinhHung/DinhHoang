@@ -9,7 +9,8 @@
 import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy, bmesh
-from common import reset, box, cyl, sphere, ring, curved_roof, ridge, bake_and_export, P, finish, mat, PALETTE
+from common import reset, box, cyl, sphere, ring, curved_roof, ridge, bake_and_export, P, finish, mat
+from statue import build_statue, SPECS
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 OUT = argv[0] if argv else "hall.glb"
@@ -20,11 +21,11 @@ BASE = dict(col="#b3242a", stone="#ddd5c6", stone_dark="#b9b0a0", floor_a="#8a5a
 CFG = {
     "tam-thanh": dict(w=26, d=18, h=8, base=0.8, cols=8, door=5.6, roof="#d6582c", ridge="#f2b84b", wall="#9a2a20", trim="#e7b75a",
                       under="#5a2018", halo="#ffe8a0",
-                      statues=[(-4.2, "#3b5ba5", "#1d1612"), (0, "#c9302c", "#1d1612"), (4.2, "#2e7a5a", "#1d1612")], beard=True),
+                      statues=[(-4.2, "linh-bao"), (0, "nguyen-thuy"), (4.2, "dao-duc")]),
     "tai-than": dict(w=16, d=12, h=6.5, base=0.6, cols=6, door=4, roof="#e9b02c", ridge="#ffd86a", wall="#8a3a14", trim="#ffd36b",
-                     under="#5a3010", halo="#ffd86a", statues=[(0, "#c99a3e", "#1b1b1b")], beard=False),
+                     under="#5a3010", halo="#ffd86a", statues=[(0, "tai-than")]),
     "nguyet-lao": dict(w=16, d=12, h=6.5, base=0.6, cols=6, door=4, roof="#de5a88", ridge="#ffd0dc", wall="#a3304e", trim="#f7c6d4",
-                       under="#5a1a30", halo="#ffc8d8", statues=[(0, "#c8243a", "#8e2a3a")], beard=True),
+                       under="#5a1a30", halo="#ffc8d8", statues=[(0, "nguyet-lao")]),
 }
 C = {**BASE, **CFG[KIND]}
 W, D, H, TOP, DOOR = C["w"], C["d"], C["h"], C["base"], C["door"]
@@ -32,9 +33,6 @@ BIG = W > 20
 RY = TOP + H + 0.6
 FZ = D / 2
 reset({k: v for k, v in C.items() if isinstance(v, str)})
-for i, (_, robe, hat) in enumerate(C["statues"]):
-    PALETTE[f"robe{i}"] = robe
-    PALETTE[f"hat{i}"] = hat
 
 # ---------- Nền, bậc, sàn lát ô ----------
 box("terrace", W + 3, TOP, D + 3, 0, TOP / 2, 0, "stone", 0.05, 1)
@@ -156,54 +154,9 @@ for s in (-1, 1):
 box("canopy_beam", DW * 0.92, 0.3, 0.3, 0, TOP + DH + H * 0.78, -D / 2 + DD - 0.2, "gold", 0.02)
 
 
-def apply(o):
-    """Áp góc xoay, tỉ lệ (và vị trí đã đổi) vào lưới để khi gộp không bị lệch."""
-    for other in bpy.context.selected_objects:
-        other.select_set(False)
-    o.select_set(True)
-    bpy.context.view_layer.objects.active = o
-    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-    return o
-
-
-def statue(name, x, y, z, s, robe, hat, beard):
-    """Thần ngồi trên đài sen: đài, thân áo rộng, tay áo, đầu, mũ, râu và hào quang."""
-    cyl(f"{name}_lotusbase", 0.95 * s, 0.75 * s, 0.3 * s, x, y, z, "gold", 16)
-    for k in range(12):
-        a = k / 12 * math.pi * 2
-        o = sphere(f"{name}_petal{k}", 0.28 * s, x + math.cos(a) * 0.82 * s, y + 0.42 * s, z + math.sin(a) * 0.82 * s, "lotus", seg=10)
-        o.scale = (1, 1, 1.5)
-        apply(o)
-    cyl(f"{name}_cushion", 0.85 * s, 0.85 * s, 0.25 * s, x, y + 0.3 * s, z, "lotus", 16)
-    by = y + 0.55 * s
-    lap = sphere(f"{name}_lap", 0.75 * s, x, by + 0.25 * s, z + 0.1 * s, robe)
-    lap.scale = (1.1, 1.0, 0.5)
-    apply(lap)
-    cyl(f"{name}_torso", 0.52 * s, 0.36 * s, 1.15 * s, x, by + 0.2 * s, z - 0.05 * s, robe, 16)
-    for sd in (-1, 1):
-        sl = cyl(f"{name}_sleeve{sd}", 0.18 * s, 0.32 * s, 0.9 * s, x + sd * 0.5 * s, by + 0.45 * s, z + 0.12 * s, robe, 12)
-        sl.rotation_euler = (0.5, sd * -0.35, 0)
-        apply(sl)
-    sphere(f"{name}_hands", 0.17 * s, x, by + 0.55 * s, z + 0.5 * s, "skin")
-    box(f"{name}_ruyi", 0.12 * s, 0.6 * s, 0.12 * s, x, by + 0.85 * s, z + 0.55 * s, "gold", 0.02)
-    sphere(f"{name}_head", 0.3 * s, x, by + 1.62 * s, z, "skin")
-    cyl(f"{name}_crown", 0.26 * s, 0.3 * s, 0.32 * s, x, by + 1.82 * s, z - 0.03 * s, hat, 12)
-    box(f"{name}_crownboard", 0.7 * s, 0.07 * s, 0.32 * s, x, by + 2.15 * s, z - 0.03 * s, "gold", 0.01)
-    if beard:
-        cyl(f"{name}_beard", 0.16 * s, 0.02 * s, 0.6 * s, x, by + 0.95 * s, z + 0.24 * s, "white", 10)
-    halo = ring(f"{name}_halo", 0.62 * s, 0.5 * s, x, 0, 0.08 * s, 0, "gold", seg=32)
-    halo.rotation_euler = (math.pi / 2, 0, 0)
-    halo.location = P(x, by + 1.62 * s, z - 0.38 * s)
-    apply(halo)
-    disc = cyl(f"{name}_halodisc", 0.5 * s, 0.5 * s, 0.03 * s, 0, 0, 0, "halo", 32)
-    disc.rotation_euler = (math.pi / 2, 0, 0)
-    disc.location = P(x, by + 1.62 * s, z - 0.42 * s)
-    apply(disc)
-
-
 SC = 1.9 if BIG else 1.5
-for i, (sx, _, _) in enumerate(C["statues"]):
-    statue(f"st{i}", sx, TOP + DH, -D / 2 + DD * 0.5, SC, f"robe{i}", f"hat{i}", C["beard"])
+for i, (sx, key) in enumerate(C["statues"]):
+    build_statue(f"st{i}", sx, TOP + DH, -D / 2 + DD * 0.5, SC, SPECS[key])
 
 # ---------- Mái hai tầng ----------
 box("eave_ceiling", W + 4.2, 0.08, D + 4.2, 0, RY + 0.03, 0, "under", 0)
