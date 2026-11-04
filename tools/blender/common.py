@@ -125,6 +125,17 @@ def curved_roof(name, rw, rd, rh, edge, base_y, lift=0.75, res=0.15, ripple=0.06
     for j in range(nz):
         for i in range(nx):
             bm.faces.new((verts[j][i], verts[j][i + 1], verts[j + 1][i + 1], verts[j + 1][i]))
+    # UV cho ảnh ngói: hàng ngói (chiều dọc ảnh) chạy theo chiều dốc của từng mặt mái; ảnh có ~30 hàng,
+    # trải 30 × period để mỗi hàng ngói trùng một rãnh gợn trên bề mặt.
+    uvl = bm.loops.layers.uv.new("UVMap")
+    span = 30 * period
+    for f in bm.faces:
+        c = f.calc_center_median()
+        fx, fz = c.x - cx, -c.y - cz
+        along_x = (rd / 2 - abs(fz)) < (rw / 2 - abs(fx))
+        for loop in f.loops:
+            x, z = loop.vert.co.x - cx, -loop.vert.co.y - cz
+            loop[uvl].uv = (x / span, z / span) if along_x else (z / span, x / span)
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()
@@ -230,15 +241,26 @@ def bake_and_export(out, name, ao_floor=0.42, samples=48, ao_dist=3.0):
     except Exception:
         pass
 
+    # Hai vật liệu khi xuất: "vertex" (chỉ màu đỉnh) và "roof_tiles" (mặt mái; game phủ thêm ảnh ngói theo tên).
+    is_roof = [(me.materials[p.material_index] or first).name == "roof" for p in me.polygons]
     me.materials.clear()
-    vm = bpy.data.materials.new("vertex")
-    vm.use_nodes = True
-    nodes, links = vm.node_tree.nodes, vm.node_tree.links
-    attr = nodes.new("ShaderNodeVertexColor")
-    attr.layer_name = "Col"
-    links.new(attr.outputs["Color"], nodes["Principled BSDF"].inputs["Base Color"])
-    nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.85
-    me.materials.append(vm)
+
+    def vertex_mat(name):
+        m = bpy.data.materials.new(name)
+        m.use_nodes = True
+        nodes, links = m.node_tree.nodes, m.node_tree.links
+        attr = nodes.new("ShaderNodeVertexColor")
+        attr.layer_name = "Col"
+        bsdf = next(n for n in nodes if n.type == "BSDF_PRINCIPLED")
+        links.new(attr.outputs["Color"], bsdf.inputs["Base Color"])
+        bsdf.inputs["Roughness"].default_value = 0.85
+        return m
+
+    me.materials.append(vertex_mat("vertex"))
+    if any(is_roof):
+        me.materials.append(vertex_mat("roof_tiles"))
+        for p, r in zip(me.polygons, is_roof):
+            p.material_index = 1 if r else 0
 
     stats = (len(me.vertices), len(me.polygons))
     kw = dict(filepath=out, export_format="GLB", export_apply=True, export_yup=True, use_selection=False,

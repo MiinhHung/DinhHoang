@@ -182,7 +182,7 @@ export function hallInterior(x, z) {
     const h = HALL[k];
     if (Math.abs(x - h.x) < h.w / 2 - 0.3 && z > h.z - h.d / 2 + 0.3 && z < h.z + h.d / 2 - 0.5) {
       const y = hallFloor(k);
-      return { k, x0: h.x - h.w / 2 + 0.6, x1: h.x + h.w / 2 - 0.6, z0: h.z - h.d / 2 + h.d * 0.32 + 0.6, z1: h.z + h.d / 2 + 0.5, ceil: y + h.h + 0.6, floor: y };
+      return { k, x0: h.x - h.w / 2 + 0.6, x1: h.x + h.w / 2 - 0.6, z0: h.z - h.d / 2 + h.d * 0.32 + 0.6, z1: h.z + h.d / 2 - 1.1, ceil: y + h.h + 0.6, floor: y };
     }
   }
   return null;

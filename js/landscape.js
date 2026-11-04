@@ -62,11 +62,12 @@ export function makeTerrain(heightFn, { x0 = -120, x1 = 120, z0 = -160, z1 = 210
 }
 
 // Sân lát đá phủ mặt một tầng.
-export function makeCourtyard(poly, y) {
+// map: texture đá lát (mặc định vẽ bằng canvas); toạ độ UV là mét nên repeat = 1 / kích thước một ô ảnh.
+export function makeCourtyard(poly, y, map = pavingTexture()) {
   const s = new THREE.Shape(poly.map(([x, z]) => new THREE.Vector2(x, -z)));
   const geo = new THREE.ShapeGeometry(s);
   geo.rotateX(-Math.PI / 2);
-  const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: pavingTexture() }));
+  const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map }));
   m.position.y = y + 0.04;
   return m;
 }

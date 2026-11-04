@@ -9,3 +9,4 @@ Thumbs.db
 .claude/settings.local.json
 .playwright-mcp/
 __pycache__/
+assets/textures/src/

@@ -287,6 +287,17 @@ function interiorColumnsLocal(w, d, door) {
   return xs.flatMap(x => zs.map(z => [x, z * d]));
 }
 
+// Ảnh texture lặp (Poly Haven, CC0; nguồn ghi trong tools/blender/prep_textures.py).
+const texLoader = new THREE.TextureLoader();
+function loadTexture(url, repeat = 1) {
+  const t = texLoader.load(url);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(repeat, repeat);
+  t.anisotropy = 4;
+  return t;
+}
+
 // ---------- Mô hình dựng từ Blender ----------
 // Tải các file .glb trong assets/models (nén Draco). Thiếu file hay lỗi mạng thì trả về null để dùng khung đơn giản.
 const MODELS = Object.fromEntries(["gate", "chuong", "boc-dich", "tam-thanh", "tai-than", "nguyet-lao"].map(k => [k, `assets/models/${k}.glb`]));
@@ -299,12 +310,14 @@ async function loadModels() {
   const draco = new DRACOLoader().setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/");
   const loader = new GLTFLoader().setDRACOLoader(draco);
   const out = {};
+  const plainMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const roofMat = new THREE.MeshLambertMaterial({ vertexColors: true, map: loadTexture("assets/textures/roof_tiles.jpg") });
   await Promise.all(Object.entries(MODELS).map(async ([k, url]) => {
     try {
       const gltf = await loader.loadAsync(url);
       // Màu và bóng đổ đã bake vào màu đỉnh; dùng Lambert cho đồng bộ ánh sáng ngày/đêm với phần còn lại.
-      const m = new THREE.MeshLambertMaterial({ vertexColors: true });
-      gltf.scene.traverse(o => { if (o.isMesh) o.material = m; });
+      // Mặt mái ("roof_tiles") phủ thêm ảnh ngói Poly Haven, nhân với màu mái và bóng đổ đã bake.
+      gltf.scene.traverse(o => { if (o.isMesh) o.material = o.material?.name === "roof_tiles" ? roofMat : plainMat; });
       out[k] = gltf.scene;
     } catch (e) { console.warn(`Không tải được ${url}, dùng khung đơn giản.`, e); }
   }));
@@ -697,7 +710,9 @@ export async function createWorld(container, hooks = {}) {
   terrain.userData.noShadow = true;
   scene.add(terrain);
   const walkMeshes = [terrain];
-  LEVELS.forEach(l => { const c = makeCourtyard(l.poly, l.y); scene.add(c); walkMeshes.push(c); });
+  // Đá lát Poly Haven: một ô ảnh phủ 4 m (mỗi tấm đá khoảng 0,8 m).
+  const pavingMap = loadTexture("assets/textures/paving.jpg", 1 / 4);
+  LEVELS.forEach(l => { const c = makeCourtyard(l.poly, l.y, pavingMap); scene.add(c); walkMeshes.push(c); });
   STAIRS.forEach(s => { const st = makeStairs(s); scene.add(st); walkMeshes.push(st); });
   const driftClouds = makeClouds(scene);
   for (let i = 0; i < 26; i++) {
