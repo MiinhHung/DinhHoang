@@ -26,24 +26,6 @@ export function pavingTexture(unit = 4) {
   return t;
 }
 
-function rockTexture() {
-  const t = canvasTex(256, 256, (g, w, h) => {
-    g.fillStyle = "#8a8378"; g.fillRect(0, 0, w, h);
-    for (let y = 0; y < h; y += 6 + Math.random() * 10) {
-      const v = 110 + Math.random() * 50 | 0;
-      g.fillStyle = `rgba(${v},${v - 6},${v - 16},.55)`;
-      g.fillRect(0, y, w, 3 + Math.random() * 6);
-    }
-    for (let k = 0; k < 900; k++) {
-      g.fillStyle = `rgba(0,0,0,${Math.random() * 0.12})`;
-      g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 6, 2);
-    }
-  });
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(1 / 9, 1 / 9);
-  return t;
-}
-
 function cloudTexture() {
   const t = canvasTex(256, 256, (g) => {
     for (let i = 0; i < 18; i++) {
@@ -54,33 +36,6 @@ function cloudTexture() {
     }
   });
   return t;
-}
-
-// ---------- Cao nguyên ----------
-// outline: các điểm [x, z] theo vòng; mặt trên ở y = 0, vách đá đổ xuống `depth`.
-export function makePlateau(outline, depth = 26) {
-  const shape = new THREE.Shape(outline.map(([x, z]) => new THREE.Vector2(x, z)));
-  const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 4 });
-  geo.rotateX(Math.PI / 2);
-  const top = new THREE.MeshLambertMaterial({ map: pavingTexture() });
-  const side = new THREE.MeshLambertMaterial({ map: rockTexture(), color: "#f2ebe0", emissive: "#2a2622" });
-  const m = new THREE.Mesh(geo, [top, side]);
-  const g = new THREE.Group();
-  g.add(m);
-  // Chân núi thuôn dần xuống biển mây và vài tảng đá lồi ra ở mép vách.
-  const rockM = new THREE.MeshLambertMaterial({ map: rockTexture(), color: "#a9a094" });
-  const root = new THREE.Mesh(new THREE.CylinderGeometry(30, 9, 34, 9, 1), rockM);
-  root.position.y = -depth - 16;
-  g.add(root);
-  outline.forEach(([x, z], i) => {
-    if (i % 2) return;
-    const r = 2.5 + Math.random() * 3;
-    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), rockM);
-    rock.position.set(x * 0.97, -depth * (0.35 + Math.random() * 0.4), z * 0.97);
-    rock.scale.set(1, 1.8, 1);
-    g.add(rock);
-  });
-  return { group: g, top: m };
 }
 
 // ---------- Núi nhiều tầng ----------
@@ -130,21 +85,51 @@ export function makeStairs({ x, hw, z0, y0, z1, y1 }) {
   return g;
 }
 
-// Mặt nước chảy (suối) và thác đổ theo sườn núi: dải nước có kết cấu trôi liên tục.
-function waterTex() {
-  const t = canvasTex(64, 256, (g, w, h) => {
-    g.fillStyle = "rgba(90,180,210,.85)"; g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 70; i++) {
-      g.fillStyle = `rgba(255,255,255,${0.25 + Math.random() * 0.55})`;
-      g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 3, 12 + Math.random() * 40);
-    }
+// ---------- Nước chảy ----------
+// Shader nước: vệt sóng mềm trôi theo dòng (nhiễu nhiều lớp), mép mờ dần vào bờ, mép có bọt nhẹ.
+// Thác (fall) chảy nhanh, nhiều bọt trắng hơn. uLight theo giờ trong ngày để ban đêm nước tối lại.
+const WATER_VS = `
+varying vec2 vUv;
+#include <fog_pars_vertex>
+void main() {
+  vUv = uv;
+  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+  gl_Position = projectionMatrix * mvPosition;
+  #include <fog_vertex>
+}`;
+const WATER_FS = `
+uniform float uTime, uSpeed, uFoam, uLight;
+uniform vec3 uDeep, uShallow;
+varying vec2 vUv;
+#include <fog_pars_fragment>
+float h(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float n(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + 1.0), f.x), f.y); }
+float fbm(vec2 p) { return n(p) * 0.55 + n(p * 2.1 + 3.7) * 0.3 + n(p * 4.3 + 7.1) * 0.15; }
+void main() {
+  float side = min(vUv.x, 1.0 - vUv.x) * 2.0;
+  vec2 p = vec2(vUv.x * 3.0, vUv.y - uTime * uSpeed);
+  float flow = fbm(p * vec2(2.2, 1.1));
+  float streak = smoothstep(0.58 - uFoam * 0.2, 0.85, fbm(p * vec2(5.0, 0.7) + flow));
+  vec3 col = mix(uShallow, uDeep, smoothstep(0.0, 0.8, side) * (0.6 + flow * 0.4));
+  float foam = clamp(streak * (0.35 + uFoam) + (1.0 - smoothstep(0.0, 0.35, side)) * 0.35 * (0.5 + flow), 0.0, 1.0);
+  col = mix(col, vec3(0.95, 0.98, 1.0), foam);
+  gl_FragColor = vec4(col * uLight, smoothstep(0.0, 0.22, side) * (0.82 + foam * 0.18));
+  #include <fog_fragment>
+}`;
+export function makeWaterMaterials() {
+  const shared = { uTime: { value: 0 }, uLight: { value: 1 } };
+  const make = (speed, foam, deep, shallow) => new THREE.ShaderMaterial({
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uSpeed: { value: speed }, uFoam: { value: foam }, uDeep: { value: new THREE.Color(deep) }, uShallow: { value: new THREE.Color(shallow) } }]),
+    vertexShader: WATER_VS, fragmentShader: WATER_FS, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: true
   });
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  return t;
+  const stream = make(0.35, 0.08, "#2a96a0", "#9ee2e0"), fall = make(1.6, 0.75, "#5fb6cc", "#d8f2f6");
+  [stream, fall].forEach(m => { m.uniforms.uTime = shared.uTime; m.uniforms.uLight = shared.uLight; });
+  return { stream, fall, update: dt => { shared.uTime.value += dt; }, setLight: v => { shared.uLight.value = v; } };
 }
-// path: các điểm [x, y, z] dọc dòng chảy (từ nguồn xuống); width: bề rộng dòng nước.
-export function makeWaterPath(path, width, speed = 0.6) {
-  const tex = waterTex();
+
+// path: các điểm [x, y, z] dọc dòng chảy (từ nguồn xuống); width: bề rộng dòng nước; material: từ makeWaterMaterials.
+export function makeWaterPath(path, width, material) {
   const pos = [], uv = [], idx = [];
   let acc = 0;
   path.forEach(([x, y, z], i) => {
@@ -161,9 +146,33 @@ export function makeWaterPath(path, width, speed = 0.6) {
   geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
   geo.setIndex(idx);
   geo.computeVertexNormals();
-  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.92, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+  const m = new THREE.Mesh(geo, material);
   m.renderOrder = 2;
-  return { mesh: m, update: dt => { tex.offset.y -= dt * speed; } };
+  return m;
+}
+
+// Bờ kè đá hai bên lòng suối chạy dọc trục z, chừa chỗ cho cầu và ao.
+export function makeBanks(x, z0, z1, y, halfW) {
+  const g = new THREE.Group();
+  const stone = lam("#bdb4a4"), cap = lam("#d6cebf");
+  const len = Math.abs(z1 - z0), zc = (z0 + z1) / 2;
+  [-1, 1].forEach(s => {
+    g.add(box(0.5, 0.55, len, stone, x + s * (halfW + 0.25), y + 0.2, zc));
+    g.add(box(0.62, 0.1, len, cap, x + s * (halfW + 0.25), y + 0.5, zc));
+  });
+  // Lòng suối tối màu bên dưới mặt nước cho có chiều sâu.
+  const bed = mesh(new THREE.PlaneGeometry(halfW * 2, len), lam("#2c4a48"), x, y + 0.1, zc);
+  bed.rotation.x = -Math.PI / 2;
+  g.add(bed);
+  return g;
+}
+
+// Đá tảng rải hai bên thác.
+export function makeRock(r) {
+  const m = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), lam(Math.random() < 0.5 ? "#8f8a82" : "#a39d93"));
+  m.scale.set(1, 0.7 + Math.random() * 0.4, 1);
+  m.rotation.set(Math.random(), Math.random() * 3, Math.random());
+  return m;
 }
 
 // Bọt nước trắng ở chân thác.
@@ -185,19 +194,55 @@ export function makeFoam(glowTex, x, y, z, r = 2) {
   };
 }
 
-// Cầu đá vòm nhỏ bắc qua suối.
-export function makeBridge(span, width) {
+// Cầu vòm bán nguyệt: thân đá liền khối khoét lỗ vòm tròn cho nước chảy qua, mặt cầu gồ cao theo deckY,
+// bậc đá ngang trên mặt cầu, lan can trụ nụ sen chạy theo dáng cong. Nhịp cầu theo trục x, rộng theo z.
+export function makeMoonBridge(len, width, deckY, archR = 1.45) {
   const g = new THREE.Group();
-  const stone = lam("#d6cebf");
-  const n = 8;
-  for (let i = 0; i < n; i++) {
-    const t = (i + 0.5) / n, x = (t - 0.5) * span, y = Math.sin(t * Math.PI) * 0.45;
-    g.add(box(span / n + 0.05, 0.3, width, stone, x, y + 0.05, 0));
+  const base = -0.4, n = 32;
+  const s = new THREE.Shape();
+  s.moveTo(-len / 2, base);
+  for (let i = 0; i <= n; i++) { const x = -len / 2 + len * i / n; s.lineTo(x, deckY(x)); }
+  s.lineTo(len / 2, base);
+  s.lineTo(archR, base);
+  s.absarc(0, base, archR, 0, Math.PI, false);
+  s.lineTo(-len / 2, base);
+  const geo = new THREE.ExtrudeGeometry(s, { depth: width, bevelEnabled: false, curveSegments: 24 });
+  geo.translate(0, 0, -width / 2);
+  g.add(new THREE.Mesh(geo, lam("#d8d0c1")));
+  // Viền đá sẫm quanh miệng vòm hai mặt cầu.
+  [-1, 1].forEach(sz => {
+    const rim = new THREE.Mesh(new THREE.RingGeometry(archR, archR + 0.28, 32, 1, 0, Math.PI), lam("#a89f90"));
+    rim.position.set(0, base, sz * (width / 2 + 0.01));
+    if (sz < 0) rim.rotation.y = Math.PI;
+    g.add(rim);
+  });
+  // Bậc đá ngang trên mặt cầu.
+  const stepM = lam("#c4bbab");
+  for (let x = -len / 2 + 0.35; x < len / 2 - 0.2; x += 0.55) {
+    const slope = Math.atan2(deckY(x + 0.05) - deckY(x - 0.05), 0.1);
+    const st = box(0.12, 0.05, width - 0.5, stepM, x, deckY(x) + 0.02, 0);
+    st.rotation.z = slope;
+    g.add(st);
   }
-  [-1, 1].forEach(s => {
-    const pts = Array.from({ length: n + 1 }, (_, i) => [(i / n - 0.5) * span, s * (width / 2 - 0.1)]);
-    const rail = makeBalustrade(pts, { closed: false, step: span / 4, y: 0.35 });
-    g.add(rail);
+  // Lan can: trụ nụ sen theo dáng cong, thanh vịn nghiêng theo độ dốc.
+  const post = lam("#e2dbcd"), bud = lam("#f0c8d2");
+  [-1, 1].forEach(sz => {
+    const z = sz * (width / 2 - 0.15), xs = [];
+    for (let i = 0; i <= 8; i++) xs.push(-len / 2 + 0.3 + (len - 0.6) * i / 8);
+    xs.forEach((x, i) => {
+      const end = i === 0 || i === xs.length - 1;
+      g.add(box(end ? 0.36 : 0.24, end ? 1.05 : 0.85, end ? 0.36 : 0.24, post, x, deckY(x) + (end ? 0.52 : 0.42), z));
+      g.add(ball(end ? 0.2 : 0.14, bud, x, deckY(x) + (end ? 1.12 : 0.92), z, 8));
+      if (i) {
+        const x0 = xs[i - 1], y0 = deckY(x0) + 0.72, y1 = deckY(x) + 0.72;
+        const rail = box(Math.hypot(x - x0, y1 - y0), 0.1, 0.14, post, (x + x0) / 2, (y0 + y1) / 2, z);
+        rail.rotation.z = Math.atan2(y1 - y0, x - x0);
+        g.add(rail);
+        const panel = box(Math.hypot(x - x0, y1 - y0) - 0.2, 0.32, 0.08, lam("#cfc6b6"), (x + x0) / 2, (y0 + y1) / 2 - 0.36, z);
+        panel.rotation.z = rail.rotation.z;
+        g.add(panel);
+      }
+    });
   });
   return g;
 }

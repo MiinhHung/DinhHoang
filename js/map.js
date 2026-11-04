@@ -37,9 +37,13 @@ export const WATER = {
   x: 13,
   spring: { x: 13, z: -2, w: 7, d: 5 },
   pool2: { x: 13, z: 27, w: 7, d: 5 },
-  bridge: { z0: 54, z1: 58 },
+  bridge: { z0: 54.2, z1: 57.8 },
   pool1: { x: 14, z: 97, w: 10, d: 8 }
 };
+// Cầu vòm bán nguyệt bắc ngang suối tầng 2: dài `len` theo trục x, rộng theo z, đỉnh cao `rise`.
+export const BRIDGE = { x: WATER.x, z: (WATER.bridge.z0 + WATER.bridge.z1) / 2, len: 8.4, width: WATER.bridge.z1 - WATER.bridge.z0, rise: 1.9 };
+// Mặt cầu cong parabol: dốc nhất ở hai đầu (≈ 0.9), vẫn đi bộ được.
+export const bridgeDeckY = dx => BRIDGE.rise * Math.max(0, 1 - (2 * dx / BRIDGE.len) ** 2);
 export const POND = { x: -14, z: 98, w: 10, d: 7 }; // Ao Sen thả hoa đăng
 export const GATE_Z = 125;
 export const SPAWN = { x: 0, z: 142 };
@@ -88,6 +92,7 @@ const levelAt = (x, z) => LEVELS.find(l => inPoly(l.poly, x, z));
 
 // Phần nền nổi trên mặt tầng: nền điện và bậc trước điện, Bốc Dịch Đài và bậc của đài.
 function featureY(x, z) {
+  if (Math.abs(z - BRIDGE.z) <= BRIDGE.width / 2 - 0.15 && Math.abs(x - BRIDGE.x) <= BRIDGE.len / 2) return bridgeDeckY(x - BRIDGE.x);
   for (const k in HALL) {
     const h = HALL[k], hw = h.w / 2 + 1.5, hd = h.d / 2 + 1.5;
     const dx = x - h.x, dz = z - h.z;

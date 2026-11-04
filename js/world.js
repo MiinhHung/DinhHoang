@@ -3,10 +3,10 @@ import * as THREE from "three";
 import { V, lam, mesh, box, cyl, ball, canvasTex, roundRect, HAN, SERIF, boardTexture, boardMesh, hipRoof } from "./build.js";
 import {
   grassPatch, makeBush, makeRoundTree, makeBalustrade, makeClouds, makePeak, makeTerrain, makeCourtyard, makeStairs,
-  makeWaterPath, makeFoam, makeBridge, makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate
+  makeWaterPath, makeWaterMaterials, makeBanks, makeRock, makeFoam, makeMoonBridge, makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate
 } from "./landscape.js";
 import {
-  LEVELS, STAIRS, HALL, ALTAR, WATER, POND, GATE_Z, SPAWN as SPAWN_XZ, hallFloor, altarBase,
+  LEVELS, STAIRS, HALL, ALTAR, WATER, POND, BRIDGE, bridgeDeckY, GATE_Z, SPAWN as SPAWN_XZ, hallFloor, altarBase,
   terrainY, heightAt, walkable, canStep, hallObstacles, interiorColumns, hallInterior, inPoly
 } from "./map.js";
 
@@ -682,7 +682,10 @@ export async function createWorld(container, hooks = {}) {
     moon.scale.setScalar(40 + sun * 30);
     moonCore.scale.setScalar(12 + sun * 10);
     renderer.toneMappingExposure = n("exp");
+    // Độ sáng cho mặt nước (shader không dùng đèn của cảnh): tối dần về đêm.
+    waterLight = 0.42 + 0.58 * sun;
   }
+  let waterLight = 1;
   applySky();
 
   // ---------- Núi, sân các tầng, bậc đá ----------
@@ -714,7 +717,9 @@ export async function createWorld(container, hooks = {}) {
         pts.push([x + (cx - x) / dl * 0.5, z + (cz - z) / dl * 0.5]);
       }
     });
-    const gap = ([x, z]) => STAIRS.some(s => Math.abs(x - s.x) < s.hw + 0.7 && (Math.abs(z - s.z0) < 2 || Math.abs(z - s.z1) < 2));
+    // Chừa lối cho bậc thang và chỗ dòng nước chảy qua mép tầng.
+    const gap = ([x, z]) => Math.abs(x - WATER.x) < 2.2 ||
+      STAIRS.some(s => Math.abs(x - s.x) < s.hw + 0.7 && (Math.abs(z - s.z0) < 2 || Math.abs(z - s.z1) < 2));
     let run = [];
     const flush = () => { if (run.length > 1) scene.add(makeBalustrade(run, { closed: false, step: 1.8, y: l.y })); run = []; };
     [...pts, pts[0]].forEach(p => { if (gap(p)) flush(); else run.push(p); });
@@ -722,14 +727,39 @@ export async function createWorld(container, hooks = {}) {
   });
 
   // ---------- Dòng nước: suối nguồn → thác 2 → ao tầng 2 → suối qua cầu → thác 1 → ao thác ----------
-  const waters = [], foams = [];
-  const stream = (z0, z1, y, w = 2.6) => { const wp = makeWaterPath([[WATER.x, y + 0.42, z0], [WATER.x, y + 0.42, z1]], w); scene.add(wp.mesh); waters.push(wp); };
-  const cascade = (z0, z1, x = WATER.x, w = 3.2) => {
-    const pts = [];
-    for (let z = z0; z <= z1 + 0.01; z += 0.7) pts.push([x, terrainY(x, z) + 0.35, z]);
-    const wp = makeWaterPath(pts, w, 1.4);
-    scene.add(wp.mesh);
-    waters.push(wp);
+  const waterMats = makeWaterMaterials();
+  const foams = [];
+  const HW = 1.3; // nửa bề rộng lòng suối
+  // Suối trên mặt tầng: nước nằm trong lòng có bờ kè đá hai bên.
+  const stream = (z0, z1, y, banks = true) => {
+    scene.add(makeWaterPath([[WATER.x, y + 0.42, z0], [WATER.x, y + 0.42, z1]], HW * 2, waterMats.stream));
+    if (banks) scene.add(makeBanks(WATER.x, z0, z1, y, HW));
+  };
+  // Thác đổ thành nhiều bậc theo sườn núi: mỗi bậc một đoạn nước phẳng rồi đổ xuống, gờ đá đỡ dưới,
+  // bọt trắng ở chân mỗi bậc, đá tảng rải hai bên.
+  const cascade = (z0, y0, z1, y1, tiers = 5) => {
+    const pts = [], x = WATER.x, len = z1 - z0;
+    for (let i = 0; i <= tiers * 10; i++) {
+      const t = i / (tiers * 10), k = Math.min(tiers - 1, Math.floor(t * tiers)), u = t * tiers - k;
+      const drop = u < 0.6 ? 0 : (u - 0.6) / 0.4;
+      const y = y0 - (y0 - y1) * (k + drop * drop * (3 - 2 * drop)) / tiers;
+      pts.push([x, Math.max(y, terrainY(x, z0 + len * t) + 0.25) + 0.12, z0 + len * t]);
+    }
+    scene.add(makeWaterPath(pts, HW * 2.2, waterMats.fall));
+    for (let k = 0; k < tiers; k++) {
+      const zs = z0 + len * k / tiers, ze = z0 + len * (k + 0.62) / tiers, yk = y0 - (y0 - y1) * k / tiers;
+      const zm = (zs + ze) / 2, bottom = terrainY(x, ze) - 1.5;
+      scene.add(box(HW * 2 + 1.2, yk - bottom, ze - zs, lam("#9a948a"), x, (yk + bottom) / 2, zm));
+      if (k) { const f = makeFoam(tex.glow, x, yk + 0.25, zs + 0.3, 1.1); foams.push(f); }
+    }
+    foams.push(makeFoam(tex.glow, x, y1 + 0.3, z1 + 0.6, 1.6));
+    for (let z = z0 + 0.5; z < z1; z += 1.3) {
+      [-1, 1].forEach(s => {
+        const r = makeRock(0.45 + Math.random() * 0.55), rx = x + s * (HW + 1.1 + Math.random() * 0.8);
+        r.position.set(rx, terrainY(rx, z) + 0.15, z + Math.random() * 0.6);
+        scene.add(r);
+      });
+    }
   };
   const lv = id => LEVELS.find(l => l.id === id).y;
   [[WATER.spring, lv(3)], [WATER.pool2, lv(2)], [WATER.pool1, lv(1)]].forEach(([p, y]) => {
@@ -737,25 +767,25 @@ export async function createWorld(container, hooks = {}) {
     pond.position.set(p.x, y, p.z);
     scene.add(pond);
   });
-  stream(WATER.spring.z + WATER.spring.d / 2, 8.5, lv(3));
-  cascade(8, 22);
+  stream(WATER.spring.z + WATER.spring.d / 2, 8.4, lv(3));
+  cascade(8.4, lv(3), 22, lv(2));
   stream(22, WATER.pool2.z - WATER.pool2.d / 2, lv(2));
-  stream(WATER.pool2.z + WATER.pool2.d / 2, 70.5, lv(2));
-  cascade(70, 84);
+  stream(WATER.pool2.z + WATER.pool2.d / 2, BRIDGE.z - BRIDGE.width / 2, lv(2));
+  stream(BRIDGE.z - BRIDGE.width / 2, BRIDGE.z + BRIDGE.width / 2, lv(2), false);
+  stream(BRIDGE.z + BRIDGE.width / 2, 70.4, lv(2));
+  cascade(70.4, lv(2), 84, lv(1));
   stream(84, WATER.pool1.z - WATER.pool1.d / 2, lv(1));
-  foams.push(makeFoam(tex.glow, WATER.x, lv(2) + 0.3, 23), makeFoam(tex.glow, WATER.x, lv(1) + 0.3, 85));
   // Thác hai bên sườn núi đổ xuống biển mây.
   [[-44, 40, -1], [44, 46, 1]].forEach(([x0, z, s]) => {
     const pts = [];
     for (let x = x0; Math.abs(x) <= 95; x += s * 1.2) pts.push([x, terrainY(x, z) + 0.4, z]);
-    const wp = makeWaterPath(pts, 4, 1.6);
-    scene.add(wp.mesh);
-    waters.push(wp);
+    scene.add(makeWaterPath(pts, 4, waterMats.fall));
   });
   foams.forEach(f => scene.add(f.points));
-  const bridge = makeBridge(5.4, WATER.bridge.z1 - WATER.bridge.z0);
-  bridge.position.set(WATER.x, lv(2), (WATER.bridge.z0 + WATER.bridge.z1) / 2);
+  const bridge = makeMoonBridge(BRIDGE.len, BRIDGE.width, bridgeDeckY);
+  bridge.position.set(BRIDGE.x, lv(2), BRIDGE.z);
   scene.add(bridge);
+  walkMeshes.push(bridge);
 
   // ---------- Tam quan và sân tầng 1 ----------
   const models = await loadModels();
@@ -1238,7 +1268,8 @@ export async function createWorld(container, hooks = {}) {
     bagua.userData.taiji.rotation.z += dt * (0.15 + spinBoost * 2.5);
     bagua.userData.ring.material.opacity = 0.2 + spinBoost * 0.6 + (zone === "boc-dich" ? 0.15 : 0);
     banners.forEach(b => b.userData.wave(t));
-    waters.forEach(w => w.update(dt));
+    waterMats.update(dt);
+    waterMats.setLight(waterLight);
     foams.forEach(f => f.update(t));
     driftClouds(dt);
     // Cánh hoa rơi quanh nhân vật (bản đồ rộng, không rải khắp núi).
