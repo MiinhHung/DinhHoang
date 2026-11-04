@@ -49,7 +49,10 @@
   <!-- HUD -->
   <div id="hud" class="hidden">
     <div class="hud-top">
-      <div id="zone-name" class="zone-name">Sân Đình</div>
+      <div class="hud-left">
+        <div id="zone-name" class="zone-name">Sân Đình</div>
+        <button id="merit" class="merit" title="Sổ Công Đức" aria-label="Mở Sổ Công Đức">📜 <b>0</b> công đức</button>
+      </div>
       <div class="hud-btns">
         <span id="online" class="online hidden"></span>
         <button id="btn-map" class="icon-btn" title="Đi nhanh" aria-label="Đi nhanh">🗺</button>
@@ -77,6 +80,9 @@
         <button data-go="tai-than"><b>Tài Thần Điện</b><small>Triệu Công Minh · cầu tài</small></button>
         <button data-go="nguyet-lao"><b>Nguyệt Lão Điện</b><small>Hợp Hoan Cung · cầu duyên</small></button>
         <button data-go="boc-dich"><b>Bốc Dịch Đài</b><small>Gieo quẻ Kinh Dịch</small></button>
+        <button data-go="dao-si"><b>Lão Đạo Sĩ</b><small>Lời dạy hôm nay · việc lành trong ngày</small></button>
+        <button data-go="chuong"><b>Lầu Chuông</b><small>Thỉnh một tiếng chuông đồng</small></button>
+        <button data-go="ao-sen"><b>Ao Sen</b><small>Thả hoa đăng gửi điều nguyện</small></button>
       </div>
       <button class="btn ghost" data-close>Đóng</button>
     </div>
@@ -90,6 +96,8 @@
         <li>Không đăng nhập, không thu thập tài khoản.</li>
         <li>Họ tên, năm sinh, ngành nghề, tình trạng chỉ dùng để luận quẻ ngay trên trình duyệt của bạn và được lưu tạm trong phiên (đóng tab là hết).</li>
         <li>Ảnh bùa được vẽ ngay trên máy bạn, không gửi lên máy chủ.</li>
+        <li>Sổ Công Đức (điểm, bộ sưu tập quẻ, lá bùa gần đây kèm tên và năm sinh đã nhập) được lưu lâu dài trên trình duyệt của máy này để bạn xem lại. Có thể xóa bất cứ lúc nào bằng nút "Xóa sổ công đức" trong sổ.</li>
+        <li>Lời nguyện viết khi thả hoa đăng không được lưu và không gửi cho ai.</li>
         <li>Nếu chế độ "người chơi online" được bật, chỉ danh xưng, màu áo và vị trí nhân vật được chia sẻ với người cùng trong đình; không gửi tên thật hay năm sinh.</li>
         <li>Chúng tôi có thể đo nguồn truy cập (UTM) ở dạng ẩn danh để cải thiện trải nghiệm.</li>
       </ul>

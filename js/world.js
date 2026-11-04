@@ -6,13 +6,27 @@ export const ZONES = {
   "tam-thanh": { name: "Tam Thanh Điện", han: "三清殿", sub: "Chính điện · thắp nén tâm hương", act: "Thắp hương" },
   "tai-than": { name: "Tài Thần Điện", han: "財神殿", sub: "Triệu Công Minh · cầu tài lộc", act: "Xin quẻ Tài Thần" },
   "nguyet-lao": { name: "Nguyệt Lão Điện", han: "月老殿 · 合歡宮", sub: "Hợp Hoan Cung · cầu duyên", act: "Rút xăm Nguyệt Lão" },
-  "boc-dich": { name: "Bốc Dịch Đài", han: "卜易台", sub: "Gieo quẻ Kinh Dịch", act: "Gieo quẻ" }
+  "boc-dich": { name: "Bốc Dịch Đài", han: "卜易台", sub: "Gieo quẻ Kinh Dịch", act: "Gieo quẻ" },
+  // Các điểm nhỏ trong sân: không có biển tên lớn, chỉ hiện nút khi đứng gần.
+  "dao-si": { name: "Lão Đạo Sĩ", act: "Hỏi chuyện Lão Đạo Sĩ", prop: true },
+  chuong: { name: "Lầu Chuông", act: "Thỉnh chuông", prop: true },
+  "ao-sen": { name: "Ao Sen", act: "Thả hoa đăng", prop: true },
+  "to-hong": { name: "Cây Tơ Hồng", act: "Buộc tơ hồng", prop: true },
+  "kim-tien": { name: "Cây Kim Tiền", act: "Hái lộc", prop: true }
 };
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
-const SPOT = { "tam-thanh": V(0, 0, -10.5), "tai-than": V(11.8, 0, -2), "nguyet-lao": V(-11.8, 0, -2), "boc-dich": V(0, 0, 8) };
+const SPOT = {
+  "tam-thanh": V(0, 0, -10.5), "tai-than": V(11.8, 0, -2), "nguyet-lao": V(-11.8, 0, -2), "boc-dich": V(0, 0, 8),
+  "dao-si": V(2.2, 0, 17.9), chuong: V(-20, 0, 15.6), "ao-sen": V(20, 0, 16.1), "to-hong": V(-15, 0, 8.9), "kim-tien": V(15, 0, 8.9)
+};
 const BURNER = { "tam-thanh": V(0, 0, -13), "tai-than": V(14.5, 0, -2), "nguyet-lao": V(-14.5, 0, -2), "boc-dich": V(0, 0, 8) };
-const ACT_R = { "tam-thanh": 3.2, "tai-than": 3.2, "nguyet-lao": 3.2, "boc-dich": 4.2 };
+const PROP = { "dao-si": V(3.7, 0, 16.6), chuong: V(-20, 0, 12.5), "ao-sen": V(20, 0, 12.5), "to-hong": V(-15, 0, 6.5), "kim-tien": V(15, 0, 6.5) };
+// Chỗ nhân vật quay mặt về khi làm nghi lễ ở mỗi điểm.
+const FOCUS = { ...BURNER, ...PROP };
+const ACT_R = { "tam-thanh": 3.2, "tai-than": 3.2, "nguyet-lao": 3.2, "boc-dich": 4.2, "dao-si": 2.8, chuong: 2.3, "ao-sen": 2.3, "to-hong": 2, "kim-tien": 2 };
+const POND_R = 2.6;
+const HOA_DANG = { sen: ["#f59ab5", "#5a1626"], vang: ["#f2c14e", "#5a3a00"], trang: ["#f3ecd8", "#3a3428"] };
 const SPAWN = V(0, 0, 19);
 // Giới hạn phía nam để camera không chui sau mái tam quan.
 const BOUNDS = { x0: -27.5, x1: 27.5, z0: -27.5, z1: 21 };
@@ -461,6 +475,127 @@ function makeAvatar(color, name, tex) {
   };
 }
 
+// ---------- Điểm tương tác trong sân ----------
+function makeBellTower() {
+  const g = new THREE.Group();
+  const wood = lam("#a3201f");
+  g.add(box(3.4, 0.4, 3.4, lam("#8d8577"), 0, 0.2, 0));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(cyl(0.14, 0.17, 3.4, wood, sx * 1.3, 2.1, sz * 1.3, 8));
+  g.add(box(3, 0.22, 0.22, wood, 0, 3.72, 0));
+  g.add(hipRoof(4.4, 4.4, 1.3, new THREE.MeshLambertMaterial({ color: "#2c5a52", side: THREE.DoubleSide }), 0.15).translateY(3.8));
+  g.add(ball(0.22, lam("#ffd36b", "#7a4a00"), 0, 5.2, 0));
+  const bronze = new THREE.MeshLambertMaterial({ color: "#8a6a32", emissive: "#2a1a04", side: THREE.DoubleSide });
+  const bell = new THREE.Group();
+  bell.position.y = 3.6;
+  const prof = [[0, 0], [0.4, -0.05], [0.48, -0.4], [0.53, -1], [0.66, -1.35], [0.68, -1.42], [0, -1.42]].map(([x, y]) => new THREE.Vector2(x, y));
+  bell.add(new THREE.Mesh(new THREE.LatheGeometry(prof, 20), bronze));
+  [-0.45, -1.15].forEach(y => {
+    const band = mesh(new THREE.TorusGeometry(y < -1 ? 0.6 : 0.49, 0.03, 6, 20), lam("#c99a3e", "#3a2508"), 0, y, 0);
+    band.rotation.x = Math.PI / 2;
+    bell.add(band);
+  });
+  g.add(bell);
+  // Chày gỗ treo bên cạnh, xoay quanh điểm treo trên xà.
+  const striker = new THREE.Group();
+  striker.position.set(1.05, 3.62, 0);
+  const log = cyl(0.12, 0.12, 0.95, lam("#6b4a2e"), 0.55, -0.95, 0, 8);
+  log.rotation.z = Math.PI / 2;
+  striker.add(log);
+  [0.2, 0.9].forEach(x => striker.add(cyl(0.015, 0.015, 0.95, lam("#3a2a1a"), x, -0.47, 0, 4)));
+  g.add(striker);
+  g.userData = { bell, striker };
+  return g;
+}
+
+function makePond() {
+  const g = new THREE.Group();
+  g.add(cyl(POND_R + 0.35, POND_R + 0.45, 0.45, lam("#7d766b"), 0, 0.22, 0, 28));
+  const water = mesh(new THREE.CircleGeometry(POND_R, 32), new THREE.MeshLambertMaterial({ color: "#1d4652", emissive: "#06161c" }), 0, 0.46, 0);
+  water.rotation.x = -Math.PI / 2;
+  g.add(water);
+  const pad = lam("#2f6a3a");
+  for (let i = 0; i < 9; i++) {
+    const a = i * 2.4, r = 0.8 + (i % 3) * 0.6;
+    const p = mesh(new THREE.CircleGeometry(0.3, 12, 0.3, Math.PI * 2 - 0.3), pad, Math.cos(a) * r, 0.47, Math.sin(a) * r);
+    p.rotation.x = -Math.PI / 2;
+    p.rotation.z = a;
+    g.add(p);
+  }
+  const petal = lam("#f6a9c0", "#3a0f1c");
+  [[1.2, 0.6], [-1, 1.1], [-0.6, -1.4], [1.6, -0.9]].forEach(([x, z]) => {
+    const f = new THREE.Group();
+    for (let k = 0; k < 6; k++) {
+      const c = mesh(new THREE.ConeGeometry(0.07, 0.24, 5), petal, Math.cos(k) * 0.08, 0.1, Math.sin(k) * 0.08);
+      c.rotation.set(Math.sin(k) * 0.5, 0, -Math.cos(k) * 0.5);
+      f.add(c);
+    }
+    f.add(ball(0.05, lam("#f2c14e", "#4a3000"), 0, 0.08, 0, 6));
+    f.position.set(x, 0.47, z);
+    g.add(f);
+  });
+  return g;
+}
+
+function makeHoaDang(color, glowTex) {
+  const [c, e] = HOA_DANG[color] || HOA_DANG.sen;
+  const g = new THREE.Group();
+  g.add(box(0.34, 0.06, 0.34, lam("#d9c8a0"), 0, 0.03, 0));
+  const pm = lam(c, e);
+  for (let k = 0; k < 8; k++) {
+    const a = k / 8 * Math.PI * 2;
+    const p = mesh(new THREE.ConeGeometry(0.07, 0.26, 5), pm, Math.cos(a) * 0.15, 0.15, Math.sin(a) * 0.15);
+    p.rotation.set(Math.sin(a) * 0.45, 0, -Math.cos(a) * 0.45);
+    g.add(p);
+  }
+  g.add(cyl(0.035, 0.035, 0.12, lam("#f3e6c8"), 0, 0.12, 0, 6));
+  const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffb347, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  flame.position.y = 0.26;
+  flame.scale.set(0.4, 0.4, 1);
+  g.add(flame);
+  return g;
+}
+
+function makeDaoSi(tex) {
+  const group = new THREE.Group();
+  const body = new THREE.Group();
+  group.add(body);
+  const robe = lam("#5d6b8a"), white = lam("#f4f1ea");
+  body.add(cyl(0.34, 0.58, 1.25, robe, 0, 0.63, 0));
+  body.add(cyl(0.36, 0.36, 0.1, lam("#e7b75a"), 0, 1.2, 0));
+  const upper = new THREE.Group();
+  upper.position.y = 1.2;
+  body.add(upper);
+  upper.add(cyl(0.26, 0.33, 0.5, robe, 0, 0.25, 0));
+  [-1, 1].forEach(s => {
+    const sl = cyl(0.12, 0.25, 0.62, robe, s * 0.36, 0.18, 0.05, 8);
+    sl.rotation.z = s * 0.4;
+    upper.add(sl);
+  });
+  upper.add(ball(0.24, lam("#ecc79c"), 0, 0.74, 0));
+  upper.add(ball(0.25, lam("#d8d4cc"), 0, 0.8, -0.04));
+  upper.add(cyl(0.09, 0.11, 0.16, lam("#1d1612"), 0, 1.05, -0.02, 8));
+  upper.add(box(0.3, 0.03, 0.03, lam("#c99a3e"), 0, 1.07, -0.02));
+  const beard = mesh(new THREE.ConeGeometry(0.13, 0.5, 8), white, 0, 0.45, 0.2);
+  beard.rotation.x = Math.PI;
+  upper.add(beard);
+  [-1, 1].forEach(s => upper.add(box(0.09, 0.025, 0.03, white, s * 0.09, 0.83, 0.22)));
+  // Phất trần cầm tay phải
+  const whisk = new THREE.Group();
+  whisk.position.set(0.5, -0.05, 0.22);
+  whisk.add(cyl(0.02, 0.02, 0.55, lam("#7a4a24"), 0, 0.2, 0, 5));
+  whisk.add(mesh(new THREE.ConeGeometry(0.06, 0.45, 6), white, 0, -0.25, 0));
+  whisk.rotation.z = 0.25;
+  upper.add(whisk);
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.4), new THREE.MeshBasicMaterial({ map: tex.shadow, transparent: true, depthWrite: false }));
+  sh.rotation.x = -Math.PI / 2;
+  sh.position.y = 0.02;
+  group.add(sh);
+  const label = makeLabel("Lão Đạo Sĩ");
+  label.position.y = 2.75;
+  group.add(label);
+  return { group, body, upper };
+}
+
 function skyDome() {
   const geo = new THREE.SphereGeometry(220, 32, 16);
   const mat = new THREE.ShaderMaterial({
@@ -491,13 +626,16 @@ export async function createWorld(container, hooks = {}) {
   camera.position.set(0, 16, 46);
   const tex = makeTextures();
 
-  scene.add(new THREE.HemisphereLight(0xb9a8ff, 0x4a3426, 1.7));
-  scene.add(new THREE.AmbientLight(0x8a7aa8, 0.55));
+  const hemi = new THREE.HemisphereLight(0xb9a8ff, 0x4a3426, 1.7);
+  scene.add(hemi);
+  const amb = new THREE.AmbientLight(0x8a7aa8, 0.55);
+  scene.add(amb);
   const moonLight = new THREE.DirectionalLight(0xffe2c0, 1.5);
   moonLight.position.set(-30, 50, 20);
   scene.add(moonLight);
 
-  scene.add(skyDome());
+  const sky = skyDome();
+  scene.add(sky);
   const stars = new Float32Array(500 * 3);
   for (let i = 0; i < 500; i++) {
     const a = Math.random() * Math.PI * 2, e = 0.15 + Math.random() * 1.3, r = 200;
@@ -505,7 +643,8 @@ export async function createWorld(container, hooks = {}) {
   }
   const sg = new THREE.BufferGeometry();
   sg.setAttribute("position", new THREE.BufferAttribute(stars, 3));
-  scene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xfff6e0, size: 1.1, sizeAttenuation: false, fog: false })));
+  const starMat = new THREE.PointsMaterial({ color: 0xfff6e0, size: 1.1, sizeAttenuation: false, fog: false, transparent: true });
+  scene.add(new THREE.Points(sg, starMat));
   const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.glow, color: 0xfff1cf, fog: false, depthWrite: false, toneMapped: false }));
   moon.position.set(-70, 80, -170);
   moon.scale.set(40, 40, 1);
@@ -514,6 +653,38 @@ export async function createWorld(container, hooks = {}) {
   moonCore.position.copy(moon.position);
   moonCore.scale.set(12, 12, 1);
   scene.add(moonCore);
+
+  // Ngày và đêm theo giờ trên máy người chơi: nội suy giữa các mốc trong ngày.
+  const NIGHT = { top: "#0c0a22", mid: "#3a2a5e", low: "#d9855a", fog: "#2a2342", hs: "#b9a8ff", hg: "#4a3426", hi: 1.7, ai: 0.55, dc: "#ffe2c0", di: 1.5, star: 1, sun: 0, exp: 1.1 };
+  const DAWN = { top: "#27346a", mid: "#9a7aa8", low: "#f6a878", fog: "#6e5c7e", hs: "#ffd0c0", hg: "#5a4030", hi: 1.6, ai: 0.6, dc: "#ffc49a", di: 1.6, star: 0.25, sun: 0.6, exp: 1.05 };
+  const DAY = { top: "#3d78c4", mid: "#a3c8ea", low: "#f4e6c8", fog: "#b4c4d4", hs: "#e6eeff", hg: "#6e5c40", hi: 1.5, ai: 0.7, dc: "#fff4dc", di: 2.3, star: 0, sun: 1, exp: 0.95 };
+  const DUSK = { top: "#232458", mid: "#b0607a", low: "#ffa25a", fog: "#5e405e", hs: "#ffc2a8", hg: "#4a3426", hi: 1.6, ai: 0.55, dc: "#ffb27a", di: 1.6, star: 0.35, sun: 0.5, exp: 1.05 };
+  const SKY_KEYS = [[0, NIGHT], [4.8, NIGHT], [6, DAWN], [8, DAY], [16.3, DAY], [18, DUSK], [19.4, NIGHT], [24, NIGHT]];
+  const ca = new THREE.Color(), cb = new THREE.Color();
+  const mixC = (a, b, t, out) => out.copy(ca.set(a)).lerp(cb.set(b), t);
+  let hourOverride = null, skyTimer = 0;
+  function applySky() {
+    const d = new Date();
+    const h = hourOverride ?? d.getHours() + d.getMinutes() / 60;
+    let i = 0;
+    while (i < SKY_KEYS.length - 2 && h >= SKY_KEYS[i + 1][0]) i++;
+    const [h0, a] = SKY_KEYS[i], [h1, b] = SKY_KEYS[i + 1];
+    const t = h1 > h0 ? Math.min(1, Math.max(0, (h - h0) / (h1 - h0))) : 0;
+    const n = k => a[k] + (b[k] - a[k]) * t;
+    const u = sky.material.uniforms;
+    mixC(a.top, b.top, t, u.top.value); mixC(a.mid, b.mid, t, u.mid.value); mixC(a.low, b.low, t, u.low.value);
+    mixC(a.fog, b.fog, t, scene.fog.color);
+    mixC(a.hs, b.hs, t, hemi.color); mixC(a.hg, b.hg, t, hemi.groundColor);
+    hemi.intensity = n("hi"); amb.intensity = n("ai");
+    mixC(a.dc, b.dc, t, moonLight.color); moonLight.intensity = n("di");
+    starMat.opacity = n("star");
+    const sun = n("sun");
+    moon.material.color.set(0xfff1cf).lerp(cb.set(0xfff8e6), sun);
+    moon.scale.setScalar(40 + sun * 30);
+    moonCore.scale.setScalar(12 + sun * 10);
+    renderer.toneMappingExposure = n("exp");
+  }
+  applySky();
 
   // Mặt đất
   const outside = mesh(new THREE.PlaneGeometry(500, 500), lam("#1d2620"), 0, -0.02, 0);
@@ -608,10 +779,62 @@ export async function createWorld(container, hooks = {}) {
   ];
   const circles = Object.values(BURNER).slice(0, 3).map(p => ({ x: p.x, z: p.z, r: 0.95 }));
   const place = (obj, x, z, r) => { obj.position.set(x, 0, z); scene.add(obj); if (r) circles.push({ x, z, r }); };
-  [[-23, -22], [23, -22], [-25, 15], [25, 15], [-12, 22], [12, 22], [-25, -12], [25, -12]].forEach(([x, z]) => place(makeTree("pine"), x, z, 0.6));
-  [[-9, -9], [9, -9], [-18, 18], [18, 18]].forEach(([x, z]) => place(makeTree("blossom"), x, z, 0.5));
-  place(makeTree("tohong"), -15, 6.5, 0.5);
-  place(makeTree("kimtien"), 15, 6.5, 0.5);
+  [[-23, -22], [23, -22], [-25, 15], [25, 15], [-26, 24], [26, 24], [-25, -12], [25, -12]].forEach(([x, z]) => place(makeTree("pine"), x, z, 0.6));
+  [[-9, -9], [9, -9], [-11, 23], [11, 23]].forEach(([x, z]) => place(makeTree("blossom"), x, z, 0.5));
+  const toHong = makeTree("tohong"), kimTien = makeTree("kimtien");
+  place(toHong, PROP["to-hong"].x, PROP["to-hong"].z, 0.5);
+  place(kimTien, PROP["kim-tien"].x, PROP["kim-tien"].z, 0.5);
+  toHong.userData.zone = "to-hong";
+  kimTien.userData.zone = "kim-tien";
+
+  const bellTower = makeBellTower();
+  place(bellTower, PROP.chuong.x, PROP.chuong.z);
+  bellTower.userData.zone = "chuong";
+  obstacles.push({ x0: PROP.chuong.x - 1.7, x1: PROP.chuong.x + 1.7, z0: PROP.chuong.z - 1.7, z1: PROP.chuong.z + 1.7 });
+  const bellLabel = makeLabel("Lầu Chuông");
+  bellLabel.position.set(PROP.chuong.x, 6, PROP.chuong.z);
+  scene.add(bellLabel);
+
+  const pond = makePond();
+  place(pond, PROP["ao-sen"].x, PROP["ao-sen"].z, POND_R + 0.45);
+  pond.userData.zone = "ao-sen";
+  const pondLabel = makeLabel("Ao Sen · thả hoa đăng");
+  pondLabel.position.set(PROP["ao-sen"].x, 2.2, PROP["ao-sen"].z);
+  scene.add(pondLabel);
+  const hoaDang = [];
+  // Vài chiếc hoa đăng trang trí sẵn trên mặt ao.
+  ["vang", "sen", "trang"].forEach((c, i) => addHoaDang(c, i * 2.1, false));
+
+  const daoSi = makeDaoSi(tex);
+  const daoYaw = Math.atan2(SPAWN.x - PROP["dao-si"].x, SPAWN.z - PROP["dao-si"].z);
+  daoSi.group.rotation.y = daoYaw;
+  place(daoSi.group, PROP["dao-si"].x, PROP["dao-si"].z, 0.45);
+  daoSi.group.userData.zone = "dao-si";
+  let daoNod = -1;
+
+  function addHoaDang(color, angle, fresh) {
+    const g = makeHoaDang(color, tex.glow);
+    const item = { g, a: angle ?? Math.PI / 2, r: fresh ? POND_R - 0.3 : 0.9 + Math.random() * 1.2, speed: (0.05 + Math.random() * 0.05) * (Math.random() < 0.5 ? -1 : 1), seed: Math.random() * 9, born: fresh ? 0 : 1 };
+    scene.add(g);
+    hoaDang.push(item);
+    if (hoaDang.length > 24) scene.remove(hoaDang.shift().g);
+  }
+  function addRibbon(fresh) {
+    const a = Math.random() * Math.PI * 2, r = 0.9 + Math.random() * 0.7, x = Math.cos(a) * r, z = Math.sin(a) * r;
+    const y0 = 2.3 + Math.random() * 0.5, y1 = y0 - 0.7 - Math.random() * 0.6;
+    const rib = new THREE.Group();
+    rib.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(x, y0, z), V(x, y1, z)]), new THREE.LineBasicMaterial({ color: 0xff2f4f })));
+    rib.add(box(0.12, 0.22, 0.02, lam("#e0283a", "#5a0010"), x, y1 - 0.1, z));
+    toHong.add(rib);
+    const mine = toHong.userData.mine || (toHong.userData.mine = []);
+    mine.push(rib);
+    if (mine.length > 30) toHong.remove(mine.shift());
+    if (fresh) {
+      rib.scale.setScalar(0.01);
+      let life = 0;
+      effects.push(dt => { life += dt; rib.scale.setScalar(Math.min(1, life / 0.6)); return life < 0.6; });
+    }
+  }
   [[-3.2, 14], [3.2, 14], [-3.2, 19], [3.2, 19], [-3.2, 24], [3.2, 24], [-6, -6], [6, -6]].forEach(([x, z]) => place(makeStoneLamp(), x, z, 0.4));
   const lanternLine = (a, b, count, colors) => {
     for (let i = 0; i < count; i++) {
@@ -781,6 +1004,27 @@ export async function createWorld(container, hooks = {}) {
     spinBoost = Math.max(0, spinBoost - dt * 0.4);
     bagua.userData.taiji.rotation.z += dt * (0.15 + spinBoost * 2.5);
     bagua.userData.ring.material.opacity = 0.2 + spinBoost * 0.6 + (zone === "boc-dich" ? 0.15 : 0);
+    const pc = PROP["ao-sen"];
+    for (const d of hoaDang) {
+      d.born = Math.min(1, d.born + dt * 0.5);
+      d.a += d.speed * dt;
+      d.r += (Math.min(d.r, 1.9) - d.r) * dt * 0.3;
+      d.g.position.set(pc.x + Math.cos(d.a) * d.r, 0.47 + Math.sin(t * 1.6 + d.seed) * 0.025, pc.z + Math.sin(d.a) * d.r);
+      d.g.rotation.y += dt * 0.15;
+      d.g.scale.setScalar(0.4 + d.born * 0.6);
+    }
+    // Lão đạo sĩ quay sang nhìn người chơi khi lại gần, gật đầu khi được hỏi chuyện.
+    const dp = PROP["dao-si"];
+    const want = player && Math.hypot(pos.x - dp.x, pos.z - dp.z) < 7 ? Math.atan2(pos.x - dp.x, pos.z - dp.z) : daoYaw;
+    daoSi.group.rotation.y = angleLerp(daoSi.group.rotation.y, want, 1 - Math.exp(-dt * 3));
+    daoSi.body.position.y = Math.sin(t * 1.4) * 0.015;
+    if (daoNod >= 0) {
+      daoNod += dt / 1.1;
+      daoSi.upper.rotation.x = Math.sin(Math.min(daoNod, 1) * Math.PI * 2) * 0.18;
+      if (daoNod >= 1) { daoNod = -1; daoSi.upper.rotation.x = 0; }
+    }
+    skyTimer -= dt;
+    if (skyTimer <= 0) { skyTimer = 5; applySky(); }
     Object.values(halls).forEach((h, i) => { h.userData.light.intensity = 20 + Math.sin(t * 7 + i) * 2 + Math.sin(t * 13 + i * 2) * 1.5; });
     for (let i = effects.length - 1; i >= 0; i--) if (!effects[i](dt)) effects.splice(i, 1);
   }
@@ -801,7 +1045,7 @@ export async function createWorld(container, hooks = {}) {
 
   // ---------- Hiệu ứng ----------
   function burst(z, kind) {
-    const o = BURNER[z].clone().setY(z === "boc-dich" ? 0.8 : 1.6);
+    const o = FOCUS[z].clone().setY({ "boc-dich": 0.8, "kim-tien": 2.8, "to-hong": 2.6, "ao-sen": 0.8 }[z] ?? 1.6);
     const N = kind === "coin" ? 50 : 70;
     const arr = new Float32Array(N * 3), vel = [];
     for (let i = 0; i < N; i++) {
@@ -852,9 +1096,48 @@ export async function createWorld(container, hooks = {}) {
     });
   }
 
+  // Thỉnh chuông: kéo chày lùi lại, đánh vào chuông, chuông đung đưa và sóng âm lan ra mặt sân.
+  let gongBusy = false;
+  function gong(onHit) {
+    if (gongBusy) return false;
+    gongBusy = true;
+    const { bell, striker } = bellTower.userData;
+    let life = 0, hitDone = false;
+    effects.push(dt => {
+      life += dt;
+      if (life < 0.45) striker.rotation.z = Math.sin(life / 0.45 * Math.PI / 2) * 0.5;
+      else if (life < 0.6) striker.rotation.z = 0.5 - (life - 0.45) / 0.15 * 0.95;
+      else striker.rotation.z = -0.45 * Math.exp(-(life - 0.6) * 3) * Math.cos((life - 0.6) * 5);
+      if (!hitDone && life >= 0.6) { hitDone = true; onHit?.(); wave(); }
+      const s = Math.max(0, life - 0.6);
+      bell.rotation.z = hitDone ? -0.12 * Math.exp(-s * 1.2) * Math.sin(s * 5) : 0;
+      if (life > 3.2) { striker.rotation.z = 0; bell.rotation.z = 0; gongBusy = false; return false; }
+      return true;
+    });
+    return true;
+  }
+  function wave() {
+    for (let k = 0; k < 2; k++) {
+      const m = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.05, 48),
+        new THREE.MeshBasicMaterial({ color: 0xffd98a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+      m.rotation.x = -Math.PI / 2;
+      m.position.set(PROP.chuong.x, 0.08, PROP.chuong.z);
+      scene.add(m);
+      let life = -k * 0.35;
+      effects.push(dt => {
+        life += dt;
+        if (life < 0) return true;
+        m.scale.setScalar(1 + life * 5);
+        m.material.opacity = Math.max(0, 0.7 * (1 - life / 1.8));
+        if (life > 1.8) { scene.remove(m); m.geometry.dispose(); m.material.dispose(); return false; }
+        return true;
+      });
+    }
+  }
+
   // ---------- Chạm để đi ----------
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), plane = new THREE.Plane(V(0, 1, 0), 0), hit = V();
-  const clickables = [...Object.values(halls), ...Object.values(burners), bagua];
+  const clickables = [...Object.values(halls), ...Object.values(burners), bagua, bellTower, pond, toHong, kimTien, daoSi.group];
   let down = null;
   renderer.domElement.addEventListener("pointerdown", e => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
   renderer.domElement.addEventListener("pointerup", e => {
@@ -898,7 +1181,7 @@ export async function createWorld(container, hooks = {}) {
     renderer.render(scene, camera);
   });
 
-  const faceYaw = z => Math.atan2(BURNER[z].x - pos.x, BURNER[z].z - pos.z);
+  const faceYaw = z => Math.atan2(FOCUS[z].x - pos.x, FOCUS[z].z - pos.z);
 
   return {
     enter({ name, color }) {
@@ -916,11 +1199,13 @@ export async function createWorld(container, hooks = {}) {
       pos.copy(s);
       if (z === "boc-dich") pos.z += 2.5;
       target = null;
-      if (BURNER[z]) yaw = wantYaw = faceYaw(z);
+      if (FOCUS[z]) yaw = wantYaw = faceYaw(z);
       camera.position.copy(pos).add(camOff);
       look.set(pos.x, 1.3, pos.z - 2.5);
     },
-    face(z) { if (BURNER[z]) wantYaw = faceYaw(z); },
+    face(z) { if (FOCUS[z]) wantYaw = faceYaw(z); },
+    // Giờ trong ngày (0–24) để xem thử cảnh ngày/đêm; null = theo giờ máy.
+    setHour(h) { hourOverride = Number.isFinite(h) ? ((h % 24) + 24) % 24 : null; applySky(); },
     bow() { bowT = 0; },
     getState() { return { x: +pos.x.toFixed(2), z: +pos.z.toFixed(2), ry: +yaw.toFixed(2) }; },
     fx: {
@@ -932,11 +1217,16 @@ export async function createWorld(container, hooks = {}) {
         if (s) s.boost = 1;
       },
       burst(z) {
-        if (z === "tai-than") burst(z, "coin");
-        else if (z === "nguyet-lao") burst(z, "heart");
+        if (z === "tai-than" || z === "kim-tien") burst(z, "coin");
+        else if (z === "nguyet-lao" || z === "to-hong") burst(z, "heart");
         else if (z === "boc-dich") { burst(z, "blue"); spinBoost = 1; }
+        else if (PROP[z]) burst(z, "spark");
         else { burst(z, "spark"); pillar(z); }
-      }
+      },
+      gong,
+      hoaDang(color) { addHoaDang(color, Math.PI / 2 + (Math.random() - 0.5) * 0.6, true); },
+      ribbon(n = 1, fresh = true) { for (let i = 0; i < n; i++) addRibbon(fresh); },
+      daoSiNod() { daoNod = 0; }
     },
     remote: {
       upsert(id, d) {

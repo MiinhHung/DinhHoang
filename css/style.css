@@ -213,3 +213,51 @@ h1 span { font-style: italic; font-weight: 400; color: var(--text); }
 .zone-banner b { display: block; font-size: 28px; color: var(--accent); text-shadow: 0 2px 20px rgba(0,0,0,.8); }
 .zone-banner small { font-size: 14px; color: var(--text); text-shadow: 0 1px 8px rgba(0,0,0,.9); }
 .zone-banner .han { font-family: var(--han); font-size: 18px; color: var(--gold-2); letter-spacing: 6px; }
+
+/* ---------- Sổ công đức & Lão đạo sĩ ---------- */
+.hud-left { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.merit { pointer-events: auto; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: rgba(20,16,34,.6); color: var(--text); font-size: 13px;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.merit b { color: var(--gold-2); }
+.merit.pop { animation: meritPop .7s ease-out; }
+@keyframes meritPop { 30% { transform: scale(1.18); box-shadow: 0 0 18px rgba(231,183,90,.7); } }
+.btn.mini { padding: 5px 10px; font-size: 12px; border-radius: 10px; flex: none; }
+.linkish { background: none; border: 0; padding: 0; color: var(--gold-2); text-decoration: underline; font-size: 12px; }
+.sheet h4 { margin: 18px 0 8px; font-size: 13px; letter-spacing: .6px; text-transform: uppercase; color: var(--accent); }
+
+.tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.tasks li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06); font-size: 14px; }
+.tasks .tick { width: 20px; height: 20px; flex: none; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; font-size: 12px; color: var(--ink); }
+.tasks li.ok .tick { background: var(--accent); border-color: var(--accent); }
+.tasks li.ok .tl { color: var(--muted); text-decoration: line-through; }
+.tasks .tl { flex: 1; }
+.tasks .tp { color: var(--gold-2); font-size: 12px; }
+
+.npc-head { display: flex; gap: 12px; align-items: flex-start; }
+.npc-ava { width: 52px; height: 52px; flex: none; border-radius: 50%; display: grid; place-items: center; font-family: var(--han); font-size: 26px; color: var(--ink);
+  background: radial-gradient(circle at 35% 30%, #dfe6f5, #8fa0c4 65%, #4a5878); }
+.npc-head .sub { margin-bottom: 8px; }
+.teach { margin: 10px 0 4px; padding: 14px 16px; border-radius: 14px; background: linear-gradient(180deg, rgba(255,244,214,.1), rgba(255,244,214,.03)); border: 1px solid var(--line); }
+.teach .lv { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); }
+.teach blockquote { margin: 8px 0 4px; font-size: 17px; line-height: 1.6; font-style: italic; color: var(--gold-2); }
+.teach cite { display: block; font-size: 12px; color: var(--muted); font-style: normal; }
+.teach p { margin: 10px 0 0; font-size: 14.5px; line-height: 1.6; }
+
+.rank { padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,.05); border: 1px solid var(--line); text-align: center; }
+.rank-name { font-size: 22px; font-weight: 700; color: var(--gold-2); }
+.rank-pts { font-size: 13px; color: var(--muted); margin: 4px 0 10px; }
+.bar { height: 6px; border-radius: 6px; background: rgba(255,255,255,.1); overflow: hidden; }
+.bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-2)); }
+.streak { margin-top: 10px; font-size: 14px; }
+.coll { border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 8px 12px; margin-bottom: 6px; background: rgba(255,255,255,.03); }
+.coll summary { display: flex; justify-content: space-between; cursor: pointer; font-size: 14px; list-style: none; }
+.coll summary::-webkit-details-marker { display: none; }
+.coll summary span { color: var(--gold-2); }
+.cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-top: 10px; }
+.cells.boc-dich { grid-template-columns: repeat(8, 1fr); }
+.cells i { font-style: normal; font-size: 10px; text-align: center; padding: 4px 0; border-radius: 6px; background: rgba(255,255,255,.05); color: rgba(255,255,255,.3); }
+.cells i.on { background: var(--gold); color: var(--ink); font-weight: 700; }
+.hist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.hist li { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.04); }
+.hist li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist li small { color: var(--muted); font-size: 11px; }

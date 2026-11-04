@@ -37,8 +37,13 @@ export async function connectOnline(cfg, me, world, onCount) {
   ch.on("broadcast", { event: "pos" }, ({ payload }) => {
     if (payload?.id) show(payload.id, payload);
   });
+  // Hiệu ứng người khác vừa làm: thắp hương, thỉnh chuông, thả hoa đăng, buộc tơ hồng. Không kèm lời nguyện.
   ch.on("broadcast", { event: "fx" }, ({ payload }) => {
-    if (payload?.zone && visible.has(payload.id)) world.fx.incense(payload.zone);
+    if (!payload?.zone || !visible.has(payload.id)) return;
+    if (payload.kind === "gong") world.fx.gong();
+    else if (payload.kind === "hoadang") world.fx.hoaDang(["sen", "vang", "trang"].includes(payload.color) ? payload.color : "sen");
+    else if (payload.kind === "ribbon") world.fx.ribbon();
+    else world.fx.incense(payload.zone);
   });
 
   let last = "";
@@ -57,6 +62,6 @@ export async function connectOnline(cfg, me, world, onCount) {
   addEventListener("pagehide", () => { clearInterval(tick); ch.unsubscribe(); });
 
   return {
-    sendFx(zone) { ch.send({ type: "broadcast", event: "fx", payload: { id, zone } }); }
+    sendFx(zone, kind, color) { ch.send({ type: "broadcast", event: "fx", payload: { id, zone, ...(kind ? { kind } : {}), ...(color ? { color } : {}) } }); }
   };
 }

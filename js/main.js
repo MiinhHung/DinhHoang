@@ -8,6 +8,8 @@ import { drawCharm } from "./charm.js";
 import { canvasBlob, saveBlob, shareBlob, shareText, shareUrl, facebookUrl, copyText, fileName } from "./share.js";
 import { initAnalytics, track } from "./analytics.js";
 import { connectOnline } from "./online.js";
+import * as progress from "./progress.js";
+import { TASKS, ALL_DONE_BONUS } from "./progress.js";
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -52,6 +54,20 @@ function toast(msg, ms = 2600) {
   t.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("show"), ms);
+}
+// Nhiều thông báo liên tiếp (công đức, thăng bậc…) hiện lần lượt, không đè nhau.
+const toastQ = [];
+let toastBusy = false;
+function toastSeq(msgs) {
+  toastQ.push(...msgs.filter(Boolean));
+  if (!toastBusy) nextToast();
+}
+function nextToast() {
+  const m = toastQ.shift();
+  if (!m) { toastBusy = false; return; }
+  toastBusy = true;
+  toast(m, 2300);
+  setTimeout(nextToast, 2600);
 }
 function showHint(msg, ms = 4000) {
   const h = $("#hint");
@@ -278,7 +294,10 @@ function openRitual(z) {
   if (!z || !entered) return;
   world.face(z);
   track("ritual_start", { zone: z });
-  ({ "tam-thanh": ritualTamThanh, "nguyet-lao": ritualLove, "tai-than": ritualWealth, "boc-dich": ritualIching })[z]();
+  ({
+    "tam-thanh": ritualTamThanh, "nguyet-lao": ritualLove, "tai-than": ritualWealth, "boc-dich": ritualIching,
+    "dao-si": talkDaoSi, chuong: ringBell, "ao-sen": ritualHoaDang, "to-hong": tieRibbon, "kim-tien": harvestLoc
+  })[z]?.();
 }
 
 // Chọn lễ vật (nếu điện có) ngay trên bảng thắp hương; trả về chữ in trên kết quả.
@@ -341,6 +360,7 @@ function bows(id, offer) {
         rain(RAIN["tam-thanh"], 18);
         const r = { kind: "tam-thanh", blessing: tamThanhBlessing(), profile: { name: me.name }, stamp: `${offer} · Giờ ${gioAm()} · ngày ${ngayVN()}` };
         track("reading_done", { kind: "tam-thanh", offer });
+        afterReading(r, "huong");
         showResult(r, id);
       }, 900);
     }
@@ -397,6 +417,7 @@ function shakeStep(id, z, prof, offer = "") {
     const r = love ? readLove({ ...prof }) : readWealth({ ...prof });
     if (offer) r.stamp = `${offer} · ${r.stamp}`;
     track("reading_done", { kind: z, no: r.no, ...(offer ? { offer } : {}) });
+    afterReading(r, "que");
     z === "tai-than" ? audio.coins(8) : audio.chime();
     world.fx.burst(z);
     rain(RAIN[z]);
@@ -452,6 +473,7 @@ function tossStep(id, prof) {
         if (id !== flow) return;
         const r = readIching({ ...prof }, lines);
         track("reading_done", { kind: "boc-dich", no: r.card?.so });
+        afterReading(r, "que");
         audio.bell(174, 0.5);
         world.fx.burst("boc-dich");
         rain(RAIN["boc-dich"], 14);
@@ -459,6 +481,165 @@ function tossStep(id, prof) {
       }, 900);
     }, 720);
   });
+}
+
+// ---------- Công đức ----------
+const COLL_TOTAL = () => ({ "nguyet-lao": content.love.cards.length, "tai-than": content.wealth.que.length, "boc-dich": 64 });
+const KIND_LABEL = { "nguyet-lao": "Xăm Nguyệt Lão", "tai-than": "Quẻ Tài Thần", "boc-dich": "Quẻ Dịch", "tam-thanh": "Bùa Bình An" };
+const dayIdx = n => [...new Date().toDateString()].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % n;
+const withName = t => String(t || "").replace(/\{ten\}/g, me.name || "thí chủ");
+
+function updateMerit(pop) {
+  const b = $("#merit");
+  b.querySelector("b").textContent = progress.state().pts;
+  if (pop) { b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop"); }
+}
+// Báo điểm vừa nhận, thưởng đủ việc lành và thăng bậc.
+function announce(res, first, extra = []) {
+  if (!res) { toastSeq(extra); return; }
+  updateMerit(true);
+  const msgs = [first, ...extra];
+  if (res.allDone) msgs.push(`Đủ 5 việc lành hôm nay — thưởng thêm ${ALL_DONE_BONUS} công đức 🎉`);
+  if (res.rankUp) msgs.push(`Thăng bậc: ${res.rankUp} ✨`);
+  toastSeq(msgs);
+  if (res.allDone || res.rankUp) { rain(["✨", "☯️", "🪷"], 16); audio.chime(); }
+  track("merit", { pts: res.pts, ...(res.task ? { task: res.task.id } : {}) });
+}
+function gain(id, extra) {
+  const res = progress.complete(id);
+  announce(res, res && `+${res.task.pts} công đức · ${res.task.label}`, extra);
+}
+function afterReading(r, task) {
+  const extra = [];
+  if (progress.record(r) && COLL_TOTAL()[r.kind]) {
+    extra.push(`Quẻ mới vào bộ sưu tập · ${progress.state().seen[r.kind].length}/${COLL_TOTAL()[r.kind]}`);
+  }
+  gain(task, extra);
+}
+
+const taskList = st => `<ul class="tasks">${TASKS.map(t => {
+  const ok = st.done.includes(t.id);
+  return `<li class="${ok ? "ok" : ""}"><span class="tick">${ok ? "✓" : ""}</span><span class="tl">${esc(t.label)}</span><span class="tp">+${t.pts}</span>${!ok && t.go ? `<button class="btn mini" data-goto="${t.go}">Đi tới</button>` : ""}</li>`;
+}).join("")}</ul><p class="note">Làm đủ 5 việc trong ngày: thưởng thêm ${ALL_DONE_BONUS} công đức.</p>`;
+const bindTaskGo = () => sheetBody.querySelectorAll("[data-goto]").forEach(b => b.addEventListener("click", () => goTo(b.dataset.goto)));
+
+// ---------- Các điểm trong sân ----------
+function talkDaoSi() {
+  ++flow;
+  world.fx.daoSiNod();
+  audio.mo(0.3);
+  const st = progress.state(), d = content.dao;
+  const h = new Date().getHours();
+  const greets = d.greetings[h < 11 ? "sang" : h < 14 ? "trua" : h < 18 ? "chieu" : "toi"];
+  const teach = d.teachings[dayIdx(d.teachings.length)];
+  const allDone = TASKS.every(t => st.done.includes(t.id));
+  openSheet(`<div class="npc-head"><div class="npc-ava">道</div><div><h2>Lão Đạo Sĩ</h2><p class="sub">${esc(withName(greets[dayIdx(greets.length)]))}</p></div></div>
+    ${st.visits <= 1 && !st.pts ? `<p class="sub">${esc(d.newcomer)}</p>` : ""}
+    <div class="teach"><span class="lv">Lời dạy hôm nay</span><blockquote>${esc(teach.text)}</blockquote><cite>— ${esc(teach.src)}</cite><p>${esc(teach.giang)}</p></div>
+    <h4>Việc lành hôm nay</h4>${allDone ? `<p class="sub">${esc(withName(d.allDone))}</p>` : ""}${taskList(st)}
+    <div class="btn-row"><button class="btn primary" id="b-ledger">📜 Mở Sổ Công Đức</button></div>${ent}`, true);
+  bindTaskGo();
+  $("#b-ledger").addEventListener("click", openLedger);
+}
+
+function ringBell() {
+  ++flow;
+  const ok = world.fx.gong(() => {
+    audio.bell(98, 0.8);
+    setTimeout(() => audio.bell(147, 0.22), 140);
+    buzz([30, 50, 30]);
+    gain("chuong");
+  });
+  if (ok) online?.sendFx("chuong", "gong");
+}
+
+function ritualHoaDang() {
+  const id = ++flow;
+  const colors = [["sen", "🌸 Hồng sen"], ["vang", "🌼 Vàng nghệ"], ["trang", "🤍 Trắng ngà"]];
+  openSheet(`<h2>Ao Sen</h2>
+    <p class="sub">Viết một điều nguyện rồi thả hoa đăng xuống ao. Lời nguyện chỉ ở lại trong lòng thí chủ — người khác trong đình chỉ thấy chiếc đèn trôi.</p>
+    <div class="field"><span>Màu hoa đăng</span>${chips("f-hd", colors, "sen")}</div>
+    <label class="field"><span>Điều nguyện <em>(không bắt buộc, không lưu lại)</em></span>
+      <textarea id="f-wish" maxlength="60" placeholder="Ví dụ: Mong mẹ luôn mạnh khỏe"></textarea></label>
+    <button class="btn primary big" id="go">🏮 Thả hoa đăng</button>${ent}`);
+  bindChips("f-hd");
+  $("#go").addEventListener("click", () => {
+    if (id !== flow) return;
+    const color = $("#f-hd").dataset.val || "sen", wish = $("#f-wish").value.trim().slice(0, 60);
+    closeSheet();
+    world.fx.hoaDang(color);
+    online?.sendFx("ao-sen", "hoadang", color);
+    audio.chime();
+    buzz(30);
+    if (wish) showHint(`“${wish}” đã theo hoa đăng trôi đi…`, 4500);
+    gain("hoadang");
+  });
+}
+
+function tieRibbon() {
+  ++flow;
+  const n = progress.addRibbon();
+  world.fx.ribbon(1, true);
+  world.fx.burst("to-hong");
+  online?.sendFx("to-hong", "ribbon");
+  audio.chime();
+  buzz(25);
+  toast(`Đã buộc một sợi tơ hồng lên cây ❤️ (${n} sợi của thí chủ)`);
+  if (n === 1) setTimeout(() => showHint("Muốn biết duyên mình ra sao? Nguyệt Lão Điện ở ngay phía sau cây.", 4500), 2600);
+}
+
+function harvestLoc() {
+  ++flow;
+  const list = content.dao.loc;
+  const res = progress.harvest(() => list[Math.floor(Math.random() * list.length)]);
+  if (!res.again) {
+    world.fx.burst("kim-tien");
+    audio.coins(8);
+    buzz([40, 30, 80]);
+    announce(res, `+${res.gained} công đức · Hái lộc cây kim tiền`);
+  }
+  openSheet(`<div class="reveal"><div class="lot"><span class="lv">Cây Kim Tiền · lộc hôm nay</span><h3>${esc(res.loc.ten)}</h3><div class="poem">${esc(res.loc.text)}</div></div></div>
+    <p class="sub" style="text-align:center;margin-top:12px">${res.again ? "Hôm nay thí chủ đã hái lộc rồi — mai cây lại ra lộc mới." : "Mỗi ngày cây ra một lộc. Mai ghé hái tiếp nhé."}</p>
+    <div class="btn-row"><button class="btn primary" id="b-tt">Sang Tài Thần Điện xin quẻ</button></div>${ent}`);
+  $("#b-tt").addEventListener("click", () => goTo("tai-than"));
+  track("harvest", { again: res.again });
+}
+
+function openLedger() {
+  closeModal();
+  ++flow;
+  const st = progress.state(), rk = st.rank, totals = COLL_TOTAL();
+  const pct = rk.next ? Math.round((st.pts - rk.min) / (rk.next[0] - rk.min) * 100) : 100;
+  const coll = kind => {
+    const seen = st.seen[kind] || [];
+    return `<details class="coll"><summary><b>${KIND_LABEL[kind]}</b><span>${seen.length}/${totals[kind]}</span></summary>
+      <div class="cells ${kind}">${Array.from({ length: totals[kind] }, (_, i) => `<i class="${seen.includes(i + 1) ? "on" : ""}">${i + 1}</i>`).join("")}</div></details>`;
+  };
+  const hist = st.history.length
+    ? st.history.map((h, i) => `<li><span>${esc(KIND_LABEL[h.r.kind])} · ${esc(h.r.card?.ten || "Tâm an vạn sự an")}</span><small>${new Date(h.at).toLocaleDateString("vi-VN")}</small><button class="btn mini" data-h="${i}">Xem lại</button></li>`).join("")
+    : `<li class="muted">Chưa có lá bùa nào. Ghé một điện để xin quẻ nhé.</li>`;
+  openSheet(`<h2>📜 Sổ Công Đức</h2>
+    <div class="rank"><div class="rank-name">${esc(rk.name)}</div>
+      <div class="rank-pts">☯ ${st.pts} công đức${rk.next ? ` · còn ${rk.next[0] - st.pts} nữa lên bậc ${esc(rk.next[1])}` : ""}</div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="streak">🔥 ${st.streak} ngày liên tiếp làm việc lành</div></div>
+    <h4>Việc lành hôm nay</h4>${taskList(st)}
+    <h4>Bộ sưu tập quẻ</h4>${coll("nguyet-lao")}${coll("tai-than")}${coll("boc-dich")}
+    <h4>Lá bùa gần đây</h4><ul class="hist">${hist}</ul>
+    <p class="note">Sổ chỉ lưu trên trình duyệt của máy này. <button class="linkish" id="b-clear">Xóa sổ công đức</button></p>`, true);
+  bindTaskGo();
+  sheetBody.querySelectorAll("[data-h]").forEach(b => b.addEventListener("click", () => {
+    const r = st.history[+b.dataset.h]?.r;
+    if (r) showResult(r, ++flow, true);
+  }));
+  $("#b-clear").addEventListener("click", () => {
+    if (!confirm("Xóa toàn bộ công đức, bộ sưu tập và lá bùa đã lưu trên máy này?")) return;
+    progress.clearAll();
+    updateMerit();
+    openLedger();
+    toast("Đã xóa sổ công đức.");
+  });
+  track("ledger_open");
 }
 
 // ---------- Kết quả ----------
@@ -478,7 +659,7 @@ function lotHtml(r) {
     <h3>${esc(c.ten)}</h3><div class="poem">${(c.tho || []).map(esc).join("<br>")}</div></div>`;
 }
 
-function showResult(r, id) {
+function showResult(r, id, replay = false) {
   if (id !== flow) return;
   const p = r.profile || {};
   const who = r.yi ? `${esc(p.name)} · ${esc(r.yi.canchi)} · mệnh ${esc(r.yi.menh)}` : p.chudeLabel ? `Hỏi về ${esc(p.chudeLabel.toLowerCase())}` : "";
@@ -510,6 +691,7 @@ function showResult(r, id) {
     s.querySelector("h4").textContent = "Lời dặn riêng 🔓";
     $("#secret-note")?.remove();
   };
+  if (replay) unlock();
   drawCharm(r, config).then(async cv => {
     blob = await canvasBlob(cv);
     if (id !== flow || !blob) return;
@@ -532,18 +714,20 @@ function showResult(r, id) {
     const res = await shareBlob(blob, r, config);
     if (res === "cancelled") return;
     unlock();
+    gain("chiase");
     track("charm_share", { kind: r.kind, method: res });
     if (res === "copied") toast("Đã tải ảnh và chép lời chia sẻ — dán vào nơi bạn muốn đăng nhé.");
   });
   $("#b-fb").addEventListener("click", () => {
     open(facebookUrl(shareUrl(config, r.kind, "facebook")), "_blank", "noopener,width=640,height=560");
     unlock();
+    gain("chiase");
     track("charm_share", { kind: r.kind, method: "facebook" });
   });
   $("#b-copy").addEventListener("click", async () => {
     const ok = await copyText(shareText(r, config, "copy"));
     toast(ok ? "Đã chép lời chia sẻ" : "Trình duyệt chưa cho chép, bạn thử chọn và sao chép thủ công nhé.");
-    if (ok) { unlock(); track("charm_share", { kind: r.kind, method: "copy" }); }
+    if (ok) { unlock(); gain("chiase"); track("charm_share", { kind: r.kind, method: "copy" }); }
   });
   $("#b-again")?.addEventListener("click", () => openRitual(r.kind));
   $("#b-next").addEventListener("click", () => goTo(nextZone));
@@ -607,12 +791,19 @@ function enter() {
   setTimeout(() => gate.classList.add("hidden"), 820);
   $("#hud").classList.remove("hidden");
   world.enter({ name: me.name || "Thí chủ", color: me.color });
+  const firstVisit = progress.visit();
+  const ribbons = progress.state().ribbons;
+  if (ribbons) world.fx.ribbon(ribbons, false);
+  updateMerit();
   if (deepZone) {
     // Đến từ link chia sẻ của một điện: đưa thẳng tới đó và mở nghi lễ.
     setTimeout(() => veil(() => { world.teleport(deepZone); openRitual(deepZone); }), 700);
+  } else if (firstVisit) {
+    showHint("Lão Đạo Sĩ đang đứng chờ ngay bên phải — bấm nút để hỏi chuyện", 6000);
+    setTimeout(() => !sheetOpen() && showHint(isTouch ? "Kéo cần điều khiển hoặc chạm xuống sân để đi" : "Dùng W A S D / phím mũi tên, hoặc bấm xuống sân để đi", 5200), 6500);
   } else {
-    showHint(isTouch ? "Kéo cần điều khiển hoặc chạm xuống sân để đi" : "Dùng W A S D / phím mũi tên, hoặc bấm xuống sân để đi", 5200);
-    setTimeout(() => !sheetOpen() && showHint("Bốn điện đang chờ: Tam Thanh phía trước, Nguyệt Lão bên trái, Tài Thần bên phải", 5000), 6000);
+    const left = TASKS.filter(t => !progress.state().done.includes(t.id)).length;
+    showHint(left ? `Hôm nay còn ${left} việc lành chưa làm — mở 📜 để xem` : "Hôm nay thí chủ đã đủ việc lành. Cứ thong thả dạo đình.", 5200);
   }
   track("enter", { color: me.color, ...(deepZone ? { zone: deepZone } : {}) });
   connectOnline(config.supabase, me, world, n => {
@@ -624,6 +815,7 @@ function enter() {
 
 function setupHud() {
   $("#btn-act").addEventListener("click", () => openRitual(near));
+  $("#merit").addEventListener("click", openLedger);
   $("#btn-map").addEventListener("click", () => openModal("map"));
   $("#btn-home").addEventListener("click", () => goTo("tam-thanh"));
   $("#btn-sound").addEventListener("click", () => {
@@ -690,6 +882,9 @@ async function boot() {
   try {
     const [, w] = await Promise.all([loadContent(), createWorld($("#scene"), { onZone, onNear })]);
     world = w;
+    // ?gio=14 để xem thử cảnh vào giờ khác (dùng khi kiểm thử, chụp ảnh quảng bá).
+    const gio = new URLSearchParams(location.search).get("gio");
+    if (gio) world.setHour(Number(gio));
     btn.disabled = false;
     btn.textContent = GATE_CTA[deepZone] || "Bước vào đình";
   } catch (e) {

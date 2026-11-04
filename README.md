@@ -53,6 +53,15 @@ Không cần đụng vào code; sửa JSON rồi tải lại trang.
 - `tai-than.json` — các quẻ Tài Thần (`timing`: `tien` nên tiến, `thu` nên thủ, `giu` giữ nhịp).
 - `boc-dich.json` — đủ 64 quẻ Kinh Dịch. **Không xóa quẻ nào**: mỗi tổ hợp `upper`/`lower` phải có mặt, nếu không gieo ra quẻ thiếu sẽ lỗi.
 - `van-phong.json` — câu mở đầu, câu kết, lời chúc, lời khuyên theo ngành nghề, chủ đề hỏi Dịch, lời chúc Tam Thanh.
+- `dao-si.json` — lời chào của Lão Đạo Sĩ theo buổi, lời dạy mỗi ngày (trích Đạo Đức Kinh, mỗi ngày một câu), các lộc của Cây Kim Tiền.
+
+## Trong sân đình
+
+- **Lão Đạo Sĩ** đứng cạnh chỗ xuất hiện: chào theo buổi, đọc lời dạy hôm nay, nhắc việc lành còn thiếu.
+- **Lầu Chuông** (bên trái cổng): thỉnh chuông. **Ao Sen** (bên phải cổng): thả hoa đăng kèm điều nguyện (không lưu).
+- **Cây Tơ Hồng** (trước Nguyệt Lão Điện): buộc dây đỏ, cây giữ lại tối đa 30 sợi của mỗi người. **Cây Kim Tiền** (trước Tài Thần Điện): mỗi ngày hái một lộc.
+- **Sổ Công Đức** (nút 📜): 5 việc lành mỗi ngày (thắp hương, xin quẻ, thỉnh chuông, thả hoa đăng, chia sẻ bùa), điểm, cấp bậc, chuỗi ngày liên tiếp, bộ sưu tập quẻ và xem lại lá bùa cũ. Lưu trong `localStorage` của trình duyệt, có nút xóa.
+- **Ngày và đêm** theo giờ máy người chơi. Thêm `?gio=14` vào địa chỉ để xem thử cảnh vào giờ khác.
 
 Trong câu chữ có thể dùng các biến: `{ten}` (tên gọi), `{hoten}` (họ tên đầy đủ), `{canchi}`, `{menh}`, `{mong}` (điều mong), `{nghe}`, `{chude}`. Biến nào không có giá trị sẽ để trống (riêng `{ten}` thành “thí chủ”). Ở phần Bốc Dịch không có `{canchi}`/`{menh}`.
 
@@ -70,6 +79,7 @@ js/charm.js       Vẽ lá bùa 1080×1920 (khung Story 9:16) trên canvas
 js/share.js       Chia sẻ (Web Share, Facebook, chép lời), link có UTM
 js/audio.js       Chuông, mõ, nhạc thiền tổng hợp bằng Web Audio
 js/online.js      Người chơi online qua Supabase Realtime
+js/progress.js    Sổ công đức: điểm, việc lành, bộ sưu tập (localStorage)
 js/analytics.js   Ghi nhận UTM, gửi sự kiện GA4
 content/          Nội dung quẻ (JSON)
 assets/           Icon và ảnh xem trước khi chia sẻ (og.png)

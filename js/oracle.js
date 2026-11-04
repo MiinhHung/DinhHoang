@@ -4,7 +4,7 @@ import { yearInfo, gioAm, ngayVN } from "./lunar.js";
 const C = {};
 
 export async function loadContent() {
-  const files = { love: "nguyet-lao", wealth: "tai-than", iching: "boc-dich", style: "van-phong" };
+  const files = { love: "nguyet-lao", wealth: "tai-than", iching: "boc-dich", style: "van-phong", dao: "dao-si" };
   await Promise.all(Object.entries(files).map(async ([k, f]) => {
     const r = await fetch(`content/${f}.json`, { cache: "no-cache" });
     if (!r.ok) throw new Error(`Không tải được content/${f}.json`);
