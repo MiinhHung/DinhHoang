@@ -333,8 +333,10 @@ export function makePondRect(w, d) {
 }
 
 // Đài Bốc Dịch: bệ tròn cao, bậc thang phía nam, lan can quanh vành và đèn trên cột.
-export function makeAltarPlatform(r, h, stairW, stairLen) {
+// shell: bệ đài dựng từ Blender; không có thì dựng bằng hình khối.
+export function makeAltarPlatform(r, h, stairW, stairLen, shell) {
   const g = new THREE.Group();
+  if (shell) { g.add(shell); return g; }
   const stone = lam("#d9d2c4");
   const body = mesh(new THREE.CylinderGeometry(r, r + 0.4, h, 40), lam("#bfb6a6"), 0, h / 2, 0);
   g.add(body);

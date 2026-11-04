@@ -50,12 +50,14 @@ def finish(obj, key, bevel=0.0, cuts=0, smooth=False):
     return obj
 
 
-def box(name, w, h, d, x, y, z, key, bevel=0.03, cuts=0):
+def box(name, w, h, d, x, y, z, key, bevel=0.03, cuts=0, yaw=0.0, tilt=0.0):
+    """Khối hộp; yaw xoay quanh trục đứng (radian, theo hệ three.js), tilt nghiêng quanh trục ngang x."""
     bpy.ops.mesh.primitive_cube_add(size=1, location=P(x, y, z))
     o = bpy.context.active_object
     o.name = name
     o.scale = (w, d, h)
-    bpy.ops.object.transform_apply(scale=True)
+    o.rotation_euler = (tilt, 0, yaw)
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
     return finish(o, key, bevel, cuts)
 
 
@@ -193,7 +195,9 @@ def bake_and_export(out, name, ao_floor=0.42, samples=48):
 
     # Màu cuối = màu vật liệu × bóng đổ (nâng sáng cho hợp phong cách hoạt hình).
     col = me.color_attributes.new("Col", "BYTE_COLOR", "CORNER")
-    mat_cols = [lin(PALETTE[m.name]) for m in me.materials]
+    # Ô vật liệu rỗng (ví dụ mặt cắt của phép boolean) lấy màu vật liệu đầu tiên.
+    first = next(m for m in me.materials if m)
+    mat_cols = [lin(PALETTE[(m or first).name]) for m in me.materials]
     for poly in me.polygons:
         base = mat_cols[poly.material_index]
         for li in poly.loop_indices:

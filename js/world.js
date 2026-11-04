@@ -284,7 +284,7 @@ function buildHallFrame(g, { w, d, h, top, ry, wall, roof, trim, colX }) {
 
 // ---------- Mô hình dựng từ Blender ----------
 // Tải các file .glb trong assets/models (nén Draco). Thiếu file hay lỗi mạng thì trả về null để dùng khung đơn giản.
-const MODELS = Object.fromEntries(["tam-thanh", "tai-than", "nguyet-lao", "gate", "chuong"].map(k => [k, `assets/models/${k}.glb`]));
+const MODELS = Object.fromEntries(["tam-thanh", "tai-than", "nguyet-lao", "gate", "chuong", "boc-dich"].map(k => [k, `assets/models/${k}.glb`]));
 async function loadModels() {
   let GLTFLoader, DRACOLoader;
   try {
@@ -744,7 +744,7 @@ export async function createWorld(container, hooks = {}) {
     scene.add(g);
   });
 
-  const altar = makeAltarPlatform(ALTAR.r, ALTAR.h, ALTAR.stairW, ALTAR.stairLen);
+  const altar = makeAltarPlatform(ALTAR.r, ALTAR.h, ALTAR.stairW, ALTAR.stairLen, models["boc-dich"]);
   altar.position.set(ALTAR.x, 0, ALTAR.z);
   altar.userData.zone = "boc-dich";
   scene.add(altar);
