@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { V, lam, mesh, box, cyl, ball, canvasTex, roundRect, HAN, SERIF, boardTexture, boardMesh, hipRoof } from "./build.js";
 import {
   grassPatch, makeBush, makeRoundTree, makeBalustrade, makeClouds, makePeak, makeTerrain, makeCourtyard, makeStairs,
-  makeWaterPath, makeWaterMaterials, makeBanks, makeRock, makeFoam, makeMoonBridge, makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate
+  makeWaterPath, makeWaterMaterials, makeChannel, makeNaturalPond, makeGardenBed, makeRockField, makeMist, makeFoam, makeMoonBridge, makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate, makePavilionLamp
 } from "./landscape.js";
 import {
   LEVELS, STAIRS, HALL, ALTAR, WATER, POND, BRIDGE, bridgeDeckY, GATE_Z, SPAWN as SPAWN_XZ, hallFloor, altarBase,
@@ -733,7 +733,7 @@ export async function createWorld(container, hooks = {}) {
       }
     });
     // Chừa lối cho bậc thang và chỗ dòng nước chảy qua mép tầng.
-    const gap = ([x, z]) => Math.abs(x - WATER.x) < 2.2 ||
+    const gap = ([x, z]) => Math.abs(x - WATER.x) < 2.2 || (x > 28 && Math.abs(z - WATER.outflow.z) < 2.4) ||
       STAIRS.some(s => Math.abs(x - s.x) < s.hw + 0.7 && (Math.abs(z - s.z0) < 2 || Math.abs(z - s.z1) < 2));
     let run = [];
     const flush = () => { if (run.length > 1) scene.add(makeBalustrade(run, { closed: false, step: 1.8, y: l.y })); run = []; };
@@ -741,61 +741,92 @@ export async function createWorld(container, hooks = {}) {
     flush();
   });
 
-  // ---------- Dòng nước: suối nguồn → thác 2 → ao tầng 2 → suối qua cầu → thác 1 → ao thác ----------
+  // ---------- Dòng nước liền một mạch ----------
+  // Mỏm đá đầu nguồn → thác nhỏ → suối nguồn (tầng 3) → suối → thác 5 bậc → ao tầng 2 → suối qua cầu
+  // → thác 5 bậc → ao thác (tầng 1) → dòng tràn ra mép núi → thác lớn đổ xuống biển mây.
   const waterMats = makeWaterMaterials();
   const foams = [];
   const HW = 1.3; // nửa bề rộng lòng suối
-  // Suối trên mặt tầng: nước nằm trong lòng có bờ kè đá hai bên.
-  const stream = (z0, z1, y, banks = true) => {
-    scene.add(makeWaterPath([[WATER.x, y + 0.42, z0], [WATER.x, y + 0.42, z1]], HW * 2, waterMats.stream));
-    if (banks) scene.add(makeBanks(WATER.x, z0, z1, y, HW));
+  const WY = 0.14; // mặt nước so với mặt sân (bằng mặt nước các ao)
+  const lv = id => LEVELS.find(l => l.id === id).y;
+  const pondR = p => [p.w / 2 * 1.12, p.d / 2 * 1.12];
+  // Suối trên mặt tầng: nước nằm trong lòng có bờ kè đá; hai đầu ăn sâu vào ao để nước nối liền.
+  const stream = (ax, az, bx, bz, y, banks = true) => {
+    scene.add(makeWaterPath([[ax, y + WY, az], [bx, y + WY, bz]], HW * 2, waterMats.stream));
+    if (banks) scene.add(makeChannel(ax, az, bx, bz, y, HW));
   };
   // Thác đổ thành nhiều bậc theo sườn núi: mỗi bậc một đoạn nước phẳng rồi đổ xuống, gờ đá đỡ dưới,
-  // bọt trắng ở chân mỗi bậc, đá tảng rải hai bên.
+  // bọt trắng ở chân mỗi bậc, đá tảng hai bên, mù nước ở chân thác.
+  const mistPts = [];
   const cascade = (z0, y0, z1, y1, tiers = 5) => {
     const pts = [], x = WATER.x, len = z1 - z0;
     for (let i = 0; i <= tiers * 10; i++) {
       const t = i / (tiers * 10), k = Math.min(tiers - 1, Math.floor(t * tiers)), u = t * tiers - k;
       const drop = u < 0.6 ? 0 : (u - 0.6) / 0.4;
       const y = y0 - (y0 - y1) * (k + drop * drop * (3 - 2 * drop)) / tiers;
-      pts.push([x, Math.max(y, terrainY(x, z0 + len * t) + 0.25) + 0.12, z0 + len * t]);
+      pts.push([x, Math.max(y + WY, terrainY(x, z0 + len * t) + 0.25), z0 + len * t]);
     }
-    scene.add(makeWaterPath(pts, HW * 2.2, waterMats.fall));
+    scene.add(makeWaterPath(pts, HW * 2.3, waterMats.fall));
     for (let k = 0; k < tiers; k++) {
       const zs = z0 + len * k / tiers, ze = z0 + len * (k + 0.62) / tiers, yk = y0 - (y0 - y1) * k / tiers;
       const zm = (zs + ze) / 2, bottom = terrainY(x, ze) - 1.5;
       scene.add(box(HW * 2 + 1.2, yk - bottom, ze - zs, lam("#9a948a"), x, (yk + bottom) / 2, zm));
-      if (k) { const f = makeFoam(tex.glow, x, yk + 0.25, zs + 0.3, 1.1); foams.push(f); }
+      if (k) foams.push(makeFoam(tex.glow, x, yk + 0.25, zs + 0.3, 1.1));
     }
-    foams.push(makeFoam(tex.glow, x, y1 + 0.3, z1 + 0.6, 1.6));
-    for (let z = z0 + 0.5; z < z1; z += 1.3) {
+    foams.push(makeFoam(tex.glow, x, y1 + 0.3, z1 + 0.8, 1.8));
+    mistPts.push([x, y1 + 1.2, z1 + 1, 7]);
+    const rocks = [];
+    for (let z = z0 + 0.4; z < z1; z += 0.9) {
       [-1, 1].forEach(s => {
-        const r = makeRock(0.45 + Math.random() * 0.55), rx = x + s * (HW + 1.1 + Math.random() * 0.8);
-        r.position.set(rx, terrainY(rx, z) + 0.15, z + Math.random() * 0.6);
-        scene.add(r);
+        const rx = x + s * (HW + 0.9 + Math.random() * 1.2);
+        rocks.push([rx, terrainY(rx, z), z + Math.random() * 0.5, 0.45 + Math.random() * 0.6]);
       });
     }
+    scene.add(makeRockField(rocks));
   };
-  const lv = id => LEVELS.find(l => l.id === id).y;
-  [[WATER.spring, lv(3)], [WATER.pool2, lv(2)], [WATER.pool1, lv(1)]].forEach(([p, y]) => {
-    const pond = makePondRect(p.w, p.d);
+  [[WATER.spring, lv(3), 11], [WATER.pool2, lv(2), 12], [WATER.pool1, lv(1), 13]].forEach(([p, y, seed]) => {
+    const [rx, rz] = pondR(p);
+    const pond = makeNaturalPond(rx, rz, waterMats.pond, { seed });
     pond.position.set(p.x, y, p.z);
     scene.add(pond);
   });
-  stream(WATER.spring.z + WATER.spring.d / 2, 8.4, lv(3));
+  const sp = WATER.spring, p2 = WATER.pool2, p1 = WATER.pool1;
+  stream(WATER.x, sp.z + pondR(sp)[1] * 0.6, WATER.x, 8.4, lv(3));
   cascade(8.4, lv(3), 22, lv(2));
-  stream(22, WATER.pool2.z - WATER.pool2.d / 2, lv(2));
-  stream(WATER.pool2.z + WATER.pool2.d / 2, BRIDGE.z - BRIDGE.width / 2, lv(2));
-  stream(BRIDGE.z - BRIDGE.width / 2, BRIDGE.z + BRIDGE.width / 2, lv(2), false);
-  stream(BRIDGE.z + BRIDGE.width / 2, 70.4, lv(2));
+  stream(WATER.x, 21.9, WATER.x, p2.z - pondR(p2)[1] * 0.6, lv(2));
+  stream(WATER.x, p2.z + pondR(p2)[1] * 0.6, WATER.x, BRIDGE.z - BRIDGE.width / 2, lv(2));
+  stream(WATER.x, BRIDGE.z - BRIDGE.width / 2, WATER.x, BRIDGE.z + BRIDGE.width / 2, lv(2), false);
+  stream(WATER.x, BRIDGE.z + BRIDGE.width / 2, WATER.x, 70.4, lv(2));
   cascade(70.4, lv(2), 84, lv(1));
-  stream(84, WATER.pool1.z - WATER.pool1.d / 2, lv(1));
-  // Thác hai bên sườn núi đổ xuống biển mây.
-  [[-44, 40, -1], [44, 46, 1]].forEach(([x0, z, s]) => {
+  stream(WATER.x, 83.9, WATER.x, p1.z - pondR(p1)[1] * 0.6, lv(1));
+  // Dòng tràn ra mép núi phía đông rồi đổ thành thác lớn theo sườn xuống biển mây.
+  const of = WATER.outflow;
+  stream(p1.x + pondR(p1)[0] * 0.6, of.z, of.x1, of.z, lv(1));
+  {
     const pts = [];
-    for (let x = x0; Math.abs(x) <= 95; x += s * 1.2) pts.push([x, terrainY(x, z) + 0.4, z]);
-    scene.add(makeWaterPath(pts, 4, waterMats.fall));
-  });
+    for (let x = of.x1; x <= 112; x += 0.8) pts.push([x, Math.max(terrainY(x, of.z) + 0.35, x < of.x1 + 1 ? lv(1) + WY : -60), of.z]);
+    scene.add(makeWaterPath(pts, 3.6, waterMats.fall));
+    const rocks = [];
+    for (let x = of.x1 + 1; x < 100; x += 1.4) [-1, 1].forEach(s => rocks.push([x, terrainY(x, of.z + s * 3), of.z + s * (2.6 + Math.random()), 0.6 + Math.random() * 0.9]));
+    scene.add(makeRockField(rocks));
+    foams.push(makeFoam(tex.glow, of.x1 + 0.6, lv(1) + 0.2, of.z, 1.2));
+    for (let x = 45; x < 110; x += 16) mistPts.push([x, terrainY(x, of.z) + 3, of.z, 12]);
+  }
+  // Mỏm đá đầu nguồn: đá chồng sau suối nguồn, thác nhỏ đổ từ đỉnh xuống ao.
+  {
+    const src = WATER.source, y3 = lv(3);
+    const rocks = [];
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * Math.PI, rr = 2.4 + Math.random() * 1.2, h = Math.random() * src.h * (1 - Math.abs(Math.cos(a)) * 0.6);
+      rocks.push([src.x + Math.cos(a) * rr, y3 + h, src.z - Math.sin(a) * rr * 0.8, 0.7 + Math.random() * 0.7]);
+    }
+    rocks.push([src.x, y3 + src.h - 0.6, src.z - 0.8, 1.4], [src.x - 1.2, y3 + 1.2, src.z - 0.4, 1.3], [src.x + 1.3, y3 + 1, src.z - 0.3, 1.2]);
+    scene.add(makeRockField(rocks));
+    const pts = [];
+    for (let t = 0; t <= 1.0001; t += 0.1) pts.push([src.x, y3 + WY + (src.h - 0.3) * (1 - t * t), src.z + 0.3 + t * 2.4]);
+    scene.add(makeWaterPath(pts, 1.6, waterMats.fall));
+    foams.push(makeFoam(tex.glow, src.x, y3 + 0.3, src.z + 2.8, 1));
+  }
   foams.forEach(f => scene.add(f.points));
   const bridge = makeMoonBridge(BRIDGE.len, BRIDGE.width, bridgeDeckY);
   bridge.position.set(BRIDGE.x, lv(2), BRIDGE.z);
@@ -872,7 +903,11 @@ export async function createWorld(container, hooks = {}) {
   Object.keys(HALL).forEach(k => { const o = hallObstacles(k); obstacles.push(...o.boxes); circles.push(...o.circles); });
   Object.keys(burners).forEach(k => circles.push({ x: BURNER[k].x, z: BURNER[k].z, r: k === "tam-thanh" ? 1.2 : 0.95 }));
   const rectOf = (p, pad = 0.4) => ({ x0: p.x - p.w / 2 - pad, x1: p.x + p.w / 2 + pad, z0: p.z - p.d / 2 - pad, z1: p.z + p.d / 2 + pad });
-  obstacles.push(rectOf(POND), rectOf(WATER.spring), rectOf(WATER.pool2), rectOf(WATER.pool1));
+  const pondPad = p => Math.max(p.w, p.d) * 0.18 + 0.4;
+  obstacles.push(rectOf(POND), rectOf(WATER.spring, pondPad(WATER.spring)), rectOf(WATER.pool2, pondPad(WATER.pool2)), rectOf(WATER.pool1, pondPad(WATER.pool1)));
+  // Dòng tràn ra mép núi và mỏm đá đầu nguồn.
+  obstacles.push({ x0: WATER.pool1.x, x1: 40, z0: WATER.outflow.z - 1.9, z1: WATER.outflow.z + 1.9 });
+  circles.push({ x: WATER.source.x, z: WATER.source.z - 0.6, r: 3.2 });
   const wx0 = WATER.x - 1.4, wx1 = WATER.x + 1.4;
   obstacles.push({ x0: wx0, x1: wx1, z0: WATER.spring.z, z1: 8.6 }, { x0: wx0, x1: wx1, z0: 21.5, z1: WATER.pool2.z },
     { x0: wx0, x1: wx1, z0: WATER.pool2.z, z1: WATER.bridge.z0 }, { x0: wx0, x1: wx1, z0: WATER.bridge.z1, z1: 70.6 },
@@ -893,7 +928,7 @@ export async function createWorld(container, hooks = {}) {
   // Rừng thông và cây tán tròn mọc trên sườn núi (không đi tới được), rải theo hạt giống cố định.
   let seed = 7;
   const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  for (let i = 0; i < 260 && seed; i++) {
+  for (let i = 0; i < 560 && seed; i++) {
     const x = (rnd() - 0.5) * 170, z = -110 + rnd() * 270;
     const y = terrainY(x, z);
     if (walkable(x, z) || y < -26 || y > 30) continue;
@@ -914,6 +949,44 @@ export async function createWorld(container, hooks = {}) {
   [[-26, 112, 10, 8], [24, 100, 8, 6], [-34, 50, 6, 12], [34, 36, 6, 12], [-28, -20, 8, 14], [28, -10, 8, 12], [-10, -70, 6, 6], [10, -82, 6, 6]]
     .forEach(([x, z, w, d]) => { const gp = grassPatch(w, d, x, z); gp.position.y = groundY(x, z) + 0.06; scene.add(gp); });
 
+  // ---------- Vườn, đá, mây mù: lấp những khoảng sân và sườn núi còn trống ----------
+  // Bồn cây trên sân các tầng [x, z, rộng, sâu, màu tán cây]; có va chạm.
+  const BEDS = [
+    [-25, 90, 5, 3, "#f4a6c0"], [25, 88, 6, 3, "#3f7a3a"], [-18, 118, 5, 3, "#f4a6c0"], [18, 118, 5, 3, "#f4a6c0"], [-26, 104, 3, 6, "#3f7a3a"],
+    [-6, 50, 4, 9, "#3f7a3a"], [6, 46, 4, 6, null], [-22, 62, 6, 3, "#f2c14e"], [30, 64, 5, 3, "#f4a6c0"], [-30, 28, 8, 3, "#f2c14e"], [30, 28, 8, 3, "#f4a6c0"],
+    [-24, -6, 6, 4, "#3f7a3a"], [-27, -26, 4, 10, "#3f7a3a"], [27, -26, 4, 10, "#3f7a3a"], [-10, -2, 5, 3, "#f4a6c0"], [26, -4, 5, 3, "#f4a6c0"],
+    [-8, -64, 4, 3, null], [8, -64, 4, 3, null]
+  ];
+  BEDS.forEach(([x, z, w, d, tree], i) => {
+    const b = makeGardenBed(w, d, { seed: i + 1, tree });
+    b.position.set(x, groundY(x, z), z);
+    scene.add(b);
+    obstacles.push({ x0: x - w / 2 - 0.2, x1: x + w / 2 + 0.2, z0: z - d / 2 - 0.2, z1: z + d / 2 + 0.2 });
+  });
+  // Đá tảng trên sườn núi (chỗ không đi được), thưa dần xuống thấp.
+  {
+    const rocks = [];
+    for (let i = 0; i < 420; i++) {
+      const x = (rnd() - 0.5) * 190, z = -120 + rnd() * 290, y = terrainY(x, z);
+      if (walkable(x, z) || y < -30 || y > 30 || Math.abs(x - WATER.x) < 3) continue;
+      rocks.push([x, y, z, 0.4 + rnd() * rnd() * 2.2]);
+    }
+    scene.add(makeRockField(rocks));
+  }
+  // Núi đá vôi gần hơn, chân chìm trong mây, và một vòng mây mù quanh sườn núi.
+  for (let i = 0; i < 12; i++) {
+    const a = i / 12 * Math.PI * 2 + 0.3, r = 135 + rnd() * 40;
+    const pk = makePeak(34 + rnd() * 26, 9 + rnd() * 7);
+    pk.position.set(Math.cos(a) * r, -40, 25 + Math.sin(a) * r);
+    scene.add(pk);
+  }
+  for (let i = 0; i < 26; i++) {
+    const a = i / 26 * Math.PI * 2, r = 62 + rnd() * 26;
+    mistPts.push([Math.cos(a) * r * 0.75, -12 + rnd() * 16, 25 + Math.sin(a) * r * 1.2, 26 + rnd() * 18]);
+  }
+  const mist = makeMist(mistPts, 0.5);
+  scene.add(mist);
+
   const toHong = makeTree("tohong"), kimTien = makeRoundTree("#f2c14e", 1.15);
   place(toHong, PROP["to-hong"].x, PROP["to-hong"].z, 0.5);
   place(kimTien, PROP["kim-tien"].x, PROP["kim-tien"].z, 0.5);
@@ -928,7 +1001,13 @@ export async function createWorld(container, hooks = {}) {
   kimTien.userData.zone = "kim-tien";
 
   // ---------- Ao Sen, Lầu Chuông, Lão Đạo Sĩ ----------
-  const pond = makePondRect(POND.w, POND.d);
+  const pond = makeNaturalPond(POND.w / 2 * 1.05, POND.d / 2 * 1.05, waterMats.pond, { seed: 21 });
+  // Bốn đèn đá mái xanh quanh Ao Sen giữ nét riêng của chỗ thả hoa đăng.
+  [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sz]) => {
+    const l = makePavilionLamp();
+    l.position.set(POND.x + sx * (POND.w / 2 + 1.2), 0, POND.z + sz * (POND.d / 2 + 1));
+    scene.add(l);
+  });
   pond.position.set(POND.x, 0, POND.z);
   pond.userData.zone = "ao-sen";
   scene.add(pond);
@@ -1288,6 +1367,7 @@ export async function createWorld(container, hooks = {}) {
     waterMats.setLight(waterLight);
     foams.forEach(f => f.update(t));
     driftClouds(dt);
+    mist.userData.update(t);
     // Cánh hoa rơi quanh nhân vật (bản đồ rộng, không rải khắp núi).
     if (entered) petals.position.set(pos.x, groundY(pos.x, pos.z), pos.z);
     const pc = PROP["ao-sen"];
@@ -1295,7 +1375,7 @@ export async function createWorld(container, hooks = {}) {
       d.born = Math.min(1, d.born + dt * 0.5);
       d.a += d.speed * dt;
       d.r += (Math.min(d.r, 1.9) - d.r) * dt * 0.3;
-      d.g.position.set(pc.x + Math.cos(d.a) * d.r * 1.5, 0.4 + Math.sin(t * 1.6 + d.seed) * 0.025, pc.z + Math.sin(d.a) * d.r);
+      d.g.position.set(pc.x + Math.cos(d.a) * d.r * 1.5, 0.2 + Math.sin(t * 1.6 + d.seed) * 0.025, pc.z + Math.sin(d.a) * d.r);
       d.g.rotation.y += dt * 0.15;
       d.g.scale.setScalar(0.4 + d.born * 0.6);
     }

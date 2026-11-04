@@ -38,7 +38,10 @@ export const WATER = {
   spring: { x: 13, z: -2, w: 7, d: 5 },
   pool2: { x: 13, z: 27, w: 7, d: 5 },
   bridge: { z0: 54.2, z1: 57.8 },
-  pool1: { x: 14, z: 97, w: 10, d: 8 }
+  pool1: { x: 14, z: 97, w: 10, d: 8 },
+  // Mỏm đá đầu nguồn sau suối nguồn (thác nhỏ đổ xuống), và dòng tràn từ ao thác ra mép núi phía đông.
+  source: { x: 13, z: -6.2, h: 4 },
+  outflow: { z: 97, x0: 19.4, x1: 34.6 }
 };
 // Cầu vòm bán nguyệt bắc ngang suối tầng 2: dài `len` theo trục x, rộng theo z, đỉnh cao `rise`.
 export const BRIDGE = { x: WATER.x, z: (WATER.bridge.z0 + WATER.bridge.z1) / 2, len: 8.4, width: WATER.bridge.z1 - WATER.bridge.z0, rise: 1.9 };

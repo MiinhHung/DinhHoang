@@ -125,8 +125,9 @@ export function makeWaterMaterials() {
     vertexShader: WATER_VS, fragmentShader: WATER_FS, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: true
   });
   const stream = make(0.35, 0.08, "#2a96a0", "#9ee2e0"), fall = make(1.6, 0.75, "#5fb6cc", "#d8f2f6");
-  [stream, fall].forEach(m => { m.uniforms.uTime = shared.uTime; m.uniforms.uLight = shared.uLight; });
-  return { stream, fall, update: dt => { shared.uTime.value += dt; }, setLight: v => { shared.uLight.value = v; } };
+  const pond = make(0.06, 0.02, "#256f78", "#8fd6d2");
+  [stream, fall, pond].forEach(m => { m.uniforms.uTime = shared.uTime; m.uniforms.uLight = shared.uLight; });
+  return { stream, fall, pond, update: dt => { shared.uTime.value += dt; }, setLight: v => { shared.uLight.value = v; } };
 }
 
 // path: các điểm [x, y, z] dọc dòng chảy (từ nguồn xuống); width: bề rộng dòng nước; material: từ makeWaterMaterials.
@@ -165,6 +166,164 @@ export function makeBanks(x, z0, z1, y, halfW) {
   const bed = mesh(new THREE.PlaneGeometry(halfW * 2, len), lam("#2c4a48"), x, y + 0.1, zc);
   bed.rotation.x = -Math.PI / 2;
   g.add(bed);
+  return g;
+}
+
+const prng = seed => { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
+
+// Ao tự nhiên: mặt nước hình méo (nhiều sóng hình sin), mép mờ dần, đáy xanh thẫm, bờ đá tảng xếp quanh,
+// lá súng và hoa sen. rx, rz: bán kính hai trục. Gốc toạ độ ở mặt sân, nước nằm ở y = 0.14.
+export function makeNaturalPond(rx, rz, waterMat, { seed = 3, lilies = true } = {}) {
+  const rnd = prng(seed * 7919 + 13);
+  const p1 = rnd() * 6, p2 = rnd() * 6;
+  const R = a => 1 + 0.11 * Math.sin(3 * a + p1) + 0.06 * Math.sin(5 * a + p2);
+  const g = new THREE.Group();
+  const N = 48, RINGS = 4, pos = [0, 0, 0], uv = [0.5, 0], idx = [];
+  for (let k = 1; k <= RINGS; k++) {
+    const t = k / RINGS;
+    for (let i = 0; i < N; i++) {
+      const a = i / N * Math.PI * 2, x = Math.cos(a) * rx * R(a) * t, z = Math.sin(a) * rz * R(a) * t;
+      pos.push(x, 0, z);
+      uv.push(0.5 * (1 - t), z / 8);
+      const cur = 1 + (k - 1) * N + i, nxt = 1 + (k - 1) * N + (i + 1) % N;
+      if (k === 1) idx.push(0, nxt, cur);
+      else { const pc = cur - N, pn = nxt - N; idx.push(pc, pn, cur, pn, nxt, cur); }
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx);
+  const water = new THREE.Mesh(geo, waterMat);
+  water.position.y = 0.14;
+  water.renderOrder = 2;
+  g.add(water);
+  const bed = new THREE.Mesh(geo, lam("#2f6a66"));
+  bed.position.y = 0.08;
+  bed.scale.set(1.04, 1, 1.04);
+  g.add(bed);
+  // Bờ đá: đá tảng to nhỏ xen kẽ, màu xám ấm khác nhau.
+  const n = Math.round((rx + rz) * 3.2);
+  const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), new THREE.MeshLambertMaterial(), n);
+  const o = new THREE.Object3D(), c = new THREE.Color();
+  for (let i = 0; i < n; i++) {
+    const a = (i + rnd() * 0.5) / n * Math.PI * 2, s = 0.32 + rnd() * 0.42;
+    o.position.set(Math.cos(a) * rx * R(a) * 1.03, s * 0.25, Math.sin(a) * rz * R(a) * 1.03);
+    o.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3);
+    o.scale.set(s * (1 + rnd() * 0.4), s * 0.75, s);
+    o.updateMatrix();
+    rocks.setMatrixAt(i, o.matrix);
+    rocks.setColorAt(i, c.set(rnd() < 0.5 ? "#9b958b" : "#b2ab9f").multiplyScalar(0.85 + rnd() * 0.25));
+  }
+  g.add(rocks);
+  if (lilies) {
+    const pad = lam("#3f8a3a"), pad2 = lam("#5aa048"), petal = lam("#f6a9c0", "#3a0f1c");
+    for (let i = 0; i < Math.round(rx * rz * 0.5); i++) {
+      const a = rnd() * Math.PI * 2, t = 0.25 + rnd() * 0.6;
+      const p = mesh(new THREE.CircleGeometry(0.28 + rnd() * 0.2, 12, 0.3, Math.PI * 2 - 0.3), rnd() < 0.5 ? pad : pad2,
+        Math.cos(a) * rx * R(a) * t, 0.16, Math.sin(a) * rz * R(a) * t);
+      p.rotation.x = -Math.PI / 2;
+      p.rotation.z = rnd() * 6;
+      g.add(p);
+      if (rnd() < 0.35) {
+        const f = new THREE.Group();
+        for (let k = 0; k < 6; k++) {
+          const cc = mesh(new THREE.ConeGeometry(0.08, 0.26, 5), petal, Math.cos(k) * 0.09, 0.1, Math.sin(k) * 0.09);
+          cc.rotation.set(Math.sin(k) * 0.5, 0, -Math.cos(k) * 0.5);
+          f.add(cc);
+        }
+        f.add(ball(0.05, lam("#f2c14e", "#4a3000"), 0, 0.08, 0, 6));
+        f.position.copy(p.position).setY(0.18);
+        g.add(f);
+      }
+    }
+  }
+  return g;
+}
+
+// Lòng suối thẳng từ (ax, az) tới (bx, bz): đáy thẫm và bờ kè đá hai bên, theo hướng bất kỳ.
+export function makeChannel(ax, az, bx, bz, y, halfW) {
+  const g = new THREE.Group();
+  const len = Math.hypot(bx - ax, bz - az), ang = Math.atan2(bx - ax, bz - az);
+  g.position.set((ax + bx) / 2, y, (az + bz) / 2);
+  g.rotation.y = ang;
+  const stone = lam("#bdb4a4"), cap = lam("#d6cebf");
+  [-1, 1].forEach(s => {
+    g.add(box(0.5, 0.5, len, stone, s * (halfW + 0.25), 0.15, 0));
+    g.add(box(0.62, 0.1, len, cap, s * (halfW + 0.25), 0.42, 0));
+  });
+  const bed = mesh(new THREE.PlaneGeometry(halfW * 2, len), lam("#2f6a66"), 0, 0.08, 0);
+  bed.rotation.x = -Math.PI / 2;
+  g.add(bed);
+  return g;
+}
+
+// Bồn cây trên sân: viền đá thấp, nền cỏ, cây cảnh, bụi cây, hoa nhiều màu (instanced) và vài hòn đá.
+export function makeGardenBed(w, d, { seed = 1, tree = "#3f7a3a", flowers = ["#f4a6c0", "#ffd36b", "#ffffff", "#e0533a"] } = {}) {
+  const rnd = prng(seed * 104729 + 7);
+  const g = new THREE.Group();
+  const stone = lam("#c9c0b0");
+  [[w + 0.4, 0.3, 0.2, 0, -d / 2 - 0.1], [w + 0.4, 0.3, 0.2, 0, d / 2 + 0.1], [0.2, 0.3, d, -w / 2 - 0.1, 0], [0.2, 0.3, d, w / 2 + 0.1, 0]]
+    .forEach(([bw, bh, bd, x, z]) => g.add(box(bw, bh, bd, stone, x, bh / 2, z)));
+  g.add(box(w, 0.22, d, lam("#5f9a45"), 0, 0.11, 0));
+  if (tree) {
+    const t = makeRoundTree(tree, 0.55 + rnd() * 0.25);
+    t.position.set((rnd() - 0.5) * w * 0.4, 0.2, (rnd() - 0.5) * d * 0.3);
+    g.add(t);
+  }
+  const nb = Math.max(1, Math.round(w * d / 8));
+  for (let i = 0; i < nb; i++) {
+    const b = makeBush(0.35 + rnd() * 0.25, rnd() < 0.5 ? "#3f8a3a" : "#4f9a40");
+    b.position.set((rnd() - 0.5) * (w - 0.8), 0.2, (rnd() - 0.5) * (d - 0.8));
+    g.add(b);
+  }
+  const nf = Math.round(w * d * 3);
+  const fm = new THREE.InstancedMesh(new THREE.SphereGeometry(0.09, 6, 4), new THREE.MeshLambertMaterial(), nf);
+  const stem = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.015, 0.015, 0.25, 4), lam("#3f7a30"), nf);
+  const o = new THREE.Object3D(), c = new THREE.Color();
+  for (let i = 0; i < nf; i++) {
+    const x = (rnd() - 0.5) * (w - 0.3), z = (rnd() - 0.5) * (d - 0.3), h = 0.3 + rnd() * 0.15;
+    o.position.set(x, 0.22 + h, z); o.scale.setScalar(0.8 + rnd() * 0.6); o.updateMatrix();
+    fm.setMatrixAt(i, o.matrix);
+    fm.setColorAt(i, c.set(flowers[Math.floor(rnd() * flowers.length)]));
+    o.position.set(x, 0.22 + h / 2, z); o.scale.set(1, h / 0.25, 1); o.updateMatrix();
+    stem.setMatrixAt(i, o.matrix);
+  }
+  g.add(stem, fm);
+  for (let i = 0; i < 2; i++) {
+    const r = makeRock(0.25 + rnd() * 0.2);
+    r.position.set((rnd() - 0.5) * (w - 0.6), 0.25, (rnd() - 0.5) * (d - 0.6));
+    g.add(r);
+  }
+  return g;
+}
+
+// Đá rải trên sườn núi (một InstancedMesh): points [x, y, z, size].
+export function makeRockField(points) {
+  const m = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), new THREE.MeshLambertMaterial(), points.length);
+  const o = new THREE.Object3D(), c = new THREE.Color();
+  points.forEach(([x, y, z, s], i) => {
+    o.position.set(x, y + s * 0.2, z);
+    o.rotation.set(Math.sin(i * 3.1) * 3, i * 1.7, Math.cos(i * 2.3) * 3);
+    o.scale.set(s * 1.3, s * 0.7, s);
+    o.updateMatrix();
+    m.setMatrixAt(i, o.matrix);
+    m.setColorAt(i, c.set(i % 3 ? "#9a948a" : "#857f76"));
+  });
+  return m;
+}
+
+// Mây mù lững lờ quanh sườn núi và chân thác.
+export function makeMist(points, opacity = 0.45) {
+  const mat = new THREE.SpriteMaterial({ map: cloudTexture(), transparent: true, depthWrite: false, opacity, fog: true });
+  const g = new THREE.Group();
+  points.forEach(([x, y, z, size]) => {
+    const s = new THREE.Sprite(mat);
+    s.position.set(x, y, z);
+    s.scale.set(size, size * 0.5, 1);
+    g.add(s);
+  });
+  g.userData.update = t => g.children.forEach((s, i) => { s.position.x += Math.sin(t * 0.1 + i) * 0.004; });
   return g;
 }
 
