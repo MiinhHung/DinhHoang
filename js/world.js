@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { V, lam, mesh, box, cyl, ball, canvasTex, roundRect, HAN, SERIF, boardTexture, boardMesh, hipRoof } from "./build.js";
 import {
   grassPatch, makeBush, makeRoundTree, makeBalustrade, makeClouds, makePeak, makeTerrain, makeCourtyard, makeStairs,
-  makeWaterPath, makeWaterMaterials, makeChannel, makeNaturalPond, makeGardenBed, makeRockField, makeMist, makeFoam, makeMoonBridge, makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate, makePavilionLamp
+  makeWaterPath, makeWaterMaterials, makeChannel, makeNaturalPond, makeGardenBed, makeRockField, makeMist, makeFoam, makeMoonBridge, makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate, makePavilionLamp, makeTeaPavilion
 } from "./landscape.js";
 import {
   LEVELS, STAIRS, HALL, ALTAR, WATER, POND, BRIDGE, bridgeDeckY, GATE_Z, SPAWN as SPAWN_XZ, hallFloor, altarBase,
@@ -23,7 +23,8 @@ export const ZONES = {
   chuong: { name: "Lầu Chuông", act: "Thỉnh chuông", prop: true },
   "ao-sen": { name: "Ao Sen", act: "Thả hoa đăng", prop: true },
   "to-hong": { name: "Cây Tơ Hồng", act: "Buộc tơ hồng", prop: true },
-  "kim-tien": { name: "Cây Kim Tiền", act: "Hái lộc", prop: true }
+  "kim-tien": { name: "Cây Kim Tiền", act: "Hái lộc", prop: true },
+  "tra-dinh": { name: "Trà Đình Định Tâm", act: "Ngồi uống trà", prop: true }
 };
 
 // ---------- Vị trí trên bản đồ núi (xem js/map.js) ----------
@@ -37,12 +38,12 @@ const SPOT = {
   "tam-thanh": inHall("tam-thanh", 2.6), "tai-than": inHall("tai-than", 3), "nguyet-lao": inHall("nguyet-lao", 3),
   "boc-dich": V(ALTAR.x, 0, ALTAR.z + 5.2),
   "dao-si": V(3.4, 0, 119.6), chuong: V(27, 0, 116), "ao-sen": V(POND.x, 0, POND.z + POND.d / 2 + 1.7),
-  "to-hong": V(36, 0, 62.6), "kim-tien": V(-36, 0, 62.6)
+  "to-hong": V(36, 0, 62.6), "kim-tien": V(-36, 0, 62.6), "tra-dinh": V(23.2, 0, 90.5)
 };
-const PROP = { "dao-si": V(5, 0, 118), chuong: V(27, 0, 112), "ao-sen": V(POND.x, 0, POND.z), "to-hong": V(38, 0, 60), "kim-tien": V(-38, 0, 60) };
+const PROP = { "dao-si": V(5, 0, 118), chuong: V(27, 0, 112), "ao-sen": V(POND.x, 0, POND.z), "to-hong": V(38, 0, 60), "kim-tien": V(-38, 0, 60), "tra-dinh": V(28, 0, 90.5) };
 // Chỗ nhân vật quay mặt về khi làm nghi lễ ở mỗi điểm.
 const FOCUS = { ...BURNER, ...PROP };
-const ACT_R = { "tam-thanh": 3.2, "tai-than": 3, "nguyet-lao": 3, "boc-dich": 4.2, "dao-si": 2.8, chuong: 2.3, "ao-sen": 2.3, "to-hong": 2, "kim-tien": 2 };
+const ACT_R = { "tam-thanh": 3.2, "tai-than": 3, "nguyet-lao": 3, "boc-dich": 4.2, "dao-si": 2.8, chuong: 2.3, "ao-sen": 2.3, "to-hong": 2, "kim-tien": 2, "tra-dinh": 2.4 };
 const POND_R = 2.6;
 const HOA_DANG = { sen: ["#f59ab5", "#5a1626"], vang: ["#f2c14e", "#5a3a00"], trang: ["#f3ecd8", "#3a3428"] };
 const SPAWN = V(SPAWN_XZ.x, 0, SPAWN_XZ.z);
@@ -957,7 +958,7 @@ export async function createWorld(container, hooks = {}) {
   // ---------- Vườn, đá, mây mù: lấp những khoảng sân và sườn núi còn trống ----------
   // Bồn cây trên sân các tầng [x, z, rộng, sâu, màu tán cây]; có va chạm.
   const BEDS = [
-    [-25, 90, 5, 3, "#f4a6c0"], [25, 88, 6, 3, "#3f7a3a"], [-18, 118, 5, 3, "#f4a6c0"], [18, 118, 5, 3, "#f4a6c0"], [-26, 104, 3, 6, "#3f7a3a"],
+    [-25, 90, 5, 3, "#f4a6c0"], [-18, 118, 5, 3, "#f4a6c0"], [18, 118, 5, 3, "#f4a6c0"], [-26, 104, 3, 6, "#3f7a3a"],
     [-6, 50, 4, 9, "#3f7a3a"], [6, 46, 4, 6, null], [-22, 62, 6, 3, "#f2c14e"], [30, 64, 5, 3, "#f4a6c0"], [-30, 28, 8, 3, "#f2c14e"], [30, 28, 8, 3, "#f4a6c0"],
     [-24, -6, 6, 4, "#3f7a3a"], [-27, -26, 4, 10, "#3f7a3a"], [27, -26, 4, 10, "#3f7a3a"], [-10, -2, 5, 3, "#f4a6c0"], [26, -4, 5, 3, "#f4a6c0"],
     [-8, -64, 4, 3, null], [8, -64, 4, 3, null]
@@ -1130,10 +1131,32 @@ export async function createWorld(container, hooks = {}) {
     geo.setAttribute("position", new THREE.BufferAttribute(arr, 3));
     const mat = new THREE.PointsMaterial({ map: tex.smoke, size: 0.9, color: 0xdcd3cc, transparent: true, opacity: 0.22, depthWrite: false });
     const pts = new THREE.Points(geo, mat);
-    pts.position.copy(b.position).setY(2.1);
+    pts.position.copy(b.position).setY(b.position.y + 2.1 * b.scale.y);
     scene.add(pts);
     return { zone: z, pts, arr, seed, mat, boost: 0 };
   });
+  // ---------- Trà Đình Định Tâm bên thác lớn ----------
+  const teaHouse = makeTeaPavilion();
+  teaHouse.position.copy(PROP["tra-dinh"]);
+  teaHouse.userData.zone = "tra-dinh";
+  scene.add(teaHouse);
+  obstacles.push({ x0: PROP["tra-dinh"].x - 1.6, x1: PROP["tra-dinh"].x + 2.9, z0: PROP["tra-dinh"].z - 2.4, z1: PROP["tra-dinh"].z + 2.4 });
+  const teaLabel = makeLabel("Trà Đình Định Tâm");
+  teaLabel.position.set(PROP["tra-dinh"].x, 5.8, PROP["tra-dinh"].z);
+  scene.add(teaLabel);
+  {
+    // Hơi trà bốc lên từ ấm (dùng chung cơ chế khói hương).
+    const N = 14, arr = new Float32Array(N * 3), seed = [];
+    for (let i = 0; i < N; i++) { seed.push(Math.random()); arr.set([0, Math.random() * 1.2, 0], i * 3); }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(arr, 3));
+    const mat = new THREE.PointsMaterial({ map: tex.smoke, size: 0.45, color: 0xf4f0ea, transparent: true, opacity: 0.12, depthWrite: false });
+    const pts = new THREE.Points(geo, mat);
+    pts.position.copy(teaHouse.userData.teapot).add(teaHouse.position);
+    pts.scale.setScalar(0.4);
+    scene.add(pts);
+    smokes.push({ zone: "tra-dinh", pts, arr, seed, mat, boost: 0 });
+  }
 
   // Cánh hoa rơi
   const PN = 420, parr = new Float32Array(PN * 3);
@@ -1597,7 +1620,7 @@ export async function createWorld(container, hooks = {}) {
 
   // ---------- Chạm để đi ----------
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), plane = new THREE.Plane(V(0, 1, 0), 0), hit = V();
-  const clickables = [...Object.values(halls), ...Object.values(burners), altar, bagua, bellTower, pond, toHong, kimTien, daoSi.group];
+  const clickables = [...Object.values(halls), ...Object.values(burners), altar, bagua, bellTower, pond, toHong, kimTien, daoSi.group, teaHouse];
   // Một ngón / chuột: chạm nhanh để đi, kéo để xoay góc nhìn. Hai ngón: chụm để phóng to thu nhỏ.
   const cv = renderer.domElement, ptrs = new Map(), ROT = 0.006;
   const clampPitch = p => Math.min(PITCH_MAX, Math.max(PITCH_MIN, p));
@@ -1770,6 +1793,8 @@ export async function createWorld(container, hooks = {}) {
     bow() { bowT = 0; },
     getState() { return { x: +pos.x.toFixed(2), z: +pos.z.toFixed(2), ry: +yaw.toFixed(2) }; },
     fx: {
+      // Hơi trà (Trà Đình) hoặc khói hương bốc mạnh lên.
+      steam(z) { const s = smokes.find(x => x.zone === z); if (s) s.boost = 1; },
       incense(z) {
         const b = burners[z];
         if (!b) return;

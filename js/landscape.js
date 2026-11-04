@@ -758,3 +758,40 @@ function buildGateFrame(g) {
     }
   });
 }
+
+// Trà Đình: đình nhỏ bốn cột mái cong bên thác lớn, sàn gỗ, bàn trà thấp, hai bồ đoàn, ấm và chén trà.
+// Mặt trước (chỗ ngồi uống trà) nhìn về +x, ra phía thác. Trả về group; userData.teapot là vị trí ấm (toạ độ cục bộ).
+export function makeTeaPavilion() {
+  const g = new THREE.Group();
+  const wood = lam("#7a4a2a"), red = lam("#b3242a"), gold = lam("#e7b75a", "#3a2508");
+  g.add(box(5.2, 0.35, 4.4, lam("#cfc6b6"), 0, 0.17, 0));
+  g.add(box(4.8, 0.06, 4, lam("#8a5a3a"), 0, 0.37, 0));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(cyl(0.13, 0.15, 2.9, red, sx * 2.2, 1.8, sz * 1.8, 10));
+  g.add(box(4.7, 0.2, 0.2, gold, 0, 3.2, 1.8));
+  g.add(box(4.7, 0.2, 0.2, gold, 0, 3.2, -1.8));
+  const roofM = new THREE.MeshLambertMaterial({ color: "#2f6a5a", side: THREE.DoubleSide });
+  g.add(hipRoof(6.2, 5.4, 1.5, roofM, 0.14).translateY(3.3));
+  g.add(ball(0.2, lam("#ffd36b", "#7a4a00"), 0, 4.95, 0, 10));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const e = mesh(new THREE.ConeGeometry(0.1, 0.8, 6), gold, sx * 3.1, 3.45, sz * 2.7);
+    e.rotation.z = -sx * 0.9; e.rotation.x = sz * 0.9;
+    g.add(e);
+  }
+  // Lan can thấp ba mặt, chừa mặt sau (phía -x) để bước vào.
+  [[0, 1.95, 4.4, 0.08], [0, -1.95, 4.4, 0.08], [2.35, 0, 0.08, 3.9]].forEach(([x, z, w, d]) => g.add(box(w, 0.08, d, wood, x, 0.95, z)));
+  // Bàn trà, bồ đoàn, ấm và chén.
+  g.add(box(1.4, 0.08, 0.9, lam("#5a3420"), 0.6, 0.72, 0));
+  [[-0.5, -0.3], [-0.5, 0.3], [0.5, -0.3], [0.5, 0.3]].forEach(([x, z]) => g.add(box(0.08, 0.32, 0.08, lam("#4a2a18"), 0.6 + x, 0.53, z)));
+  [[-0.4, -0.7], [-0.4, 0.7]].forEach(([x, z]) => g.add(cyl(0.38, 0.4, 0.14, lam("#c8a060"), x, 0.46, z, 16)));
+  const pot = new THREE.Group();
+  pot.add(ball(0.17, lam("#6a3a2a"), 0, 0.15, 0, 12));
+  pot.add(cyl(0.05, 0.07, 0.08, lam("#6a3a2a"), 0, 0.31, 0, 8));
+  const spout = cyl(0.025, 0.035, 0.2, lam("#6a3a2a"), 0.16, 0.18, 0, 6);
+  spout.rotation.z = -0.9;
+  pot.add(spout);
+  pot.position.set(0.6, 0.76, 0);
+  g.add(pot);
+  [[0.4, -0.25], [0.85, 0.22], [0.35, 0.28]].forEach(([x, z]) => g.add(cyl(0.05, 0.035, 0.07, lam("#f2ece0"), x, 0.8, z, 10)));
+  g.userData.teapot = new THREE.Vector3(0.6, 1.2, 0);
+  return g;
+}

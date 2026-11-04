@@ -98,7 +98,12 @@ Nếu thiếu file `.glb` hoặc tải lỗi, game tự dùng khung hình khối
 - **Ao Sen** (tầng 1, bên trái): thả hoa đăng kèm điều nguyện (không lưu). **Lầu Chuông** (tầng 1, bên phải): thỉnh chuông.
 - **Cây Tơ Hồng** (trước Nguyệt Lão Điện): buộc dây đỏ, cây giữ lại tối đa 30 sợi của mỗi người. **Cây Kim Tiền** (trước Tài Thần Điện): mỗi ngày hái một lộc.
 - **Sổ Công Đức** (nút 📜): 5 việc lành mỗi ngày (thắp hương, xin quẻ, thỉnh chuông, thả hoa đăng, chia sẻ bùa), điểm, cấp bậc, chuỗi ngày liên tiếp, bộ sưu tập quẻ và xem lại lá bùa cũ. Lưu trong `localStorage` của trình duyệt, có nút xóa.
-- **Ngày và đêm** theo giờ máy người chơi. Thêm `?gio=14` vào địa chỉ để xem thử cảnh vào giờ khác.
+- **Trà Đình Định Tâm** (tầng 1, bên thác lớn phía đông): chọn trà, giữ để pha, ba nhịp thở theo vòng tròn, nhận một lời dạy; thêm 5 công đức mỗi ngày.
+- **Lễ hoa đăng chung** mỗi tối (mặc định 20:00, 30 phút, sửa trong `config.festival`): HUD đếm ngược, Ao Sen kín hoa đăng, đèn trời bay lên; thả hoa đăng trong giờ lễ được thưởng công đức.
+- **Ảnh khoảnh khắc**: khi rút được quẻ, camera lia cận cảnh vái lạy rồi chụp lại thành thiệp khung Story có tên người chơi, lưu và chia sẻ được cùng lá bùa.
+- **Ngày và đêm** theo giờ máy người chơi; ban đêm đèn lồng phát sáng, có đom đóm và trăng sau Bốc Dịch Đài. Thêm `?gio=21` vào địa chỉ để xem thử giờ khác.
+- **Mùa và lễ âm lịch**: hoa lá rơi đổi theo mùa (đào, sen, lá vàng, mai), lời chào dịp Tết, Rằm tháng Giêng, Vu Lan, Trung Thu, Rằm và mùng Một; đêm rằm trăng to hơn. Thêm `?ngay=2026-02-17` để xem thử một ngày.
+- **Sự sống**: cá chép bơi trong các ao, đàn hạc bay quanh núi, mây trôi qua đỉnh.
 
 Trong câu chữ có thể dùng các biến: `{ten}` (tên gọi), `{hoten}` (họ tên đầy đủ), `{canchi}`, `{menh}`, `{mong}` (điều mong), `{nghe}`, `{chude}`. Biến nào không có giá trị sẽ để trống (riêng `{ten}` thành “thí chủ”). Ở phần Bốc Dịch không có `{canchi}`/`{menh}`.
 
@@ -120,6 +125,9 @@ js/share.js       Chia sẻ (Web Share, Facebook, chép lời), link có UTM
 js/audio.js       Chuông, mõ, nhạc thiền tổng hợp bằng Web Audio
 js/online.js      Người chơi online qua Supabase Realtime
 js/progress.js    Sổ công đức: điểm, việc lành, bộ sưu tập (localStorage)
+js/night.js       Ban đêm: hiệu ứng phát sáng, quầng đèn, đom đóm
+js/life.js        Cá chép, hạc, mây trên đỉnh núi
+js/calendar.js    Âm lịch Việt Nam, mùa và ngày lễ
 js/analytics.js   Ghi nhận UTM, gửi sự kiện GA4
 content/          Nội dung quẻ (JSON)
 assets/models/    Mô hình .glb xuất từ Blender

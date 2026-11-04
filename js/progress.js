@@ -89,6 +89,17 @@ export function harvest(pickLoc) {
   return { loc: S.harvestLoc, again: false, gained: HARVEST_PTS, rankUp, pts: S.pts };
 }
 
+// Thưởng một lần mỗi ngày theo khoá (ví dụ "tea"). Trả về null nếu hôm nay đã nhận.
+export function dailyBonus(key, pts) {
+  S.bonus = S.bonus || {};
+  if (S.bonus[key] === today()) return null;
+  S.bonus[key] = today();
+  markDay();
+  const rankUp = addPts(pts);
+  save();
+  return { gained: pts, rankUp, pts: S.pts };
+}
+
 // Thưởng lễ hoa đăng chung: mỗi ngày một lần. Trả về null nếu hôm nay đã nhận.
 export function festivalBonus(pts) {
   if (S.festival === today()) return null;

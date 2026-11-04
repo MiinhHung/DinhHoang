@@ -270,3 +270,10 @@ body.cine #hud, body.cine .zone-banner, body.cine .toast, body.cine .hint { opac
 /* Lễ hoa đăng chung: nhãn đếm ngược trên HUD */
 .fest.live { color: #ffd98a; border-color: #ffb04a; box-shadow: 0 0 14px rgba(255,176,74,.55); animation: festGlow 2s ease-in-out infinite; }
 @keyframes festGlow { 50% { box-shadow: 0 0 22px rgba(255,176,74,.85); } }
+
+/* Trà Đình: vòng thở */
+.breath { position: relative; height: 230px; display: grid; place-items: center; }
+.breath-ring { width: 92px; height: 92px; border-radius: 50%; border: 2px solid var(--accent);
+  background: radial-gradient(circle, rgba(159,195,255,.45), rgba(159,195,255,.06)); transform: scale(1); transition: transform linear; }
+.breath-ring.big { transform: scale(2.1); }
+.breath b { position: absolute; font-size: 18px; color: var(--gold-2); text-shadow: 0 1px 6px rgba(0,0,0,.6); }

@@ -297,7 +297,7 @@ function openRitual(z) {
   track("ritual_start", { zone: z });
   ({
     "tam-thanh": ritualTamThanh, "nguyet-lao": ritualLove, "tai-than": ritualWealth, "boc-dich": ritualIching,
-    "dao-si": talkDaoSi, chuong: ringBell, "ao-sen": ritualHoaDang, "to-hong": tieRibbon, "kim-tien": harvestLoc
+    "dao-si": talkDaoSi, chuong: ringBell, "ao-sen": ritualHoaDang, "to-hong": tieRibbon, "kim-tien": harvestLoc, "tra-dinh": sitTea
   })[z]?.();
 }
 
@@ -558,7 +558,7 @@ function talkDaoSi() {
   world.fx.daoSiNod();
   audio.mo(0.3);
   const st = progress.state(), d = content.dao;
-  const h = new Date().getHours();
+  const h = Math.floor(world.hour());
   const greets = d.greetings[h < 11 ? "sang" : h < 14 ? "trua" : h < 18 ? "chieu" : "toi"];
   const occ = occasion(), L = occ.lunar;
   const teach = d.teachings[dayIdx(d.teachings.length)];
@@ -638,6 +638,67 @@ function harvestLoc() {
     <div class="btn-row"><button class="btn primary" id="b-tt">Sang Tài Thần Điện xin quẻ</button></div>${ent}`);
   $("#b-tt").addEventListener("click", () => goTo("tai-than"));
   track("harvest", { again: res.again });
+}
+
+// ---------- Trà Đình Định Tâm ----------
+// Chọn trà, giữ để pha (hơi trà bốc lên), ba nhịp thở theo vòng tròn (hít 4 giây, giữ 2, thở ra 6), rồi một lời dạy.
+const TEAS = [["sen", "🪷 Trà sen"], ["olong", "🍵 Ô long"], ["cuc", "🌼 Trà hoa cúc"]];
+const TEA_BONUS = 5;
+function sitTea() {
+  const id = ++flow;
+  openSheet(`${stepDots(3, 0)}<h2>Trà Đình Định Tâm</h2>
+    <p class="sub">Ngồi bên thác lớn, pha một ấm trà, thở chậm cùng tiếng nước. Ba nhịp thở là đủ để lòng lắng lại.</p>
+    <div class="field"><span>Chọn trà</span>${chips("f-tea", TEAS, "sen")}</div>
+    <div id="hold"></div><p class="note">${isTouch ? "Chạm và giữ" : "Nhấn giữ chuột (hoặc phím cách)"} để pha trà.</p>${ent}`);
+  bindChips("f-tea");
+  mountHold($("#hold"), "<b>Giữ</b>để pha trà", 2200, () => {
+    if (id !== flow) return;
+    const k = $("#f-tea").dataset.val, tea = (TEAS.find(t => t[0] === k) || TEAS[0])[1];
+    world.fx.steam("tra-dinh");
+    audio.chime();
+    setTimeout(() => id === flow && breathe(id, tea), 700);
+  });
+}
+function breathe(id, tea) {
+  openSheet(`${stepDots(3, 1)}<h2>Ba nhịp thở</h2>
+    <p class="sub">Nhìn vòng tròn: nở ra thì hít vào, dừng thì giữ hơi, co lại thì thở ra thật chậm.</p>
+    <div class="breath"><div class="breath-ring"></div><b id="br-txt">Hít vào</b></div>
+    <p class="note" id="br-n">Nhịp 1 / 3</p>
+    <div class="btn-row"><button class="btn ghost" id="br-skip">Bỏ qua</button></div>`);
+  const PH = [["Hít vào", 4000], ["Giữ hơi", 2000], ["Thở ra", 6000]], ring = $(".breath-ring");
+  let cycle = 0, k = 0, timer = 0;
+  const step = () => {
+    if (id !== flow) return;
+    if (k === PH.length) {
+      k = 0; cycle++;
+      if (cycle === 3) return finishTea(id, tea);
+      $("#br-n").textContent = `Nhịp ${cycle + 1} / 3`;
+    }
+    const [txt, ms] = PH[k++];
+    $("#br-txt").textContent = txt;
+    ring.style.transitionDuration = ms + "ms";
+    ring.classList.toggle("big", txt !== "Thở ra");
+    if (txt === "Hít vào") audio.mo(0.12);
+    timer = setTimeout(step, ms);
+  };
+  $("#br-skip").addEventListener("click", () => { clearTimeout(timer); finishTea(id, tea); });
+  requestAnimationFrame(step);
+}
+function finishTea(id, tea) {
+  if (id !== flow) return;
+  const list = content.dao.teachings;
+  const teach = list[(dayIdx(list.length) + 1 + Math.floor(Math.random() * (list.length - 1))) % list.length];
+  const res = progress.dailyBonus("tea", TEA_BONUS);
+  if (res) announce(res, `+${res.gained} công đức · Một ấm trà định tâm`);
+  audio.bell(174, 0.35);
+  track("tea", { tea });
+  openSheet(`${stepDots(3, 2)}<div class="reveal"><div class="lot"><span class="lv">${esc(tea)} · Trà Đình Định Tâm</span>
+    <h3>Lòng đã lắng</h3><div class="poem">${esc(teach.text)}</div><div class="cdn">— ${esc(teach.src)}</div></div></div>
+    <p class="sub" style="text-align:center;margin-top:12px">${esc(teach.giang)}</p>
+    <p class="note">${res ? "" : "Hôm nay thí chủ đã nhận công đức uống trà rồi, cứ ngồi thêm bao lâu tuỳ thích."}</p>
+    <div class="btn-row"><button class="btn primary" id="tea-again">Pha ấm khác</button><button class="btn ghost" id="tea-close">Đứng dậy</button></div>${ent}`);
+  $("#tea-again").addEventListener("click", sitTea);
+  $("#tea-close").addEventListener("click", closeSheet);
 }
 
 function openLedger() {
@@ -884,7 +945,7 @@ function enter() {
     // Đến từ link chia sẻ của một điện: đưa thẳng tới đó và mở nghi lễ.
     setTimeout(() => veil(() => { world.teleport(deepZone); openRitual(deepZone); }), 700);
   } else if (firstVisit) {
-    showHint("Lão Đạo Sĩ đang đứng chờ ngay bên phải — bấm nút để hỏi chuyện", 6000);
+    showHint("Đi qua cổng, Lão Đạo Sĩ đang đứng chờ ngay bên phải — lại gần để hỏi chuyện", 6000);
     setTimeout(() => !sheetOpen() && showHint(isTouch ? "Cần điều khiển để đi · vuốt màn hình để xoay góc nhìn · chụm hai ngón để phóng to" : "W A S D để đi · kéo chuột để xoay góc nhìn · lăn chuột để phóng to", 5200), 6500);
   } else {
     const left = TASKS.filter(t => !progress.state().done.includes(t.id)).length;
