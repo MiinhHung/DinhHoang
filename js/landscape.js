@@ -391,8 +391,21 @@ export function makeSign(text, width = 4.8, opts = {}) {
 }
 
 // Tam quan "Đình Hoàng Online": cột đỏ, mái xanh đậm cong đầu đao, bảng tên cả hai mặt.
-export function makeGate() {
+// shell: khung cổng dựng từ Blender; không có thì dựng bằng hình khối.
+export function makeGate(shell) {
   const g = new THREE.Group();
+  if (shell) g.add(shell);
+  else buildGateFrame(g);
+  [1, -1].forEach(side => {
+    const sg = makeSign("Đình Hoàng Online", 4.6);
+    sg.position.set(0, 4.35, side * 0.5);
+    if (side < 0) sg.rotation.y = Math.PI;
+    g.add(sg);
+  });
+  return g;
+}
+
+function buildGateFrame(g) {
   const red = lam("#b3242a"), gold = lam("#e7b75a", "#3a2508");
   [-3.6, 3.6].forEach(x => {
     g.add(cyl(0.38, 0.42, 5.2, red, x, 2.6, 0));
@@ -414,11 +427,4 @@ export function makeGate() {
       g.add(e);
     }
   });
-  [1, -1].forEach(side => {
-    const sg = makeSign("Đình Hoàng Online", 4.6);
-    sg.position.set(0, 4.35, side * 0.5);
-    if (side < 0) sg.rotation.y = Math.PI;
-    g.add(sg);
-  });
-  return g;
 }

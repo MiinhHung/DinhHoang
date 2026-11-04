@@ -284,7 +284,7 @@ function buildHallFrame(g, { w, d, h, top, ry, wall, roof, trim, colX }) {
 
 // ---------- Mô hình dựng từ Blender ----------
 // Tải các file .glb trong assets/models (nén Draco). Thiếu file hay lỗi mạng thì trả về null để dùng khung đơn giản.
-const MODELS = { "tam-thanh": "assets/models/tam-thanh.glb" };
+const MODELS = Object.fromEntries(["tam-thanh", "tai-than", "nguyet-lao", "gate", "chuong"].map(k => [k, `assets/models/${k}.glb`]));
 async function loadModels() {
   let GLTFLoader, DRACOLoader;
   try {
@@ -466,14 +466,18 @@ function makeAvatar(color, name, tex) {
 }
 
 // ---------- Điểm tương tác trong sân ----------
-function makeBellTower() {
+// shell: khung lầu dựng từ Blender; quả chuông và chày vẫn dựng ở đây vì có hoạt ảnh.
+function makeBellTower(shell) {
   const g = new THREE.Group();
   const wood = lam("#a3201f");
-  g.add(box(3.4, 0.4, 3.4, lam("#8d8577"), 0, 0.2, 0));
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(cyl(0.14, 0.17, 3.4, wood, sx * 1.3, 2.1, sz * 1.3, 8));
-  g.add(box(3, 0.22, 0.22, wood, 0, 3.72, 0));
-  g.add(hipRoof(4.4, 4.4, 1.3, new THREE.MeshLambertMaterial({ color: "#2c5a52", side: THREE.DoubleSide }), 0.15).translateY(3.8));
-  g.add(ball(0.22, lam("#ffd36b", "#7a4a00"), 0, 5.2, 0));
+  if (shell) g.add(shell);
+  else {
+    g.add(box(3.4, 0.4, 3.4, lam("#8d8577"), 0, 0.2, 0));
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(cyl(0.14, 0.17, 3.4, wood, sx * 1.3, 2.1, sz * 1.3, 8));
+    g.add(box(3, 0.22, 0.22, wood, 0, 3.72, 0));
+    g.add(hipRoof(4.4, 4.4, 1.3, new THREE.MeshLambertMaterial({ color: "#2c5a52", side: THREE.DoubleSide }), 0.15).translateY(3.8));
+    g.add(ball(0.22, lam("#ffd36b", "#7a4a00"), 0, 5.2, 0));
+  }
   const bronze = new THREE.MeshLambertMaterial({ color: "#8a6a32", emissive: "#2a1a04", side: THREE.DoubleSide });
   const bell = new THREE.Group();
   bell.position.y = 3.6;
@@ -708,7 +712,8 @@ export async function createWorld(container, hooks = {}) {
     [10, 5, -21, 26], [10, 5, 21, 26], [9, 5, -9.5, -12.5], [9, 5, 9.5, -12.5]].forEach(([w, d, x, z]) => scene.add(grassPatch(w, d, x, z)));
 
   // ---------- Tam quan và sân trước ----------
-  const gate = makeGate();
+  const models = await loadModels();
+  const gate = makeGate(models.gate);
   gate.position.set(0, 0, GATE_Z);
   scene.add(gate);
   const medallion = makeMedallion();
@@ -717,17 +722,18 @@ export async function createWorld(container, hooks = {}) {
 
   // ---------- Ba điện và Bốc Dịch Đài ----------
   const halls = {};
-  const models = await loadModels();
   const tamThanh = makeHall({
     shell: models["tam-thanh"],
     w: 14, d: 8, h: 4.6, wall: "#8a2a1e", roof: "#c4532a", board: "三清殿", couplets: ["玉清上清", "太清福壽"], sign: "Tam Thanh Điện",
     statues: [{ x: -2.2, robe: "#3b5ba5" }, { x: 0, robe: "#c9302c", halo: "#fff0b0" }, { x: 2.2, robe: "#2e7a5a" }].map(s => ({ ...s, beard: true }))
   });
   const taiThan = makeHall({
+    shell: models["tai-than"],
     w: 10, d: 7, h: 4, wall: "#8a3a14", roof: "#e0a526", trim: "#ffd36b", board: "財神殿", couplets: ["招財進寶", "金錢吉祥"], sign: "Tài Thần Điện",
     statues: [{ robe: "#c99a3e", skin: "#3a2a20", hat: "#1b1b1b" }], lantern: ["#ffb32c", "#a85a00"]
   });
   const nguyetLao = makeHall({
+    shell: models["nguyet-lao"],
     w: 10, d: 7, h: 4, wall: "#a3304e", roof: "#d4527e", trim: "#ffc0d4", board: "月老殿", couplets: ["天作之合", "合歡吉祥"], sign: "Nguyệt Lão Điện", signSub: "(Hợp Hoan Cung)",
     statues: [{ robe: "#c8243a", beard: true, hat: "#8e2a3a", halo: "#ffc0d0" }], lantern: ["#ff7a9c", "#b02a4a"]
   });
@@ -828,12 +834,12 @@ export async function createWorld(container, hooks = {}) {
   // Vài chiếc hoa đăng trang trí sẵn trên mặt ao.
   ["vang", "sen", "trang"].forEach((c, i) => addHoaDang(c, i * 2.1, false));
 
-  const bellTower = makeBellTower();
+  const bellTower = makeBellTower(models.chuong);
   place(bellTower, PROP.chuong.x, PROP.chuong.z);
   bellTower.userData.zone = "chuong";
   obstacles.push({ x0: PROP.chuong.x - 1.7, x1: PROP.chuong.x + 1.7, z0: PROP.chuong.z - 1.7, z1: PROP.chuong.z + 1.7 });
   const bellLabel = makeLabel("Lầu Chuông");
-  bellLabel.position.set(PROP.chuong.x, 6, PROP.chuong.z);
+  bellLabel.position.set(PROP.chuong.x, 6.7, PROP.chuong.z);
   scene.add(bellLabel);
 
   const daoSi = makeDaoSi(tex);

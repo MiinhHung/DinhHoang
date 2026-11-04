@@ -72,9 +72,17 @@ Phần kiến trúc của điện được dựng bằng script Python trong `to
 
 ```bash
 blender --background --factory-startup --python tools/blender/build_hall.py -- assets/models/tam-thanh.glb tam-thanh
+blender --background --factory-startup --python tools/blender/build_hall.py -- assets/models/tai-than.glb tai-than
+blender --background --factory-startup --python tools/blender/build_hall.py -- assets/models/nguyet-lao.glb nguyet-lao
+blender --background --factory-startup --python tools/blender/build_gate.py -- assets/models/gate.glb gate
+blender --background --factory-startup --python tools/blender/build_gate.py -- assets/models/chuong.glb chuong
 ```
 
-Màu sắc và kích thước nằm trong `CFG` ở đầu script. Nếu thiếu file `.glb` hoặc tải lỗi, game tự dùng khung điện đơn giản. Hiện mới có Tam Thanh Điện.
+- `common.py`: công cụ dùng chung (mái cong ngói, gờ nóc đuôi rồng, bake bóng đổ, xuất file).
+- `build_hall.py`: ba điện; màu và kích thước trong `CFG`.
+- `build_gate.py`: tam quan và khung Lầu Chuông. Quả chuông và chày vẫn do game dựng để giữ hoạt ảnh.
+
+Nếu thiếu file `.glb` hoặc tải lỗi, game tự dùng khung hình khối đơn giản. Bốc Dịch Đài vẫn dựng trong game.
 
 ## Trong sân đình
 
