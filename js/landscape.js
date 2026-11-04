@@ -83,6 +83,125 @@ export function makePlateau(outline, depth = 26) {
   return { group: g, top: m };
 }
 
+// ---------- Núi nhiều tầng ----------
+// Mặt đất núi: lưới đỉnh lấy độ cao từ heightFn, tô màu cỏ ở chỗ thoải, đá ở chỗ dốc, đá xám ở chân núi.
+export function makeTerrain(heightFn, { x0 = -120, x1 = 120, z0 = -160, z1 = 210, res = 2 } = {}) {
+  const nx = Math.round((x1 - x0) / res), nz = Math.round((z1 - z0) / res);
+  const geo = new THREE.PlaneGeometry(x1 - x0, z1 - z0, nx, nz);
+  geo.rotateX(-Math.PI / 2);
+  geo.translate((x0 + x1) / 2, 0, (z0 + z1) / 2);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) p.setY(i, heightFn(p.getX(i), p.getZ(i)));
+  geo.computeVertexNormals();
+  const n = geo.attributes.normal, cols = new Float32Array(p.count * 3);
+  const grass = new THREE.Color("#6fa64a"), grass2 = new THREE.Color("#4f8a3a"), rock = new THREE.Color("#9c958a"), deep = new THREE.Color("#7f8796"), c = new THREE.Color();
+  for (let i = 0; i < p.count; i++) {
+    const y = p.getY(i), up = n.getY(i), v = Math.sin(p.getX(i) * 0.37) * Math.sin(p.getZ(i) * 0.29);
+    c.copy(grass).lerp(grass2, 0.5 + v * 0.5);
+    c.lerp(rock, Math.min(1, Math.max(0, (0.86 - up) * 4)));
+    c.lerp(deep, Math.min(1, Math.max(0, (-6 - y) / 18)));
+    cols.set([c.r, c.g, c.b], i * 3);
+  }
+  geo.setAttribute("color", new THREE.BufferAttribute(cols, 3));
+  return new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }));
+}
+
+// Sân lát đá phủ mặt một tầng.
+export function makeCourtyard(poly, y) {
+  const s = new THREE.Shape(poly.map(([x, z]) => new THREE.Vector2(x, -z)));
+  const geo = new THREE.ShapeGeometry(s);
+  geo.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: pavingTexture() }));
+  m.position.y = y + 0.04;
+  return m;
+}
+
+// Bậc đá leo sườn núi, hai bên có thành đá bậc cấp và đèn đá ở chân, đầu bậc.
+export function makeStairs({ x, hw, z0, y0, z1, y1 }) {
+  const g = new THREE.Group();
+  const len = Math.abs(z1 - z0), n = Math.max(2, Math.round(len / 0.5)), dir = Math.sign(z1 - z0);
+  const stone = lam("#d6cebf"), edge = lam("#bdb4a4");
+  const bottom = Math.min(y0, y1) - 6;
+  for (let i = 0; i < n; i++) {
+    const zc = z0 + dir * (i + 0.5) * len / n, top = y0 + (y1 - y0) * (i + 1) / n;
+    g.add(box(hw * 2, top - bottom, len / n + 0.02, i % 2 ? stone : edge, x, (top + bottom) / 2, zc));
+    [-1, 1].forEach(s => g.add(box(0.5, top - bottom + 0.9, len / n + 0.02, edge, x + s * (hw + 0.25), (top + bottom + 0.9) / 2, zc)));
+  }
+  return g;
+}
+
+// Mặt nước chảy (suối) và thác đổ theo sườn núi: dải nước có kết cấu trôi liên tục.
+function waterTex() {
+  const t = canvasTex(64, 256, (g, w, h) => {
+    g.fillStyle = "rgba(90,180,210,.85)"; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 70; i++) {
+      g.fillStyle = `rgba(255,255,255,${0.25 + Math.random() * 0.55})`;
+      g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 3, 12 + Math.random() * 40);
+    }
+  });
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+// path: các điểm [x, y, z] dọc dòng chảy (từ nguồn xuống); width: bề rộng dòng nước.
+export function makeWaterPath(path, width, speed = 0.6) {
+  const tex = waterTex();
+  const pos = [], uv = [], idx = [];
+  let acc = 0;
+  path.forEach(([x, y, z], i) => {
+    if (i) acc += Math.hypot(x - path[i - 1][0], y - path[i - 1][1], z - path[i - 1][2]);
+    const [nx, , nz] = path[Math.min(i + 1, path.length - 1)], [px, , pz] = path[Math.max(i - 1, 0)];
+    const dx = nx - px, dz = nz - pz, l = Math.hypot(dx, dz) || 1;
+    const ox = -dz / l * width / 2, oz = dx / l * width / 2;
+    pos.push(x - ox, y, z - oz, x + ox, y, z + oz);
+    uv.push(0, acc / 6, 1, acc / 6);
+    if (i) { const a = (i - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.92, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+  m.renderOrder = 2;
+  return { mesh: m, update: dt => { tex.offset.y -= dt * speed; } };
+}
+
+// Bọt nước trắng ở chân thác.
+export function makeFoam(glowTex, x, y, z, r = 2) {
+  const n = 24, arr = new Float32Array(n * 3), seed = [];
+  for (let i = 0; i < n; i++) { seed.push(Math.random()); arr.set([x, y, z], i * 3); }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(arr, 3));
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ map: glowTex, size: 1.1, color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false }));
+  return {
+    points: pts,
+    update: t => {
+      for (let i = 0; i < n; i++) {
+        const k = (t * 0.6 + seed[i]) % 1, a = seed[i] * 40;
+        arr.set([x + Math.cos(a) * r * k, y + Math.sin(k * Math.PI) * 1.2, z + Math.sin(a) * r * k * 0.6], i * 3);
+      }
+      geo.attributes.position.needsUpdate = true;
+    }
+  };
+}
+
+// Cầu đá vòm nhỏ bắc qua suối.
+export function makeBridge(span, width) {
+  const g = new THREE.Group();
+  const stone = lam("#d6cebf");
+  const n = 8;
+  for (let i = 0; i < n; i++) {
+    const t = (i + 0.5) / n, x = (t - 0.5) * span, y = Math.sin(t * Math.PI) * 0.45;
+    g.add(box(span / n + 0.05, 0.3, width, stone, x, y + 0.05, 0));
+  }
+  [-1, 1].forEach(s => {
+    const pts = Array.from({ length: n + 1 }, (_, i) => [(i / n - 0.5) * span, s * (width / 2 - 0.1)]);
+    const rail = makeBalustrade(pts, { closed: false, step: span / 4, y: 0.35 });
+    g.add(rail);
+  });
+  return g;
+}
+
 // Thảm cỏ thấp trên mặt sân (hình elip).
 export function grassPatch(w, d, x, z) {
   const m = mesh(new THREE.CircleGeometry(1, 20), lam("#5f9a45"), x, 0.03, z);

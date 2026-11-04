@@ -57,14 +57,18 @@ Không cần đụng vào code; sửa JSON rồi tải lại trang.
 
 ## Bản đồ
 
-Một cao nguyên lơ lửng trên biển mây, có lan can đá quanh mép, thác nước đổ xuống và núi đá vôi xa xa. Đi từ nam lên bắc:
+Một ngọn núi nổi trên biển mây, đi từ chân núi lên đỉnh qua bốn tầng, nối nhau bằng bậc đá ở giữa:
 
-1. Lối vào và tam quan **Đình Hoàng Online**, hai bên có cờ âm dương.
-2. Sân tròn chạm hoa sen, hai ao sen hai bên (ao trái là Ao Sen thả hoa đăng, cạnh ao phải là Lầu Chuông). Lão Đạo Sĩ đứng ngay sau cổng.
-3. Hàng ba điện quay mặt về phía cổng: **Tài Thần Điện** (trái, mái vàng, cây vàng, thỏi vàng), **Tam Thanh Điện** (giữa), **Nguyệt Lão Điện** (phải, mái hồng, anh đào).
-4. **Bốc Dịch Đài** trên bệ tròn cao phía sau Tam Thanh, lên bằng bậc thang ở giữa.
+1. **Tầng 1** (chân núi): tam quan **Đình Hoàng Online**, sân tròn chạm hoa sen, Ao Sen thả hoa đăng (trái), ao thác và Lầu Chuông (phải), Lão Đạo Sĩ đứng sau cổng.
+2. **Tầng 2**: **Tài Thần Điện** (trái, mái vàng, cây kim tiền, thỏi vàng) và **Nguyệt Lão Điện** (phải, mái hồng, cây tơ hồng). Suối chảy giữa, có cầu đá bắc qua.
+3. **Tầng 3**: **Tam Thanh Điện**, điện lớn nhất; cạnh đó là suối nguồn của thác.
+4. **Đỉnh núi**: **Bốc Dịch Đài**, nhìn xuống toàn cảnh.
 
-Toạ độ các khu vực nằm ở đầu `js/world.js` (`HALL`, `ALTAR`, `POND`, `SPOT`, `PROP`). Chạm xuống sân thì nhân vật tự tìm đường vòng qua điện, ao và lên xuống bậc thang.
+Dòng thác đổ từ suối nguồn tầng 3 xuống tầng 2, chảy qua cầu, rồi đổ tiếp xuống ao thác tầng 1, chạy dọc bậc thang. Hai bên sườn núi có thêm thác đổ xuống biển mây.
+
+Ba điện đều đi vào được bên trong; nghi lễ diễn ra trong điện, trước lư hương. Khi vào trong, camera tự thu gần và nằm dưới trần.
+
+Toàn bộ toạ độ và độ cao nằm trong `js/map.js` (`LEVELS`, `STAIRS`, `HALL`, `ALTAR`, `WATER`, `POND`). Chạm xuống đất thì nhân vật tự tìm đường: vòng qua điện, ao, suối, đi qua cầu, lên xuống bằng bậc thang. Không leo được vách núi, mép nền điện hay vành đài.
 
 ## Mô hình 3D dựng bằng Blender
 
@@ -76,18 +80,22 @@ blender --background --factory-startup --python tools/blender/build_hall.py -- a
 blender --background --factory-startup --python tools/blender/build_hall.py -- assets/models/nguyet-lao.glb nguyet-lao
 blender --background --factory-startup --python tools/blender/build_gate.py -- assets/models/gate.glb gate
 blender --background --factory-startup --python tools/blender/build_gate.py -- assets/models/chuong.glb chuong
+blender --background --factory-startup --python tools/blender/build_altar.py -- assets/models/boc-dich.glb
+blender --background --factory-startup --python tools/blender/preview.py -- assets/models/tam-thanh.glb xem-truoc.png
 ```
 
-- `common.py`: công cụ dùng chung (mái cong ngói, gờ nóc đuôi rồng, bake bóng đổ, xuất file).
-- `build_hall.py`: ba điện; màu và kích thước trong `CFG`.
+- `common.py`: công cụ dùng chung (mái cong ngói, gờ nóc đuôi rồng, vành tám cạnh, bake bóng đổ, xuất file).
+- `build_hall.py`: ba điện có nội thất: sàn ô cờ, thảm đỏ, hai hàng cột đai vàng, dải lụa, trần ô cờ với vòm tảo tỉnh, bệ thờ, bình phong, khám thờ và tượng thần ngồi đài sen. Màu và kích thước trong `CFG`, phải khớp `HALL` trong `js/map.js`.
 - `build_gate.py`: tam quan và khung Lầu Chuông. Quả chuông và chày vẫn do game dựng để giữ hoạt ảnh.
+- `build_altar.py`: bệ Bốc Dịch Đài. Bát quái xoay và đèn lồng do game dựng.
+- `preview.py`: render ảnh xem trước một file `.glb` để kiểm tra nhanh.
 
-Nếu thiếu file `.glb` hoặc tải lỗi, game tự dùng khung hình khối đơn giản. Bốc Dịch Đài vẫn dựng trong game.
+Nếu thiếu file `.glb` hoặc tải lỗi, game tự dùng khung hình khối đơn giản. Tổng các mô hình khoảng 2,8 MB.
 
 ## Trong sân đình
 
 - **Lão Đạo Sĩ** đứng cạnh chỗ xuất hiện: chào theo buổi, đọc lời dạy hôm nay, nhắc việc lành còn thiếu.
-- **Ao Sen** (ao bên trái sau cổng): thả hoa đăng kèm điều nguyện (không lưu). **Lầu Chuông** (cạnh ao bên phải): thỉnh chuông.
+- **Ao Sen** (tầng 1, bên trái): thả hoa đăng kèm điều nguyện (không lưu). **Lầu Chuông** (tầng 1, bên phải): thỉnh chuông.
 - **Cây Tơ Hồng** (trước Nguyệt Lão Điện): buộc dây đỏ, cây giữ lại tối đa 30 sợi của mỗi người. **Cây Kim Tiền** (trước Tài Thần Điện): mỗi ngày hái một lộc.
 - **Sổ Công Đức** (nút 📜): 5 việc lành mỗi ngày (thắp hương, xin quẻ, thỉnh chuông, thả hoa đăng, chia sẻ bùa), điểm, cấp bậc, chuỗi ngày liên tiếp, bộ sưu tập quẻ và xem lại lá bùa cũ. Lưu trong `localStorage` của trình duyệt, có nút xóa.
 - **Ngày và đêm** theo giờ máy người chơi. Thêm `?gio=14` vào địa chỉ để xem thử cảnh vào giờ khác.
@@ -101,7 +109,8 @@ index.html        Khung trang, cổng vào, HUD, các bảng
 config.js         Cấu hình cho đội vận hành
 css/style.css     Giao diện
 js/main.js        Điều phối: cổng, nghi lễ từng điện, kết quả, chia sẻ
-js/world.js       Cảnh 3D (three.js): bố cục, nhân vật, camera, tìm đường, hiệu ứng
+js/map.js         Bản đồ núi: các tầng, bậc đá, điện, dòng nước; độ cao và chỗ đi được
+js/world.js       Cảnh 3D (three.js): dựng cảnh, nhân vật, camera, tìm đường, hiệu ứng
 js/landscape.js   Địa hình: cao nguyên, vách đá, mây, núi, thác, lan can, ao, cổng, bảng tên
 js/build.js       Vật liệu, hình khối và chữ vẽ canvas dùng chung
 js/oracle.js      Bộ máy rút quẻ và ráp lời luận

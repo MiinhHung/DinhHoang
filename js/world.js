@@ -2,9 +2,13 @@
 import * as THREE from "three";
 import { V, lam, mesh, box, cyl, ball, canvasTex, roundRect, HAN, SERIF, boardTexture, boardMesh, hipRoof } from "./build.js";
 import {
-  makePlateau, grassPatch, makeBush, makeRoundTree, makeBalustrade, makeClouds, makePeak, makeWaterfall,
-  makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate
+  grassPatch, makeBush, makeRoundTree, makeBalustrade, makeClouds, makePeak, makeTerrain, makeCourtyard, makeStairs,
+  makeWaterPath, makeFoam, makeBridge, makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate
 } from "./landscape.js";
+import {
+  LEVELS, STAIRS, HALL, ALTAR, WATER, POND, GATE_Z, SPAWN as SPAWN_XZ, hallFloor, altarBase,
+  terrainY, heightAt, walkable, canStep, hallObstacles, interiorColumns, hallInterior, inPoly
+} from "./map.js";
 
 export const ZONES = {
   san: { name: "Sân Đình", han: "", sub: "" },
@@ -20,63 +24,35 @@ export const ZONES = {
   "kim-tien": { name: "Cây Kim Tiền", act: "Hái lộc", prop: true }
 };
 
-// ---------- Bố cục theo bản phác thảo (bắc = -z, cổng ở phía nam) ----------
-// Cổng → sân tròn hoa sen → hai ao sen hai bên → hàng ba điện (Tài Thần trái, Tam Thanh giữa,
-// Nguyệt Lão phải) → Bốc Dịch Đài trên bệ cao phía sau Tam Thanh.
-const HALL = {
-  "tam-thanh": { x: 0, z: -6, w: 14, d: 8 },
-  "tai-than": { x: -19.5, z: -4, w: 10, d: 7 },
-  "nguyet-lao": { x: 19.5, z: -4, w: 10, d: 7 }
+// ---------- Vị trí trên bản đồ núi (xem js/map.js) ----------
+// Nghi lễ ở ba điện diễn ra bên trong điện, trước lư hương đặt giữa hai hàng cột.
+const inHall = (k, dz) => V(HALL[k].x, 0, HALL[k].z + dz);
+const BURNER = {
+  "tam-thanh": inHall("tam-thanh", -0.5), "tai-than": inHall("tai-than", 0.6), "nguyet-lao": inHall("nguyet-lao", 0.6),
+  "boc-dich": V(ALTAR.x, 0, ALTAR.z)
 };
-const ALTAR = { x: 0, z: -25, r: 9, h: 1.6, stairW: 2.1, stairLen: 3.6 };
-const POND = { w: 8.4, d: 6, z: 19.5, x: 14 };
-const GATE_Z = 28.8;
-// Mép cao nguyên và vùng được đi (thụt vào trong lan can).
-const OUTLINE = [[-5, 39], [-5, 28.8], [-26, 28.8], [-30.5, 24], [-30.5, -31], [-24.5, -37.5], [24.5, -37.5], [30.5, -31], [30.5, 24], [26, 28.8], [5, 28.8], [5, 39]];
-const WALK = [[-3.8, 38], [-3.8, 27.6], [-25.5, 27.6], [-29.3, 23.5], [-29.3, -30.5], [-24, -36.3], [24, -36.3], [29.3, -30.5], [29.3, 23.5], [25.5, 27.6], [3.8, 27.6], [3.8, 38]];
-
 const SPOT = {
-  "tam-thanh": V(0, 0, 4.6), "tai-than": V(-19.5, 0, 6.2), "nguyet-lao": V(19.5, 0, 6.2), "boc-dich": V(0, 0, -19.8),
-  "dao-si": V(2.4, 0, 24), chuong: V(23.6, 0, 23.4), "ao-sen": V(-POND.x, 0, 24.2), "to-hong": V(24.4, 0, 5.8), "kim-tien": V(-24.4, 0, 5.8)
+  "tam-thanh": inHall("tam-thanh", 2.6), "tai-than": inHall("tai-than", 3), "nguyet-lao": inHall("nguyet-lao", 3),
+  "boc-dich": V(ALTAR.x, 0, ALTAR.z + 5.2),
+  "dao-si": V(3.4, 0, 119.6), chuong: V(27, 0, 116), "ao-sen": V(POND.x, 0, POND.z + POND.d / 2 + 1.7),
+  "to-hong": V(36, 0, 62.6), "kim-tien": V(-36, 0, 62.6)
 };
-const BURNER = { "tam-thanh": V(0, 0, 1.8), "tai-than": V(-19.5, 0, 3.3), "nguyet-lao": V(19.5, 0, 3.3), "boc-dich": V(ALTAR.x, 0, ALTAR.z) };
-const PROP = { "dao-si": V(4, 0, 22.6), chuong: V(23.6, 0, 19.6), "ao-sen": V(-POND.x, 0, POND.z), "to-hong": V(26.4, 0, 3), "kim-tien": V(-26.4, 0, 3) };
+const PROP = { "dao-si": V(5, 0, 118), chuong: V(27, 0, 112), "ao-sen": V(POND.x, 0, POND.z), "to-hong": V(38, 0, 60), "kim-tien": V(-38, 0, 60) };
 // Chỗ nhân vật quay mặt về khi làm nghi lễ ở mỗi điểm.
 const FOCUS = { ...BURNER, ...PROP };
-const ACT_R = { "tam-thanh": 3.2, "tai-than": 3.2, "nguyet-lao": 3.2, "boc-dich": 4.2, "dao-si": 2.8, chuong: 2.3, "ao-sen": 2.3, "to-hong": 2, "kim-tien": 2 };
-const POND_R = 2.4;
+const ACT_R = { "tam-thanh": 3.2, "tai-than": 3, "nguyet-lao": 3, "boc-dich": 4.2, "dao-si": 2.8, chuong: 2.3, "ao-sen": 2.3, "to-hong": 2, "kim-tien": 2 };
+const POND_R = 2.6;
 const HOA_DANG = { sen: ["#f59ab5", "#5a1626"], vang: ["#f2c14e", "#5a3a00"], trang: ["#f3ecd8", "#3a3428"] };
-const SPAWN = V(0, 0, 34);
-const SPEED = 5.2, RADIUS = 0.45;
+const SPAWN = V(SPAWN_XZ.x, 0, SPAWN_XZ.z);
+const SPEED = 5.6, RADIUS = 0.45;
+const groundY = (x, z) => { const h = heightAt(x, z); return Number.isNaN(h) ? terrainY(x, z) : h; };
 
 function zoneAt(x, z) {
-  if (Math.hypot(x - ALTAR.x, z - ALTAR.z) < ALTAR.r + 1.5 || (Math.abs(x) < 3 && z < -12 && z > -17)) return "boc-dich";
-  if (Math.abs(x) < 10 && z < 7 && z > -13) return "tam-thanh";
-  if (x < -10 && z < 9) return "tai-than";
-  if (x > 10 && z < 9) return "nguyet-lao";
+  if (z < -50) return "boc-dich";
+  if (z < 12) return "tam-thanh";
+  if (z < 74 && x < -14) return "tai-than";
+  if (z < 74 && x > 16) return "nguyet-lao";
   return "san";
-}
-
-// Điểm có nằm trong vùng đi được (đa giác WALK) hay không.
-function walkable(x, z) {
-  let inside = false;
-  for (let i = 0, j = WALK.length - 1; i < WALK.length; j = i++) {
-    const [xi, zi] = WALK[i], [xj, zj] = WALK[j];
-    if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) inside = !inside;
-  }
-  return inside;
-}
-// Bốc Dịch Đài cao hơn mặt sân; bậc thang phía nam là lối lên duy nhất.
-const altarR = (x, z) => Math.hypot(x - ALTAR.x, z - ALTAR.z);
-// Vùng bậc thang lấn vào trong vành đài một chút để đi từ mặt đài xuống không bị vành chặn lại.
-const onStairs = (x, z) => Math.abs(x - ALTAR.x) < ALTAR.stairW && z > ALTAR.z + ALTAR.r - 1.2 && z < ALTAR.z + ALTAR.r + ALTAR.stairLen;
-function heightAt(x, z) {
-  if (altarR(x, z) < ALTAR.r - 0.2) return ALTAR.h;
-  if (onStairs(x, z)) {
-    const t = (z - (ALTAR.z + ALTAR.r - 0.4)) / ALTAR.stairLen;
-    return ALTAR.h * Math.min(1, Math.max(0, 1 - t));
-  }
-  return 0;
 }
 
 function fontsReady() {
@@ -189,83 +165,106 @@ function addStick(burner) {
   s.add(st);
 }
 
-// shell: phần kiến trúc dựng sẵn từ Blender (assets/models/*.glb). Có shell thì bỏ qua khung hình khối đơn giản,
-// chỉ dựng thêm bảng tên, câu đối, bàn thờ, tượng và đèn lên trên.
-function makeHall({ w, d, h, wall, roof, trim = "#e7b75a", board, couplets, statues = [], lantern, sign, signSub, shell }) {
+// Điện đi vào được: nền cao `base`, tường ba mặt, tường cửa phía trước chừa lối giữa rộng 2 × door,
+// hiên cột ngoài, hai hàng cột trong, bệ thờ ở cuối điện, trần cao.
+// shell: phần kiến trúc và nội thất dựng sẵn từ Blender (kể cả tượng); không có thì dựng khung hình khối đơn giản.
+function makeHall({ w, d, h, base, door, cols, wall, roof, trim = "#e7b75a", board, couplets, statues = [], lantern, sign, signSub, shell }) {
   const g = new THREE.Group();
-  const top = 0.6;
-  const ry = top + h + 0.1;
-  const n = Math.max(4, Math.round(w / 3.2) + 1);
+  const top = base;
+  const ry = top + h + 0.6;
+  const frontZ = d / 2;
+  const n = cols || Math.max(4, Math.round(w / 3.4) + 1);
   const colX = Array.from({ length: n }, (_, i) => -w / 2 + 0.3 + (w - 0.6) * i / (n - 1));
+  const daisH = w > 20 ? 1.4 : 1.0, daisD = d * 0.3;
   if (shell) g.add(shell);
-  else buildHallFrame(g, { w, d, h, top, ry, wall, roof, trim, colX });
+  else buildHallFrame(g, { w, d, h, top, ry, wall, roof, trim, colX, door, daisH, daisD });
 
+  // Hoành phi chữ Hán trên cửa chính, câu đối trên hai cột hiên hai bên cửa.
   if (board) {
-    const b = boardMesh(boardTexture(board), 3.2, 1);
-    b.position.set(0, top + h - 0.85, d / 2 + 0.12);
+    const b = boardMesh(boardTexture(board), w > 20 ? 4.4 : 3.2, w > 20 ? 1.375 : 1);
+    b.position.set(0, top + h - 1.1, frontZ - 0.42);
     g.add(b);
   }
   // Bảng tên tiếng Việt lớn trên mái, nhìn từ xa như bản phác thảo.
   if (sign) {
-    const sg = makeSign(sign, Math.min(5.6, w * 0.5), signSub ? { sub: signSub } : {});
-    sg.position.set(0, ry + 2.15, d * 0.3 + 1.25);
+    const sg = makeSign(sign, Math.min(7.2, w * 0.42), signSub ? { sub: signSub } : {});
+    sg.position.set(0, ry + 2.6, d * 0.3 + 2);
     sg.rotation.x = -0.12;
     g.add(sg);
   }
   if (couplets) {
-    [colX[1], colX[n - 2]].forEach((x, i) => {
-      const c = boardMesh(boardTexture(couplets[i], { w: 128, h: 512, vertical: true, size: 84 }), 0.5, h * 0.62);
-      c.position.set(x, top + h * 0.48, d / 2 + 0.08);
+    const cx = colX.filter(x => Math.abs(x) > door * 0.6).sort((a, b) => Math.abs(a) - Math.abs(b));
+    [Math.min(...cx.slice(0, 2)), Math.max(...cx.slice(0, 2))].forEach((x, i) => {
+      const c = boardMesh(boardTexture(couplets[i], { w: 128, h: 512, vertical: true, size: 84 }), 0.55, h * 0.6);
+      c.position.set(x, top + h * 0.5, frontZ + 0.9 + 0.3);
       g.add(c);
     });
   }
 
-  // Bàn thờ, tượng, nến và đèn trong điện.
-  const altarZ = -d / 2 + 2.4;
-  g.add(box(Math.min(w - 2, 6), 1, 1.2, lam("#5c1f14"), 0, top + 0.5, altarZ));
-  g.add(box(Math.min(w - 2, 6) + 0.1, 0.6, 0.05, lam("#d4a03c", "#3a2508"), 0, top + 0.6, altarZ + 0.62));
+  // Bàn thờ trước bệ, nến; tượng (khi chưa có mô hình Blender).
+  const altarZ = -d / 2 + daisD + 0.9;
+  g.add(box(Math.min(w * 0.4, 7), 1, 1.2, lam("#5c1f14"), 0, top + 0.5, altarZ));
+  g.add(box(Math.min(w * 0.4, 7) + 0.1, 0.6, 0.05, lam("#d4a03c", "#3a2508"), 0, top + 0.6, altarZ + 0.62));
   const flameM = new THREE.MeshBasicMaterial({ color: 0xffb347, toneMapped: false });
   [-1, 1].forEach(s => {
-    g.add(cyl(0.07, 0.07, 0.4, lam("#f3e6c8"), s * 1.2, top + 1.2, altarZ, 8));
-    g.add(mesh(new THREE.ConeGeometry(0.05, 0.14, 6), flameM, s * 1.2, top + 1.47, altarZ));
+    g.add(cyl(0.08, 0.08, 0.5, lam("#f3e6c8"), s * 1.5, top + 1.25, altarZ, 8));
+    g.add(mesh(new THREE.ConeGeometry(0.06, 0.18, 6), flameM, s * 1.5, top + 1.6, altarZ));
   });
-  statues.forEach(s => {
-    const st = makeStatue(s);
-    st.position.set(s.x || 0, top, -d / 2 + 1.0);
-    g.add(st);
-  });
-  const light = new THREE.PointLight(0xffb066, 22, 11, 2);
-  light.position.set(0, top + 2.4, altarZ + 0.8);
+  if (!shell) {
+    const sc = w > 20 ? 1.9 : 1.45;
+    statues.forEach(s => {
+      const st = makeStatue(s);
+      st.scale.setScalar(sc);
+      st.position.set((s.x || 0) * sc, top + daisH, -d / 2 + daisD * 0.5);
+      g.add(st);
+    });
+  }
+  // Ánh nến ấm trong điện: một đèn trước bệ thờ, một đèn giữa gian.
+  const light = new THREE.PointLight(0xffb066, w > 20 ? 60 : 34, w > 20 ? 22 : 15, 2);
+  light.position.set(0, top + h * 0.55, altarZ + 1.2);
   g.add(light);
+  const fill = new THREE.PointLight(0xffc890, w > 20 ? 30 : 18, w > 20 ? 20 : 13, 2);
+  fill.position.set(0, top + h * 0.7, d * 0.15);
+  g.add(fill);
   g.userData.light = light;
 
   const lc = lantern || ["#e0362c", "#b01a12"];
   [-1, 1].forEach(s => {
+    const lx = s * (door + 1.6);
     const l = makeLantern(lc[0], lc[1]);
-    l.position.set(s * (w / 2 + 0.6), top + h - 0.8, d / 2 + 0.9);
+    l.scale.setScalar(w > 20 ? 1.4 : 1.1);
+    l.position.set(lx, top + h - 1.2, frontZ + 1.4);
     g.add(l);
-    g.add(cyl(0.012, 0.012, 0.6, lam("#222"), s * (w / 2 + 0.6), top + h - 0.25, d / 2 + 0.9, 4));
+    g.add(cyl(0.012, 0.012, 0.9, lam("#222"), lx, top + h - 0.3, frontZ + 1.4, 4));
   });
   return g;
 }
 
 // Khung điện bằng hình khối đơn giản, dùng khi chưa có (hoặc không tải được) mô hình Blender.
-function buildHallFrame(g, { w, d, h, top, ry, wall, roof, trim, colX }) {
-  const stone = lam("#8d8577");
-  g.add(box(w + 2, top, d + 2, stone, 0, top / 2, 0));
-  g.add(box(w * 0.45, 0.3, 1.2, stone, 0, 0.15, d / 2 + 1.6));
-  g.add(box(w, 0.04, d, lam("#4a2e22"), 0, top + 0.02, 0));
+function buildHallFrame(g, { w, d, h, top, ry, wall, roof, trim, colX, door, daisH, daisD }) {
+  const stone = lam("#cfc6b6");
+  g.add(box(w + 3, top, d + 3, stone, 0, top / 2, 0));
+  g.add(box(w * 0.5, top * 0.5, 2, stone, 0, top * 0.25, d / 2 + 2.5));
+  g.add(box(w, 0.04, d, lam("#6b3a22"), 0, top + 0.02, 0));
   const wallM = lam(wall);
-  g.add(box(w, h, 0.3, wallM, 0, top + h / 2, -d / 2));
-  g.add(box(0.3, h, d, wallM, -w / 2, top + h / 2, 0));
-  g.add(box(0.3, h, d, wallM, w / 2, top + h / 2, 0));
-  colX.forEach(x => g.add(cyl(0.2, 0.24, h, lam("#a3201f"), x, top + h / 2, d / 2 - 0.2)));
-  g.add(box(w + 0.6, 0.45, 0.5, lam(trim), 0, top + h - 0.1, d / 2 - 0.2));
+  g.add(box(w, h, 0.4, wallM, 0, top + h / 2, -d / 2));
+  g.add(box(0.4, h, d, wallM, -w / 2, top + h / 2, 0));
+  g.add(box(0.4, h, d, wallM, w / 2, top + h / 2, 0));
+  [-1, 1].forEach(s => {
+    const len = w / 2 - door;
+    g.add(box(len, h, 0.3, lam("#a3201f"), s * (door + len / 2), top + h / 2, d / 2 - 0.6));
+  });
+  g.add(box(door * 2, h * 0.22, 0.3, lam(trim), 0, top + h - h * 0.11, d / 2 - 0.6));
+  colX.forEach(x => g.add(cyl(0.26, 0.3, h, lam("#a3201f"), x, top + h / 2, d / 2 + 0.9)));
+  interiorColumnsLocal(w, d, door).forEach(([x, z]) => g.add(cyl(w > 20 ? 0.5 : 0.36, w > 20 ? 0.56 : 0.4, h, lam("#a3201f"), x, top + h / 2, z)));
+  g.add(box(w, 0.3, d, lam("#5a2018"), 0, top + h + 0.45, 0));
+  g.add(box(w * 0.64, daisH, daisD, lam("#8a6a4a"), 0, top + daisH / 2, -d / 2 + daisD / 2 + 0.2));
+  g.add(box(w + 0.6, 0.45, 0.5, lam(trim), 0, top + h + 0.2, d / 2 + 0.9));
   const roofM = new THREE.MeshLambertMaterial({ color: roof, side: THREE.DoubleSide });
-  g.add(hipRoof(w + 3.4, d + 3.2, 1.5, roofM, 0.62).translateY(ry));
-  g.add(box(w * 0.66, 1.1, d * 0.6, wallM, 0, ry + 1.9, 0));
-  g.add(hipRoof(w * 0.66 + 2.2, d * 0.6 + 2.2, 1.7, roofM, 0.12).translateY(ry + 2.4));
-  const ridgeY = ry + 2.4 + 1.7;
+  g.add(hipRoof(w + 4.6, d + 4.6, 1.8, roofM, 0.62).translateY(ry));
+  g.add(box(w * 0.66, 1.4, d * 0.6, wallM, 0, ry + 2.3, 0));
+  g.add(hipRoof(w * 0.66 + 2.4, d * 0.6 + 2.4, 2, roofM, 0.12).translateY(ry + 2.9));
+  const ridgeY = ry + 2.9 + 2;
   g.add(box(w * 0.5, 0.22, 0.3, lam(trim), 0, ridgeY, 0));
   g.add(ball(0.32, lam("#ffd36b", "#7a4a00"), 0, ridgeY + 0.38, 0));
   [-1, 1].forEach(s => {
@@ -275,16 +274,22 @@ function buildHallFrame(g, { w, d, h, top, ry, wall, roof, trim, colX }) {
   });
   // Đầu đao cong vút ở bốn góc mái dưới.
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const e = mesh(new THREE.ConeGeometry(0.14, 1.0, 6), lam(trim), sx * (w + 3.4) / 2, ry + 0.25, sz * (d + 3.2) / 2);
+    const e = mesh(new THREE.ConeGeometry(0.14, 1.0, 6), lam(trim), sx * (w + 4.6) / 2, ry + 0.25, sz * (d + 4.6) / 2);
     e.rotation.z = -sx * 0.9;
     e.rotation.x = sz * 0.9;
     g.add(e);
   }
 }
+// Cột trong điện theo toạ độ của điện (khớp với interiorColumns trong js/map.js).
+function interiorColumnsLocal(w, d, door) {
+  const xs = w > 20 ? [-door, door, -w * 0.36, w * 0.36] : [-door, door];
+  const zs = w > 20 ? [-0.18, 0.12] : [0.0];
+  return xs.flatMap(x => zs.map(z => [x, z * d]));
+}
 
 // ---------- Mô hình dựng từ Blender ----------
 // Tải các file .glb trong assets/models (nén Draco). Thiếu file hay lỗi mạng thì trả về null để dùng khung đơn giản.
-const MODELS = Object.fromEntries(["tam-thanh", "tai-than", "nguyet-lao", "gate", "chuong", "boc-dich"].map(k => [k, `assets/models/${k}.glb`]));
+const MODELS = Object.fromEntries(["gate", "chuong", "boc-dich", "tam-thanh", "tai-than", "nguyet-lao"].map(k => [k, `assets/models/${k}.glb`]));
 async function loadModels() {
   let GLTFLoader, DRACOLoader;
   try {
@@ -680,97 +685,137 @@ export async function createWorld(container, hooks = {}) {
   }
   applySky();
 
-  // ---------- Cao nguyên, mây, núi, thác ----------
-  scene.fog.near = 70;
-  scene.fog.far = 320;
-  const plateau = makePlateau(OUTLINE);
-  scene.add(plateau.group);
+  // ---------- Núi, sân các tầng, bậc đá ----------
+  scene.fog.near = 110;
+  scene.fog.far = 460;
+  camera.far = 900;
+  camera.updateProjectionMatrix();
+  const terrain = makeTerrain(terrainY);
+  terrain.userData.noShadow = true;
+  scene.add(terrain);
+  const walkMeshes = [terrain];
+  LEVELS.forEach(l => { const c = makeCourtyard(l.poly, l.y); scene.add(c); walkMeshes.push(c); });
+  STAIRS.forEach(s => { const st = makeStairs(s); scene.add(st); walkMeshes.push(st); });
   const driftClouds = makeClouds(scene);
-  for (let i = 0; i < 22; i++) {
-    const a = i / 22 * Math.PI * 2 + Math.random() * 0.2, r = 120 + Math.random() * 90;
-    const pk = makePeak(38 + Math.random() * 30, 10 + Math.random() * 8);
-    pk.position.set(Math.cos(a) * r, -34, Math.sin(a) * r);
+  for (let i = 0; i < 26; i++) {
+    const a = i / 26 * Math.PI * 2 + Math.random() * 0.15, r = 230 + Math.random() * 110;
+    const pk = makePeak(60 + Math.random() * 50, 18 + Math.random() * 14);
+    pk.position.set(Math.cos(a) * r, -50, 25 + Math.sin(a) * r);
     scene.add(pk);
   }
-  const falls = [];
-  const fall = (x, z, ry) => {
-    const f = makeWaterfall(3, 30);
-    f.group.position.set(x, 0, z);
-    f.group.rotation.y = ry;
-    scene.add(f.group);
-    falls.push(f);
+  // Lan can quanh mép mỗi tầng, chừa lối bậc thang.
+  LEVELS.forEach(l => {
+    const cx = l.poly.reduce((s, p) => s + p[0], 0) / l.poly.length, cz = l.poly.reduce((s, p) => s + p[1], 0) / l.poly.length;
+    const pts = [];
+    l.poly.forEach(([ax, az], i) => {
+      const [bx, bz] = l.poly[(i + 1) % l.poly.length], len = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(len / 1.8));
+      for (let k = 0; k < n; k++) {
+        const x = ax + (bx - ax) * k / n, z = az + (bz - az) * k / n, dl = Math.hypot(cx - x, cz - z) || 1;
+        pts.push([x + (cx - x) / dl * 0.5, z + (cz - z) / dl * 0.5]);
+      }
+    });
+    const gap = ([x, z]) => STAIRS.some(s => Math.abs(x - s.x) < s.hw + 0.7 && (Math.abs(z - s.z0) < 2 || Math.abs(z - s.z1) < 2));
+    let run = [];
+    const flush = () => { if (run.length > 1) scene.add(makeBalustrade(run, { closed: false, step: 1.8, y: l.y })); run = []; };
+    [...pts, pts[0]].forEach(p => { if (gap(p)) flush(); else run.push(p); });
+    flush();
+  });
+
+  // ---------- Dòng nước: suối nguồn → thác 2 → ao tầng 2 → suối qua cầu → thác 1 → ao thác ----------
+  const waters = [], foams = [];
+  const stream = (z0, z1, y, w = 2.6) => { const wp = makeWaterPath([[WATER.x, y + 0.42, z0], [WATER.x, y + 0.42, z1]], w); scene.add(wp.mesh); waters.push(wp); };
+  const cascade = (z0, z1, x = WATER.x, w = 3.2) => {
+    const pts = [];
+    for (let z = z0; z <= z1 + 0.01; z += 0.7) pts.push([x, terrainY(x, z) + 0.35, z]);
+    const wp = makeWaterPath(pts, w, 1.4);
+    scene.add(wp.mesh);
+    waters.push(wp);
   };
-  fall(-17, OUTLINE[1][1] + 0.08, 0);
-  fall(17, OUTLINE[1][1] + 0.08, 0);
-  fall(-30.58, 12, -Math.PI / 2);
-  fall(30.58, 12, Math.PI / 2);
-  // Lan can đá chạy quanh mép cao nguyên.
-  scene.add(makeBalustrade(OUTLINE.map(([x, z]) => [x * 0.985, z > 38 ? z - 0.4 : z * 0.985 + (z > 28 ? 0.25 : 0)])));
+  const lv = id => LEVELS.find(l => l.id === id).y;
+  [[WATER.spring, lv(3)], [WATER.pool2, lv(2)], [WATER.pool1, lv(1)]].forEach(([p, y]) => {
+    const pond = makePondRect(p.w, p.d);
+    pond.position.set(p.x, y, p.z);
+    scene.add(pond);
+  });
+  stream(WATER.spring.z + WATER.spring.d / 2, 8.5, lv(3));
+  cascade(8, 22);
+  stream(22, WATER.pool2.z - WATER.pool2.d / 2, lv(2));
+  stream(WATER.pool2.z + WATER.pool2.d / 2, 70.5, lv(2));
+  cascade(70, 84);
+  stream(84, WATER.pool1.z - WATER.pool1.d / 2, lv(1));
+  foams.push(makeFoam(tex.glow, WATER.x, lv(2) + 0.3, 23), makeFoam(tex.glow, WATER.x, lv(1) + 0.3, 85));
+  // Thác hai bên sườn núi đổ xuống biển mây.
+  [[-44, 40, -1], [44, 46, 1]].forEach(([x0, z, s]) => {
+    const pts = [];
+    for (let x = x0; Math.abs(x) <= 95; x += s * 1.2) pts.push([x, terrainY(x, z) + 0.4, z]);
+    const wp = makeWaterPath(pts, 4, 1.6);
+    scene.add(wp.mesh);
+    waters.push(wp);
+  });
+  foams.forEach(f => scene.add(f.points));
+  const bridge = makeBridge(5.4, WATER.bridge.z1 - WATER.bridge.z0);
+  bridge.position.set(WATER.x, lv(2), (WATER.bridge.z0 + WATER.bridge.z1) / 2);
+  scene.add(bridge);
 
-  // Thảm cỏ và bụi cây ở rìa sân, sau các điện.
-  [[14, 9, -24, -18], [14, 9, 24, -18], [16, 7, -16, -31], [16, 7, 16, -31], [8, 10, -26, 14], [8, 10, 26, 14],
-    [10, 5, -21, 26], [10, 5, 21, 26], [9, 5, -9.5, -12.5], [9, 5, 9.5, -12.5]].forEach(([w, d, x, z]) => scene.add(grassPatch(w, d, x, z)));
-
-  // ---------- Tam quan và sân trước ----------
+  // ---------- Tam quan và sân tầng 1 ----------
   const models = await loadModels();
   const gate = makeGate(models.gate);
   gate.position.set(0, 0, GATE_Z);
   scene.add(gate);
-  const medallion = makeMedallion();
-  medallion.position.set(0, 0, 16);
+  const medallion = makeMedallion(5);
+  medallion.position.set(0, 0, 106);
   scene.add(medallion);
 
-  // ---------- Ba điện và Bốc Dịch Đài ----------
+  // ---------- Ba điện (đi vào được bên trong) và Bốc Dịch Đài ----------
   const halls = {};
-  const tamThanh = makeHall({
-    shell: models["tam-thanh"],
-    w: 14, d: 8, h: 4.6, wall: "#8a2a1e", roof: "#c4532a", board: "三清殿", couplets: ["玉清上清", "太清福壽"], sign: "Tam Thanh Điện",
-    statues: [{ x: -2.2, robe: "#3b5ba5" }, { x: 0, robe: "#c9302c", halo: "#fff0b0" }, { x: 2.2, robe: "#2e7a5a" }].map(s => ({ ...s, beard: true }))
-  });
-  const taiThan = makeHall({
-    shell: models["tai-than"],
-    w: 10, d: 7, h: 4, wall: "#8a3a14", roof: "#e0a526", trim: "#ffd36b", board: "財神殿", couplets: ["招財進寶", "金錢吉祥"], sign: "Tài Thần Điện",
-    statues: [{ robe: "#c99a3e", skin: "#3a2a20", hat: "#1b1b1b" }], lantern: ["#ffb32c", "#a85a00"]
-  });
-  const nguyetLao = makeHall({
-    shell: models["nguyet-lao"],
-    w: 10, d: 7, h: 4, wall: "#a3304e", roof: "#d4527e", trim: "#ffc0d4", board: "月老殿", couplets: ["天作之合", "合歡吉祥"], sign: "Nguyệt Lão Điện", signSub: "(Hợp Hoan Cung)",
-    statues: [{ robe: "#c8243a", beard: true, hat: "#8e2a3a", halo: "#ffc0d0" }], lantern: ["#ff7a9c", "#b02a4a"]
-  });
-  Object.entries({ "tam-thanh": tamThanh, "tai-than": taiThan, "nguyet-lao": nguyetLao }).forEach(([z, g]) => {
-    g.position.set(HALL[z].x, 0, HALL[z].z);
-    g.userData.zone = z;
-    halls[z] = g;
+  const HALL_STYLE = {
+    "tam-thanh": { wall: "#8a2a1e", roof: "#c4532a", board: "三清殿", couplets: ["玉清上清", "太清福壽"], sign: "Tam Thanh Điện",
+      statues: [{ x: -2.2, robe: "#3b5ba5" }, { x: 0, robe: "#c9302c", halo: "#fff0b0" }, { x: 2.2, robe: "#2e7a5a" }].map(s => ({ ...s, beard: true })) },
+    "tai-than": { wall: "#8a3a14", roof: "#e0a526", trim: "#ffd36b", board: "財神殿", couplets: ["招財進寶", "金錢吉祥"], sign: "Tài Thần Điện",
+      statues: [{ robe: "#c99a3e", skin: "#3a2a20", hat: "#1b1b1b" }], lantern: ["#ffb32c", "#a85a00"] },
+    "nguyet-lao": { wall: "#a3304e", roof: "#d4527e", trim: "#ffc0d4", board: "月老殿", couplets: ["天作之合", "合歡吉祥"], sign: "Nguyệt Lão Điện", signSub: "(Hợp Hoan Cung)",
+      statues: [{ robe: "#c8243a", beard: true, hat: "#8e2a3a", halo: "#ffc0d0" }], lantern: ["#ff7a9c", "#b02a4a"] }
+  };
+  Object.entries(HALL_STYLE).forEach(([k, st]) => {
+    const hl = HALL[k];
+    const g = makeHall({ ...st, w: hl.w, d: hl.d, h: hl.h, base: hl.base, door: hl.door, cols: hl.cols, shell: models[k] });
+    g.position.set(hl.x, LEVELS.find(l => l.id === hl.level).y, hl.z);
+    g.userData.zone = k;
+    halls[k] = g;
     scene.add(g);
+    walkMeshes.push(g);
   });
 
+  const altarY = altarBase();
   const altar = makeAltarPlatform(ALTAR.r, ALTAR.h, ALTAR.stairW, ALTAR.stairLen, models["boc-dich"]);
-  altar.position.set(ALTAR.x, 0, ALTAR.z);
+  altar.position.set(ALTAR.x, altarY, ALTAR.z);
   altar.userData.zone = "boc-dich";
   scene.add(altar);
+  walkMeshes.push(altar);
   const bagua = makeBagua();
-  bagua.position.set(ALTAR.x, ALTAR.h - 0.18, ALTAR.z);
+  bagua.position.set(ALTAR.x, altarY + ALTAR.h - 0.18, ALTAR.z);
   bagua.userData.zone = "boc-dich";
   scene.add(bagua);
   const altarSign = makeSign("Bốc Dịch Đài", 5.2);
-  altarSign.position.set(ALTAR.x, ALTAR.h + 4.6, ALTAR.z - ALTAR.r + 0.4);
+  altarSign.position.set(ALTAR.x, altarY + ALTAR.h + 4.6, ALTAR.z - ALTAR.r + 0.4);
   scene.add(altarSign);
-  [-1, 1].forEach(s => scene.add(cyl(0.16, 0.18, 4.6, lam("#b3242a"), ALTAR.x + s * 2.9, ALTAR.h + 2.3, ALTAR.z - ALTAR.r + 0.4, 8)));
-  // Đèn lồng trên cột quanh vành đài.
+  [-1, 1].forEach(s => scene.add(cyl(0.16, 0.18, 4.6, lam("#b3242a"), ALTAR.x + s * 2.9, altarY + ALTAR.h + 2.3, ALTAR.z - ALTAR.r + 0.4, 8)));
   for (let i = 0; i < 10; i++) {
     const a = Math.PI / 2 + 0.55 + i / 9 * (Math.PI * 2 - 1.1);
     const x = ALTAR.x + Math.cos(a) * (ALTAR.r - 0.3), z = ALTAR.z + Math.sin(a) * (ALTAR.r - 0.3);
-    scene.add(cyl(0.07, 0.08, 1.6, lam("#5a3a24"), x, ALTAR.h + 0.8, z, 6));
+    scene.add(cyl(0.07, 0.08, 1.6, lam("#5a3a24"), x, altarY + ALTAR.h + 0.8, z, 6));
     const l = makeLantern("#ffb32c", "#a85a00");
     l.scale.setScalar(0.7);
-    l.position.set(x, ALTAR.h + 1.9, z);
+    l.position.set(x, altarY + ALTAR.h + 1.9, z);
     scene.add(l);
   }
 
+  // Lư hương: trong ba điện (giữa hai hàng cột) và lư lớn ngoài sân Tam Thanh.
   const burners = {};
   ["tam-thanh", "tai-than", "nguyet-lao"].forEach(z => {
     const b = makeBurner();
-    b.position.copy(BURNER[z]);
+    b.position.set(BURNER[z].x, hallFloor(z), BURNER[z].z);
+    if (z === "tam-thanh") b.scale.setScalar(1.3);
     b.userData.zone = z;
     for (let i = 0; i < 3; i++) addStick(b);
     scene.add(b);
@@ -778,15 +823,21 @@ export async function createWorld(container, hooks = {}) {
   });
 
   // ---------- Vật cản ----------
-  const obstacles = Object.values(HALL).map(hl => ({ x0: hl.x - hl.w / 2 - 1, x1: hl.x + hl.w / 2 + 1, z0: hl.z - hl.d / 2 - 1, z1: hl.z + hl.d / 2 + 1 }));
-  [-1, 1].forEach(s => obstacles.push({ x0: s * POND.x - POND.w / 2 - 0.4, x1: s * POND.x + POND.w / 2 + 0.4, z0: POND.z - POND.d / 2 - 0.4, z1: POND.z + POND.d / 2 + 0.4 }));
-  const circles = Object.values(BURNER).slice(0, 3).map(p => ({ x: p.x, z: p.z, r: 0.95 }));
+  const obstacles = [], circles = [];
+  Object.keys(HALL).forEach(k => { const o = hallObstacles(k); obstacles.push(...o.boxes); circles.push(...o.circles); });
+  Object.keys(burners).forEach(k => circles.push({ x: BURNER[k].x, z: BURNER[k].z, r: k === "tam-thanh" ? 1.2 : 0.95 }));
+  const rectOf = (p, pad = 0.4) => ({ x0: p.x - p.w / 2 - pad, x1: p.x + p.w / 2 + pad, z0: p.z - p.d / 2 - pad, z1: p.z + p.d / 2 + pad });
+  obstacles.push(rectOf(POND), rectOf(WATER.spring), rectOf(WATER.pool2), rectOf(WATER.pool1));
+  const wx0 = WATER.x - 1.4, wx1 = WATER.x + 1.4;
+  obstacles.push({ x0: wx0, x1: wx1, z0: WATER.spring.z, z1: 8.6 }, { x0: wx0, x1: wx1, z0: 21.5, z1: WATER.pool2.z },
+    { x0: wx0, x1: wx1, z0: WATER.pool2.z, z1: WATER.bridge.z0 }, { x0: wx0, x1: wx1, z0: WATER.bridge.z1, z1: 70.6 },
+    { x0: wx0, x1: wx1, z0: 83.4, z1: WATER.pool1.z });
   [-3.6, 3.6].forEach(x => circles.push({ x, z: GATE_Z, r: 0.6 }));
-  const place = (obj, x, z, r) => { obj.position.set(x, 0, z); scene.add(obj); if (r) circles.push({ x, z, r }); };
+  const place = (obj, x, z, r) => { obj.position.set(x, groundY(x, z), z); scene.add(obj); if (r) circles.push({ x, z, r }); };
 
-  // Cờ âm dương: hai bên cổng, hai bên lối lên Bốc Dịch Đài.
+  // Cờ âm dương: hai bên cổng và hai bên đầu mỗi bậc thang.
   const banners = [];
-  [[-5.8, 31], [5.8, 31], [-9.3, 25.5], [9.3, 25.5], [-11, -13.5], [11, -13.5]].forEach(([x, z]) => {
+  [[-6, 128], [6, 128], [-6.5, 86.5], [6.5, 86.5], [-6.5, 67.5], [6.5, 67.5], [-6.5, 5.5], [6.5, 5.5], [-6.5, -56], [6.5, -56]].forEach(([x, z]) => {
     const b = makeBanner();
     if (x > 0) b.rotation.y = Math.PI;
     place(b, x, z, 0.3);
@@ -794,20 +845,33 @@ export async function createWorld(container, hooks = {}) {
   });
 
   // ---------- Cây cối ----------
-  [[-27, -20], [-27, -13], [27, -20], [27, -13], [-21, -34], [21, -34], [-14, -32.5], [14, -32.5], [-27.5, 15], [27.5, 15],
-    [-11, -15.5], [11, -16.5], [-7, -34.5], [7, -34.5]].forEach(([x, z], i) =>
-    place(i % 3 ? makeTree("pine") : makeRoundTree("#3f7a3a", 0.9), x, z, 0.6));
-  // Cây vàng quanh Tài Thần, anh đào hồng quanh Nguyệt Lão và trước cổng.
-  [[-14, -10], [-27.5, -6]].forEach(([x, z]) => place(makeRoundTree("#f2c14e", 1.1), x, z, 0.6));
-  [[14, -10], [27.5, -6], [-7.5, 25.6], [7.5, 25.6], [-26.5, 21], [26.5, 21]].forEach(([x, z]) => place(makeRoundTree("#f4a6c0", 1), x, z, 0.6));
-  [[-24, -16], [24, -16], [-17, -12.5], [17, -12.5], [-28.5, 8], [28.5, 8], [-19, 26.5], [19, 26.5], [-26.5, 25.5], [26.8, 25.2], [-5.5, -12.8], [5.5, -12.8]]
+  // Rừng thông và cây tán tròn mọc trên sườn núi (không đi tới được), rải theo hạt giống cố định.
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 260 && seed; i++) {
+    const x = (rnd() - 0.5) * 170, z = -110 + rnd() * 270;
+    const y = terrainY(x, z);
+    if (walkable(x, z) || y < -26 || y > 30) continue;
+    if (Math.abs(x - WATER.x) < 4 || STAIRS.some(s => Math.abs(x - s.x) < s.hw + 2.5 && z < Math.max(s.z0, s.z1) + 1 && z > Math.min(s.z0, s.z1) - 1)) continue;
+    const t = rnd() < 0.65 ? makeTree("pine") : makeRoundTree(rnd() < 0.15 ? "#f4a6c0" : "#3f7a3a", 0.9 + rnd() * 0.4);
+    t.scale.multiplyScalar(1 + rnd() * 0.5);
+    t.position.set(x, y - 0.2, z);
+    scene.add(t);
+  }
+  // Cây trên các tầng (có va chạm): vàng quanh Tài Thần, hồng quanh Nguyệt Lão, anh đào trước cổng.
+  [[-41, 44], [-41, 30], [-13, 34]].forEach(([x, z]) => place(makeRoundTree("#f2c14e", 1.15), x, z, 0.6));
+  [[41, 44], [41, 30], [19, 62], [-9, 121], [9, 121], [-31, 117], [31, 92]].forEach(([x, z]) => place(makeRoundTree("#f4a6c0", 1), x, z, 0.6));
+  [[-33, 0], [33, 0], [-33, -36], [33, -36], [-20, 4], [24, -40], [-30, 88], [-31, 104], [-12, -66], [12, -66], [-14, -84], [14, -84]]
+    .forEach(([x, z], i) => place(i % 2 ? makeTree("pine") : makeRoundTree("#3f7a3a", 0.95), x, z, 0.6));
+  [[-17, 6], [8, 4], [-37, 20], [37, 20], [-24, 122], [24, 122], [-9, 86], [-20, 66], [26, 66], [-9, -50], [9, -50]]
     .forEach(([x, z]) => place(makeBush(0.75 + Math.random() * 0.3), x, z, 0.8));
-  [[-23, 2.6], [-16, 2.6]].forEach(([x, z]) => place(makeIngots(), x, z, 0.7));
+  [[-32.5, 54], [-21.5, 54]].forEach(([x, z]) => place(makeIngots(), x, z, 0.7));
+  [[-26, 112, 10, 8], [24, 100, 8, 6], [-34, 50, 6, 12], [34, 36, 6, 12], [-28, -20, 8, 14], [28, -10, 8, 12], [-10, -70, 6, 6], [10, -82, 6, 6]]
+    .forEach(([x, z, w, d]) => { const gp = grassPatch(w, d, x, z); gp.position.y = groundY(x, z) + 0.06; scene.add(gp); });
 
   const toHong = makeTree("tohong"), kimTien = makeRoundTree("#f2c14e", 1.15);
   place(toHong, PROP["to-hong"].x, PROP["to-hong"].z, 0.5);
   place(kimTien, PROP["kim-tien"].x, PROP["kim-tien"].z, 0.5);
-  // Đồng tiền vàng treo trên cây kim tiền.
   const coinM = lam("#ffd36b", "#4a3000");
   for (let i = 0; i < 16; i++) {
     const a = Math.random() * Math.PI * 2, r = 1 + Math.random() * 0.7;
@@ -818,20 +882,15 @@ export async function createWorld(container, hooks = {}) {
   toHong.userData.zone = "to-hong";
   kimTien.userData.zone = "kim-tien";
 
-  // ---------- Ao sen, lầu chuông, Lão đạo sĩ ----------
-  const ponds = [-1, 1].map(s => {
-    const p = makePondRect(POND.w, POND.d);
-    p.position.set(s * POND.x, 0, POND.z);
-    scene.add(p);
-    return p;
-  });
-  const pond = ponds[0];
+  // ---------- Ao Sen, Lầu Chuông, Lão Đạo Sĩ ----------
+  const pond = makePondRect(POND.w, POND.d);
+  pond.position.set(POND.x, 0, POND.z);
   pond.userData.zone = "ao-sen";
+  scene.add(pond);
   const pondLabel = makeLabel("Ao Sen · thả hoa đăng");
-  pondLabel.position.set(PROP["ao-sen"].x, 2.6, PROP["ao-sen"].z);
+  pondLabel.position.set(POND.x, 2.6, POND.z);
   scene.add(pondLabel);
   const hoaDang = [];
-  // Vài chiếc hoa đăng trang trí sẵn trên mặt ao.
   ["vang", "sen", "trang"].forEach((c, i) => addHoaDang(c, i * 2.1, false));
 
   const bellTower = makeBellTower(models.chuong);
@@ -873,9 +932,9 @@ export async function createWorld(container, hooks = {}) {
     }
   }
 
-  // Đèn đá dọc lối vào và lối giữa sân.
-  [[-3.2, 31.5], [3.2, 31.5], [-3.2, 35.5], [3.2, 35.5], [-3.4, 8.5], [3.4, 8.5], [-5.6, 12.5], [5.6, 12.5]].forEach(([x, z]) => place(makeStoneLamp(), x, z, 0.4));
-  // Dây đèn lồng giăng ngang sân trước hàng điện.
+  // Đèn đá dọc lối vào và hai bên chân, đầu mỗi bậc thang.
+  [[-3.2, 132], [3.2, 132], [-3.2, 138], [3.2, 138], [-5.6, 87.5], [5.6, 87.5], [-5.6, 66.5], [5.6, 66.5], [-5.6, 24.5], [5.6, 24.5],
+    [-5.6, 4.5], [5.6, 4.5], [-5.6, -41.5], [5.6, -41.5], [-4.5, 112], [4.5, 112]].forEach(([x, z]) => place(makeStoneLamp(), x, z, 0.4));
   const lanternLine = (a, b, count, colors) => {
     for (let i = 0; i < count; i++) {
       const t = (i + 0.5) / count;
@@ -886,9 +945,10 @@ export async function createWorld(container, hooks = {}) {
       l.scale.setScalar(0.8);
       scene.add(l);
     }
-    [a, b].forEach(p => { scene.add(cyl(0.08, 0.1, p.y, lam("#4a3324"), p.x, p.y / 2, p.z, 6)); circles.push({ x: p.x, z: p.z, r: 0.3 }); });
+    [a, b].forEach(p => { const y0 = groundY(p.x, p.z); scene.add(cyl(0.08, 0.1, p.y - y0, lam("#4a3324"), p.x, (p.y + y0) / 2, p.z, 6)); circles.push({ x: p.x, z: p.z, r: 0.3 }); });
   };
-  lanternLine(V(-9, 5.2, 10), V(9, 5.2, 10), 9, [["#e0362c", "#b01a12"], ["#ffb32c", "#a85a00"]]);
+  lanternLine(V(-9, 5.2, 92), V(9, 5.2, 92), 9, [["#e0362c", "#b01a12"], ["#ffb32c", "#a85a00"]]);
+  lanternLine(V(-9, 14.2, 34), V(9, 14.2, 34), 9, [["#ffb32c", "#a85a00"], ["#ff7a9c", "#b02a4a"]]);
 
   // Khói hương liên tục trên các lư
   const smokes = Object.entries(burners).map(([z, b]) => {
@@ -908,7 +968,8 @@ export async function createWorld(container, hooks = {}) {
   for (let i = 0; i < PN; i++) parr.set([(Math.random() - 0.5) * 56, Math.random() * 14, (Math.random() - 0.5) * 56], i * 3);
   const pgeo = new THREE.BufferGeometry();
   pgeo.setAttribute("position", new THREE.BufferAttribute(parr, 3));
-  scene.add(new THREE.Points(pgeo, new THREE.PointsMaterial({ map: tex.petal, size: 0.28, transparent: true, depthWrite: false, opacity: 0.9 })));
+  const petals = new THREE.Points(pgeo, new THREE.PointsMaterial({ map: tex.petal, size: 0.28, transparent: true, depthWrite: false, opacity: 0.9 }));
+  scene.add(petals);
 
   const marker = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.5, 24), new THREE.MeshBasicMaterial({ color: 0xf7d98b, transparent: true, opacity: 0, toneMapped: false }));
   marker.rotation.x = -Math.PI / 2;
@@ -938,9 +999,13 @@ export async function createWorld(container, hooks = {}) {
     camera.updateProjectionMatrix();
     renderer.setSize(W(), H());
   }
-  function updateCamOff() {
-    const d = camDist * zoom, flat = Math.cos(camPitch) * d;
-    camOff.set(Math.sin(camYaw) * flat, Math.sin(camPitch) * d, Math.cos(camYaw) * flat);
+  // indoor (0–1): độ "ở trong điện", kéo camera lại gần và thấp hơn.
+  let indoor = 0;
+  function updateCamOff(k = 0) {
+    const d = THREE.MathUtils.lerp(camDist * zoom, Math.min(camDist * zoom, 8.5), k);
+    const pitch = THREE.MathUtils.lerp(camPitch, Math.min(camPitch, 0.36), k);
+    const flat = Math.cos(pitch) * d;
+    camOff.set(Math.sin(camYaw) * flat, Math.sin(pitch) * d, Math.cos(camYaw) * flat);
   }
   // Hướng camera nhìn tới để đặt camera ra sau lưng khi tới một điện.
   const yawToward = (from, to) => Math.atan2(from.x - to.x, from.z - to.z);
@@ -961,41 +1026,34 @@ export async function createWorld(container, hooks = {}) {
       const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), m = c.r + RADIUS;
       if (d < m && d > 1e-4) { p.x = c.x + dx / d * m; p.z = c.z + dz / d * m; }
     }
-    // Bốc Dịch Đài: ở trên thì không rơi qua vành, ở dưới thì không trèo qua vách; chỉ qua lại bằng bậc thang.
-    const onTop = heightAt(prev.x, prev.z) > ALTAR.h * 0.5;
-    if (onStairs(prev.x, prev.z) && onStairs(p.x, p.z)) {
-      p.x = Math.min(ALTAR.x + ALTAR.stairW - 0.4, Math.max(ALTAR.x - ALTAR.stairW + 0.4, p.x));
-    } else if (onStairs(p.x, p.z) && !onTop && prev.z < ALTAR.z + ALTAR.r + ALTAR.stairLen - 0.3) {
-      p.x = prev.x;
-    } else if (!onStairs(p.x, p.z)) {
-      const r = altarR(p.x, p.z), lim = onTop ? ALTAR.r - 0.7 : ALTAR.r + 0.5;
-      if (onTop ? r > lim : r < lim) {
-        const k = lim / Math.max(r, 1e-4);
-        p.x = ALTAR.x + (p.x - ALTAR.x) * k;
-        p.z = ALTAR.z + (p.z - ALTAR.z) * k;
-      }
-    }
-    // Không bước ra khỏi lan can mép cao nguyên: thử trượt theo từng trục trước khi đứng lại.
-    if (!walkable(p.x, p.z)) {
-      if (walkable(p.x, prev.z)) p.z = prev.z;
-      else if (walkable(prev.x, p.z)) p.x = prev.x;
+    // Không bước ra khỏi lan can, không leo vách hay nhảy xuống bậc cao (nền điện, vành đài, sườn núi):
+    // thử trượt theo từng trục trước khi đứng lại.
+    if (!canStep(prev.x, prev.z, p.x, p.z)) {
+      if (canStep(prev.x, prev.z, p.x, prev.z)) p.z = prev.z;
+      else if (canStep(prev.x, prev.z, prev.x, p.z)) p.x = prev.x;
       else { p.x = prev.x; p.z = prev.z; }
     }
   }
 
   // ---------- Tìm đường khi chạm để đi ----------
-  // Lưới 1×1 phủ cả cao nguyên; ô bị chặn là ngoài lan can, điện, ao, cây, vành Bốc Dịch Đài (trừ bậc thang).
-  const GX0 = -31, GZ0 = -38, GW = 63, GH = 78, PAD = 0.5;
+  // Lưới 1×1 phủ cả núi; ô bị chặn là chỗ không đứng được hoặc vướng vật cản. Hai ô kề nhau chỉ nối
+  // được nếu đi từ ô này sang ô kia không vấp bậc cao, nên đường đi tự đi qua bậc thang và cửa điện.
+  const GX0 = -46, GZ0 = -96, GW = 93, GH = 252, PAD = 0.5;
   let grid = null;
   function blockedAt(x, z) {
     if (!walkable(x, z)) return true;
+    // Chừa khoảng an toàn quanh chỗ chênh độ cao (mép bậc thang, mép nền điện, vành đài, mép tầng).
+    for (const [dx, dz] of [[0.6, 0], [-0.6, 0], [0, 0.6], [0, -0.6]]) if (!canStep(x, z, x + dx, z + dz)) return true;
     for (const b of obstacles) if (x > b.x0 - PAD && x < b.x1 + PAD && z > b.z0 - PAD && z < b.z1 + PAD) return true;
     for (const c of circles) if (Math.hypot(x - c.x, z - c.z) < c.r + PAD) return true;
-    // Lan can hai bên bậc thang: chỉ lên xuống theo chiều dọc bậc.
-    const sx = Math.abs(x - ALTAR.x), sz0 = ALTAR.z + ALTAR.r - 1.2, sz1 = ALTAR.z + ALTAR.r + ALTAR.stairLen - 0.3;
-    if (z > sz0 && z < sz1 && sx > ALTAR.stairW - 0.6 && sx < ALTAR.stairW + 0.9) return true;
-    const r = altarR(x, z);
-    return r > ALTAR.r - 1 && r < ALTAR.r + 0.7 && !onStairs(x, z);
+    return false;
+  }
+  function linkOK(ax, az, bx, bz) {
+    for (let k = 0; k < 4; k++) {
+      const x0 = ax + (bx - ax) * k / 4, z0 = az + (bz - az) * k / 4, x1 = ax + (bx - ax) * (k + 1) / 4, z1 = az + (bz - az) * (k + 1) / 4;
+      if (!canStep(x0, z0, x1, z1)) return false;
+    }
+    return true;
   }
   const cellOf = (x, z) => Math.round(z - GZ0) * GW + Math.round(x - GX0);
   const cellX = i => (i % GW) + GX0, cellZ = i => Math.floor(i / GW) + GZ0;
@@ -1026,6 +1084,7 @@ export async function createWorld(container, hooks = {}) {
         const nx = ix + dx, j = i + dz * GW + dx;
         if (nx < 0 || nx >= GW || j < 0 || j >= grid.length || grid[j]) continue;
         if (dx && dz && (grid[i + dx] || grid[i + dz * GW])) continue;
+        if (!linkOK(cellX(i), cellZ(i), cellX(j), cellZ(j))) continue;
         const ng = g[i] + (dx && dz ? Math.SQRT2 : 1);
         if (ng < g[j]) { g[j] = ng; from[j] = i; push(j, ng + hx(j)); }
       }
@@ -1038,7 +1097,12 @@ export async function createWorld(container, hooks = {}) {
   // Rút gọn đường: bỏ các điểm giữa nếu đi thẳng được mà không chạm ô bị chặn.
   function clearLine(a, b) {
     const n = Math.ceil(a.distanceTo(b) / 0.4);
-    for (let k = 1; k < n; k++) if (grid[cellOf(a.x + (b.x - a.x) * k / n, a.z + (b.z - a.z) * k / n)]) return false;
+    let px = a.x, pz = a.z;
+    for (let k = 1; k <= n; k++) {
+      const x = a.x + (b.x - a.x) * k / n, z = a.z + (b.z - a.z) * k / n;
+      if ((k < n && grid[cellOf(x, z)]) || !canStep(px, pz, x, z)) return false;
+      px = x; pz = z;
+    }
     return true;
   }
   let route = [];
@@ -1115,10 +1179,10 @@ export async function createWorld(container, hooks = {}) {
 
   function updateCamera(dt, t) {
     if (!entered) {
-      // Trước khi vào đình: bay vòng quanh cao nguyên.
-      const a = t * 0.04;
-      camera.position.set(Math.sin(a) * 62, 30, Math.cos(a) * 62);
-      camera.lookAt(0, 0, -3);
+      // Trước khi vào đình: bay vòng quanh cả ngọn núi.
+      const a = t * 0.03;
+      camera.position.set(Math.sin(a) * 165, 85, 25 + Math.cos(a) * 165);
+      camera.lookAt(0, 8, 20);
       return;
     }
     // Ẩn tam quan khi nó chắn giữa camera và nhân vật đã đi vào trong sân.
@@ -1129,12 +1193,23 @@ export async function createWorld(container, hooks = {}) {
     camYaw = angleLerp(camYaw, camYawWant, ka);
     camPitch += (camPitchWant - camPitch) * ka;
     zoom += (zoomWant - zoom) * (1 - Math.exp(-dt * 8));
-    updateCamOff();
+    // Trong điện: camera thu gần, hạ thấp dưới trần và không ra ngoài tường.
+    const room = hallInterior(pos.x, pos.z);
+    indoor += ((room ? 1 : 0) - indoor) * (1 - Math.exp(-dt * 4));
+    updateCamOff(indoor);
     const k = 1 - Math.exp(-dt * 3.5);
-    lookWant.set(pos.x - Math.sin(camYaw) * 2.5, 1.3 + heightAt(pos.x, pos.z), pos.z - Math.cos(camYaw) * 2.5);
+    const gy = groundY(pos.x, pos.z);
+    // Trong điện nhìn cao hơn để thấy trọn tượng thần và trần.
+    lookWant.set(pos.x - Math.sin(camYaw) * 2.5 * (1 - indoor * 0.6), 1.3 + gy + indoor * 1.8, pos.z - Math.cos(camYaw) * 2.5 * (1 - indoor * 0.6));
     look.lerp(lookWant, k);
     camWant.copy(look).add(camOff);
-    camWant.y = Math.max(1.2, camWant.y);
+    if (room) {
+      camWant.x = Math.min(room.x1, Math.max(room.x0, camWant.x));
+      camWant.z = Math.min(room.z1, Math.max(room.z0, camWant.z));
+      camWant.y = Math.min(room.ceil - 0.6, camWant.y);
+    }
+    // Không để camera chui xuống sườn núi.
+    camWant.y = Math.max(terrainY(camWant.x, camWant.z) + 1.2, gy + 1.2, camWant.y);
     camera.position.copy(camWant);
     camera.lookAt(look);
   }
@@ -1163,8 +1238,11 @@ export async function createWorld(container, hooks = {}) {
     bagua.userData.taiji.rotation.z += dt * (0.15 + spinBoost * 2.5);
     bagua.userData.ring.material.opacity = 0.2 + spinBoost * 0.6 + (zone === "boc-dich" ? 0.15 : 0);
     banners.forEach(b => b.userData.wave(t));
-    falls.forEach(f => f.update(dt));
+    waters.forEach(w => w.update(dt));
+    foams.forEach(f => f.update(t));
     driftClouds(dt);
+    // Cánh hoa rơi quanh nhân vật (bản đồ rộng, không rải khắp núi).
+    if (entered) petals.position.set(pos.x, groundY(pos.x, pos.z), pos.z);
     const pc = PROP["ao-sen"];
     for (const d of hoaDang) {
       d.born = Math.min(1, d.born + dt * 0.5);
@@ -1198,7 +1276,7 @@ export async function createWorld(container, hooks = {}) {
       r.x += dx * k; r.z += dz * k;
       if (moving) r.ry = angleLerp(r.ry, Math.atan2(dx, dz), k);
       r.phase += moving ? dt * 10 : 0;
-      r.av.group.position.set(r.x, heightAt(r.x, r.z), r.z);
+      r.av.group.position.set(r.x, groundY(r.x, r.z), r.z);
       r.av.group.rotation.y = r.ry;
       r.av.body.position.y = moving ? Math.abs(Math.sin(r.phase)) * 0.08 : 0;
     }
@@ -1206,7 +1284,8 @@ export async function createWorld(container, hooks = {}) {
 
   // ---------- Hiệu ứng ----------
   function burst(z, kind) {
-    const o = FOCUS[z].clone().setY({ "boc-dich": ALTAR.h + 0.8, "kim-tien": 2.8, "to-hong": 2.6, "ao-sen": 0.8 }[z] ?? 1.6);
+    const base = groundY(FOCUS[z].x, FOCUS[z].z);
+    const o = FOCUS[z].clone().setY(base + ({ "boc-dich": 0.8, "kim-tien": 2.8, "to-hong": 2.6, "ao-sen": 0.8 }[z] ?? 1.6));
     const N = kind === "coin" ? 50 : 70;
     const arr = new Float32Array(N * 3), vel = [];
     for (let i = 0; i < N; i++) {
@@ -1232,7 +1311,7 @@ export async function createWorld(container, hooks = {}) {
         const v = vel[i], j = i * 3;
         v.y -= grav * dt;
         v.multiplyScalar(1 - dt * 0.6);
-        arr[j] += v.x * dt; arr[j + 1] = Math.max(0.05, arr[j + 1] + v.y * dt); arr[j + 2] += v.z * dt;
+        arr[j] += v.x * dt; arr[j + 1] = Math.max(base + 0.05, arr[j + 1] + v.y * dt); arr[j + 2] += v.z * dt;
       }
       geo.attributes.position.needsUpdate = true;
       mat.opacity = 1 - Math.max(0, (life - 1.6) / 1.2);
@@ -1245,7 +1324,7 @@ export async function createWorld(container, hooks = {}) {
     const o = BURNER[z];
     const m = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 16, 24, 1, true),
       new THREE.MeshBasicMaterial({ color: 0xffd98a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
-    m.position.set(o.x, 8, o.z);
+    m.position.set(o.x, groundY(o.x, o.z) + 8, o.z);
     scene.add(m);
     let life = 0;
     effects.push(dt => {
@@ -1357,7 +1436,11 @@ export async function createWorld(container, hooks = {}) {
     for (let o = hits[0]?.object; o && !z; o = o.parent) z = o.userData?.zone || null;
     let t = null;
     if (z) t = SPOT[z].clone();
-    else if (ray.ray.intersectPlane(plane, hit) && walkable(hit.x, hit.z)) { t = hit.clone(); collide(t); }
+    else {
+      // Chạm xuống mặt sân các tầng, bậc thang hay sườn núi: lấy điểm chạm nếu đứng được ở đó.
+      const gh = ray.intersectObjects(walkMeshes.filter(m => !m.userData.zone), true)[0];
+      if (gh && walkable(gh.point.x, gh.point.z)) t = V(gh.point.x, 0, gh.point.z);
+    }
     if (!t) return;
     routeTo(t);
     stuck = 0;
@@ -1411,8 +1494,9 @@ export async function createWorld(container, hooks = {}) {
         yaw = wantYaw = faceYaw(z);
         camYaw = camYawWant = yawToward(pos, FOCUS[z]);
       }
-      updateCamOff();
-      look.set(pos.x - Math.sin(camYaw) * 2.5, 1.3, pos.z - Math.cos(camYaw) * 2.5);
+      indoor = hallInterior(pos.x, pos.z) ? 1 : 0;
+      updateCamOff(indoor);
+      look.set(pos.x - Math.sin(camYaw) * 2.5, 1.3 + groundY(pos.x, pos.z), pos.z - Math.cos(camYaw) * 2.5);
       camera.position.copy(look).add(camOff);
     },
     // Quay nhân vật về phía điện và đưa camera ra sau lưng để thấy rõ nghi lễ.

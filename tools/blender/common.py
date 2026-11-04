@@ -68,8 +68,8 @@ def cyl(name, rb, rt, h, x, y, z, key, verts=16):
     return finish(o, key, smooth=True)
 
 
-def sphere(name, r, x, y, z, key):
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=r, segments=20, ring_count=12, location=P(x, y, z))
+def sphere(name, r, x, y, z, key, seg=20):
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=r, segments=seg, ring_count=max(6, seg * 3 // 5), location=P(x, y, z))
     o = bpy.context.active_object
     o.name = name
     return finish(o, key, smooth=True)
@@ -169,8 +169,28 @@ def ridge(name, length, y, cx=0.0, cz=0.0, curl=0.42, pearl=0.32):
 
 
 # ---------- Gộp, bake, xuất ----------
-def bake_and_export(out, name, ao_floor=0.42, samples=48):
+def ring(name, r_out, r_in, x, y0, h, z, key, seg=8):
+    """Vành rỗng (hình khuyên, mặc định tám cạnh) đặt từ y0 cao h."""
+    bpy.ops.mesh.primitive_cylinder_add(vertices=seg, radius=r_out, depth=h, location=P(x, y0 + h / 2, z))
+    outer = bpy.context.active_object
+    bpy.ops.mesh.primitive_cylinder_add(vertices=seg, radius=r_in, depth=h + 0.2, location=P(x, y0 + h / 2, z))
+    inner = bpy.context.active_object
+    mod = outer.modifiers.new("cut", "BOOLEAN")
+    mod.operation = "DIFFERENCE"
+    mod.object = inner
+    bpy.context.view_layer.objects.active = outer
+    bpy.ops.object.modifier_apply(modifier="cut")
+    bpy.data.objects.remove(inner)
+    outer.name = name
+    return finish(outer, key)
+
+
+def bake_and_export(out, name, ao_floor=0.42, samples=48, ao_dist=3.0):
     scene = bpy.context.scene
+    # Khoảng tìm che khuất của AO: nhỏ để trong không gian kín (nội thất) chỉ tối ở góc và khe, không tối toàn bộ.
+    if not scene.world:
+        scene.world = bpy.data.worlds.new("world")
+    scene.world.light_settings.distance = ao_dist
     objs = [o for o in scene.objects if o.type == "MESH"]
     for o in bpy.context.selected_objects:
         o.select_set(False)
