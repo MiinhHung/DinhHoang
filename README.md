@@ -66,6 +66,16 @@ Một cao nguyên lơ lửng trên biển mây, có lan can đá quanh mép, th�
 
 Toạ độ các khu vực nằm ở đầu `js/world.js` (`HALL`, `ALTAR`, `POND`, `SPOT`, `PROP`). Chạm xuống sân thì nhân vật tự tìm đường vòng qua điện, ao và lên xuống bậc thang.
 
+## Mô hình 3D dựng bằng Blender
+
+Phần kiến trúc của điện được dựng bằng script Python trong `tools/blender/`, chạy Blender ở chế độ ngầm, không cần mở giao diện. Bóng đổ được bake sẵn vào màu đỉnh, file xuất ra là `.glb` nén Draco, đặt trong `assets/models/`.
+
+```bash
+blender --background --factory-startup --python tools/blender/build_hall.py -- assets/models/tam-thanh.glb tam-thanh
+```
+
+Màu sắc và kích thước nằm trong `CFG` ở đầu script. Nếu thiếu file `.glb` hoặc tải lỗi, game tự dùng khung điện đơn giản. Hiện mới có Tam Thanh Điện.
+
 ## Trong sân đình
 
 - **Lão Đạo Sĩ** đứng cạnh chỗ xuất hiện: chào theo buổi, đọc lời dạy hôm nay, nhắc việc lành còn thiếu.
@@ -95,6 +105,8 @@ js/online.js      Người chơi online qua Supabase Realtime
 js/progress.js    Sổ công đức: điểm, việc lành, bộ sưu tập (localStorage)
 js/analytics.js   Ghi nhận UTM, gửi sự kiện GA4
 content/          Nội dung quẻ (JSON)
+assets/models/    Mô hình .glb xuất từ Blender
+tools/blender/    Script Python dựng mô hình trong Blender
 assets/           Icon và ảnh xem trước khi chia sẻ (og.png)
 ```
 

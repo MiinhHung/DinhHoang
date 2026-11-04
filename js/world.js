@@ -189,48 +189,16 @@ function addStick(burner) {
   s.add(st);
 }
 
-function makeHall({ w, d, h, wall, roof, trim = "#e7b75a", board, couplets, statues = [], lantern, sign, signSub }) {
+// shell: phần kiến trúc dựng sẵn từ Blender (assets/models/*.glb). Có shell thì bỏ qua khung hình khối đơn giản,
+// chỉ dựng thêm bảng tên, câu đối, bàn thờ, tượng và đèn lên trên.
+function makeHall({ w, d, h, wall, roof, trim = "#e7b75a", board, couplets, statues = [], lantern, sign, signSub, shell }) {
   const g = new THREE.Group();
   const top = 0.6;
-  const stone = lam("#8d8577");
-  g.add(box(w + 2, top, d + 2, stone, 0, top / 2, 0));
-  g.add(box(w * 0.45, 0.3, 1.2, stone, 0, 0.15, d / 2 + 1.6));
-  g.add(box(w, 0.04, d, lam("#4a2e22"), 0, top + 0.02, 0));
-  const wallM = lam(wall);
-  g.add(box(w, h, 0.3, wallM, 0, top + h / 2, -d / 2));
-  g.add(box(0.3, h, d, wallM, -w / 2, top + h / 2, 0));
-  g.add(box(0.3, h, d, wallM, w / 2, top + h / 2, 0));
-
-  const colM = lam("#a3201f");
-  const n = Math.max(4, Math.round(w / 3.2) + 1);
-  const colX = [];
-  for (let i = 0; i < n; i++) {
-    const x = -w / 2 + 0.3 + (w - 0.6) * i / (n - 1);
-    colX.push(x);
-    g.add(cyl(0.2, 0.24, h, colM, x, top + h / 2, d / 2 - 0.2));
-  }
-  g.add(box(w + 0.6, 0.45, 0.5, lam(trim), 0, top + h - 0.1, d / 2 - 0.2));
-
-  const roofM = new THREE.MeshLambertMaterial({ color: roof, side: THREE.DoubleSide });
   const ry = top + h + 0.1;
-  g.add(hipRoof(w + 3.4, d + 3.2, 1.5, roofM, 0.62).translateY(ry));
-  g.add(box(w * 0.66, 1.1, d * 0.6, wallM, 0, ry + 1.9, 0));
-  g.add(hipRoof(w * 0.66 + 2.2, d * 0.6 + 2.2, 1.7, roofM, 0.12).translateY(ry + 2.4));
-  const ridgeY = ry + 2.4 + 1.7;
-  g.add(box(w * 0.5, 0.22, 0.3, lam(trim), 0, ridgeY, 0));
-  g.add(ball(0.32, lam("#ffd36b", "#7a4a00"), 0, ridgeY + 0.38, 0));
-  [-1, 1].forEach(s => {
-    const curl = mesh(new THREE.TorusGeometry(0.35, 0.08, 6, 12, Math.PI * 1.2), lam(trim), s * w * 0.25, ridgeY + 0.3, 0);
-    curl.rotation.z = s > 0 ? -0.2 : Math.PI + 0.2;
-    g.add(curl);
-  });
-  // Đầu đao cong vút ở bốn góc mái dưới.
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const e = mesh(new THREE.ConeGeometry(0.14, 1.0, 6), lam(trim), sx * (w + 3.4) / 2, ry + 0.25, sz * (d + 3.2) / 2);
-    e.rotation.z = -sx * 0.9;
-    e.rotation.x = sz * 0.9;
-    g.add(e);
-  }
+  const n = Math.max(4, Math.round(w / 3.2) + 1);
+  const colX = Array.from({ length: n }, (_, i) => -w / 2 + 0.3 + (w - 0.6) * i / (n - 1));
+  if (shell) g.add(shell);
+  else buildHallFrame(g, { w, d, h, top, ry, wall, roof, trim, colX });
 
   if (board) {
     const b = boardMesh(boardTexture(board), 3.2, 1);
@@ -279,6 +247,64 @@ function makeHall({ w, d, h, wall, roof, trim = "#e7b75a", board, couplets, stat
     g.add(cyl(0.012, 0.012, 0.6, lam("#222"), s * (w / 2 + 0.6), top + h - 0.25, d / 2 + 0.9, 4));
   });
   return g;
+}
+
+// Khung điện bằng hình khối đơn giản, dùng khi chưa có (hoặc không tải được) mô hình Blender.
+function buildHallFrame(g, { w, d, h, top, ry, wall, roof, trim, colX }) {
+  const stone = lam("#8d8577");
+  g.add(box(w + 2, top, d + 2, stone, 0, top / 2, 0));
+  g.add(box(w * 0.45, 0.3, 1.2, stone, 0, 0.15, d / 2 + 1.6));
+  g.add(box(w, 0.04, d, lam("#4a2e22"), 0, top + 0.02, 0));
+  const wallM = lam(wall);
+  g.add(box(w, h, 0.3, wallM, 0, top + h / 2, -d / 2));
+  g.add(box(0.3, h, d, wallM, -w / 2, top + h / 2, 0));
+  g.add(box(0.3, h, d, wallM, w / 2, top + h / 2, 0));
+  colX.forEach(x => g.add(cyl(0.2, 0.24, h, lam("#a3201f"), x, top + h / 2, d / 2 - 0.2)));
+  g.add(box(w + 0.6, 0.45, 0.5, lam(trim), 0, top + h - 0.1, d / 2 - 0.2));
+  const roofM = new THREE.MeshLambertMaterial({ color: roof, side: THREE.DoubleSide });
+  g.add(hipRoof(w + 3.4, d + 3.2, 1.5, roofM, 0.62).translateY(ry));
+  g.add(box(w * 0.66, 1.1, d * 0.6, wallM, 0, ry + 1.9, 0));
+  g.add(hipRoof(w * 0.66 + 2.2, d * 0.6 + 2.2, 1.7, roofM, 0.12).translateY(ry + 2.4));
+  const ridgeY = ry + 2.4 + 1.7;
+  g.add(box(w * 0.5, 0.22, 0.3, lam(trim), 0, ridgeY, 0));
+  g.add(ball(0.32, lam("#ffd36b", "#7a4a00"), 0, ridgeY + 0.38, 0));
+  [-1, 1].forEach(s => {
+    const curl = mesh(new THREE.TorusGeometry(0.35, 0.08, 6, 12, Math.PI * 1.2), lam(trim), s * w * 0.25, ridgeY + 0.3, 0);
+    curl.rotation.z = s > 0 ? -0.2 : Math.PI + 0.2;
+    g.add(curl);
+  });
+  // Đầu đao cong vút ở bốn góc mái dưới.
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const e = mesh(new THREE.ConeGeometry(0.14, 1.0, 6), lam(trim), sx * (w + 3.4) / 2, ry + 0.25, sz * (d + 3.2) / 2);
+    e.rotation.z = -sx * 0.9;
+    e.rotation.x = sz * 0.9;
+    g.add(e);
+  }
+}
+
+// ---------- Mô hình dựng từ Blender ----------
+// Tải các file .glb trong assets/models (nén Draco). Thiếu file hay lỗi mạng thì trả về null để dùng khung đơn giản.
+const MODELS = { "tam-thanh": "assets/models/tam-thanh.glb" };
+async function loadModels() {
+  let GLTFLoader, DRACOLoader;
+  try {
+    ({ GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js"));
+    ({ DRACOLoader } = await import("three/addons/loaders/DRACOLoader.js"));
+  } catch (e) { console.warn("Không tải được GLTFLoader", e); return {}; }
+  const draco = new DRACOLoader().setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/");
+  const loader = new GLTFLoader().setDRACOLoader(draco);
+  const out = {};
+  await Promise.all(Object.entries(MODELS).map(async ([k, url]) => {
+    try {
+      const gltf = await loader.loadAsync(url);
+      // Màu và bóng đổ đã bake vào màu đỉnh; dùng Lambert cho đồng bộ ánh sáng ngày/đêm với phần còn lại.
+      const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+      gltf.scene.traverse(o => { if (o.isMesh) o.material = m; });
+      out[k] = gltf.scene;
+    } catch (e) { console.warn(`Không tải được ${url}, dùng khung đơn giản.`, e); }
+  }));
+  draco.dispose();
+  return out;
 }
 
 function makeTree(kind = "pine") {
@@ -691,7 +717,9 @@ export async function createWorld(container, hooks = {}) {
 
   // ---------- Ba điện và Bốc Dịch Đài ----------
   const halls = {};
+  const models = await loadModels();
   const tamThanh = makeHall({
+    shell: models["tam-thanh"],
     w: 14, d: 8, h: 4.6, wall: "#8a2a1e", roof: "#c4532a", board: "三清殿", couplets: ["玉清上清", "太清福壽"], sign: "Tam Thanh Điện",
     statues: [{ x: -2.2, robe: "#3b5ba5" }, { x: 0, robe: "#c9302c", halo: "#fff0b0" }, { x: 2.2, robe: "#2e7a5a" }].map(s => ({ ...s, beard: true }))
   });
