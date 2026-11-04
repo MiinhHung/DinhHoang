@@ -55,10 +55,21 @@ Không cần đụng vào code; sửa JSON rồi tải lại trang.
 - `van-phong.json` — câu mở đầu, câu kết, lời chúc, lời khuyên theo ngành nghề, chủ đề hỏi Dịch, lời chúc Tam Thanh.
 - `dao-si.json` — lời chào của Lão Đạo Sĩ theo buổi, lời dạy mỗi ngày (trích Đạo Đức Kinh, mỗi ngày một câu), các lộc của Cây Kim Tiền.
 
+## Bản đồ
+
+Một cao nguyên lơ lửng trên biển mây, có lan can đá quanh mép, thác nước đổ xuống và núi đá vôi xa xa. Đi từ nam lên bắc:
+
+1. Lối vào và tam quan **Đình Hoàng Online**, hai bên có cờ âm dương.
+2. Sân tròn chạm hoa sen, hai ao sen hai bên (ao trái là Ao Sen thả hoa đăng, cạnh ao phải là Lầu Chuông). Lão Đạo Sĩ đứng ngay sau cổng.
+3. Hàng ba điện quay mặt về phía cổng: **Tài Thần Điện** (trái, mái vàng, cây vàng, thỏi vàng), **Tam Thanh Điện** (giữa), **Nguyệt Lão Điện** (phải, mái hồng, anh đào).
+4. **Bốc Dịch Đài** trên bệ tròn cao phía sau Tam Thanh, lên bằng bậc thang ở giữa.
+
+Toạ độ các khu vực nằm ở đầu `js/world.js` (`HALL`, `ALTAR`, `POND`, `SPOT`, `PROP`). Chạm xuống sân thì nhân vật tự tìm đường vòng qua điện, ao và lên xuống bậc thang.
+
 ## Trong sân đình
 
 - **Lão Đạo Sĩ** đứng cạnh chỗ xuất hiện: chào theo buổi, đọc lời dạy hôm nay, nhắc việc lành còn thiếu.
-- **Lầu Chuông** (bên trái cổng): thỉnh chuông. **Ao Sen** (bên phải cổng): thả hoa đăng kèm điều nguyện (không lưu).
+- **Ao Sen** (ao bên trái sau cổng): thả hoa đăng kèm điều nguyện (không lưu). **Lầu Chuông** (cạnh ao bên phải): thỉnh chuông.
 - **Cây Tơ Hồng** (trước Nguyệt Lão Điện): buộc dây đỏ, cây giữ lại tối đa 30 sợi của mỗi người. **Cây Kim Tiền** (trước Tài Thần Điện): mỗi ngày hái một lộc.
 - **Sổ Công Đức** (nút 📜): 5 việc lành mỗi ngày (thắp hương, xin quẻ, thỉnh chuông, thả hoa đăng, chia sẻ bùa), điểm, cấp bậc, chuỗi ngày liên tiếp, bộ sưu tập quẻ và xem lại lá bùa cũ. Lưu trong `localStorage` của trình duyệt, có nút xóa.
 - **Ngày và đêm** theo giờ máy người chơi. Thêm `?gio=14` vào địa chỉ để xem thử cảnh vào giờ khác.
@@ -72,7 +83,9 @@ index.html        Khung trang, cổng vào, HUD, các bảng
 config.js         Cấu hình cho đội vận hành
 css/style.css     Giao diện
 js/main.js        Điều phối: cổng, nghi lễ từng điện, kết quả, chia sẻ
-js/world.js       Cảnh 3D (three.js): sân đình, bốn điện, nhân vật, hiệu ứng
+js/world.js       Cảnh 3D (three.js): bố cục, nhân vật, camera, tìm đường, hiệu ứng
+js/landscape.js   Địa hình: cao nguyên, vách đá, mây, núi, thác, lan can, ao, cổng, bảng tên
+js/build.js       Vật liệu, hình khối và chữ vẽ canvas dùng chung
 js/oracle.js      Bộ máy rút quẻ và ráp lời luận
 js/lunar.js       Can chi, mệnh nạp âm, giờ âm lịch
 js/charm.js       Vẽ lá bùa 1080×1920 (khung Story 9:16) trên canvas

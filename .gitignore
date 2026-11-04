@@ -7,3 +7,4 @@ Thumbs.db
 .env.*
 .vscode/
 .claude/settings.local.json
+.playwright-mcp/
