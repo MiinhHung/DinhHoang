@@ -10,6 +10,7 @@ import {
   terrainY, heightAt, walkable, canStep, hallObstacles, interiorColumns, hallInterior, inPoly
 } from "./map.js";
 import { makeNight } from "./night.js";
+import { makeKoiPonds, makeCranes, makeSummitClouds } from "./life.js";
 
 export const ZONES = {
   san: { name: "Sân Đình", han: "", sub: "" },
@@ -1450,6 +1451,9 @@ export async function createWorld(container, hooks = {}) {
     banners.forEach(b => b.userData.wave(t));
     waterMats.update(dt);
     updateFestival(dt, t);
+    koi(t);
+    cranes(t);
+    summitClouds(t, camera);
     waterMats.setLight(waterLight);
     foams.forEach(f => f.update(t));
     driftClouds(dt);
@@ -1671,6 +1675,14 @@ export async function createWorld(container, hooks = {}) {
   });
   addEventListener("keyup", e => { const k = KEYMAP[e.code]; if (k) keys.delete(k); });
   addEventListener("blur", () => keys.clear());
+
+  // ---------- Cá chép, hạc, mây trên đỉnh ----------
+  const koi = makeKoiPonds(scene, [
+    ...[[WATER.spring, lv(3)], [WATER.pool2, lv(2)], [WATER.pool1, lv(1)]].map(([p, y]) => ({ x: p.x, y: y + 0.14, z: p.z, rx: p.w / 2 * 0.85, rz: p.d / 2 * 0.85 })),
+    { x: POND.x, y: 0.14, z: POND.z, rx: POND.w / 2 * 0.8, rz: POND.d / 2 * 0.8 }
+  ]);
+  const cranes = makeCranes(scene, { center: [0, 25], count: 7 });
+  const summitClouds = makeSummitClouds(scene, mist.children[0].material, { x: ALTAR.x, y: altarBase(), z: ALTAR.z, r: 26 });
 
   // ---------- Ban đêm: phát sáng, quầng đèn, đom đóm quanh ao và bồn hoa ----------
   night = await makeNight(renderer, scene, camera, tex.glow, {
