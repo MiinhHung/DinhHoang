@@ -9,6 +9,7 @@ import {
   LEVELS, STAIRS, HALL, ALTAR, WATER, POND, BRIDGE, bridgeDeckY, GATE_Z, SPAWN as SPAWN_XZ, hallFloor, altarBase,
   terrainY, heightAt, walkable, canStep, hallObstacles, interiorColumns, hallInterior, inPoly
 } from "./map.js";
+import { makeNight } from "./night.js";
 
 export const ZONES = {
   san: { name: "Sân Đình", han: "", sub: "" },
@@ -658,7 +659,8 @@ export async function createWorld(container, hooks = {}) {
   const starMat = new THREE.PointsMaterial({ color: 0xfff6e0, size: 1.1, sizeAttenuation: false, fog: false, transparent: true });
   scene.add(new THREE.Points(sg, starMat));
   const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.glow, color: 0xfff1cf, fog: false, depthWrite: false, toneMapped: false }));
-  moon.position.set(-70, 80, -170);
+  // Trăng (ban ngày là mặt trời) mọc phía sau Bốc Dịch Đài trên đỉnh núi.
+  moon.position.set(40, 120, -300);
   moon.scale.set(40, 40, 1);
   scene.add(moon);
   const moonCore = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.glow, color: 0xffffff, fog: false, depthWrite: false, toneMapped: false }));
@@ -667,7 +669,7 @@ export async function createWorld(container, hooks = {}) {
   scene.add(moonCore);
 
   // Ngày và đêm theo giờ trên máy người chơi: nội suy giữa các mốc trong ngày.
-  const NIGHT = { top: "#0c0a22", mid: "#3a2a5e", low: "#d9855a", fog: "#2a2342", hs: "#b9a8ff", hg: "#4a3426", hi: 1.7, ai: 0.55, dc: "#ffe2c0", di: 1.5, star: 1, sun: 0, exp: 1.1 };
+  const NIGHT = { top: "#070818", mid: "#1c1c48", low: "#5a3a5a", fog: "#1a1a36", hs: "#7f8cd8", hg: "#2a2030", hi: 0.75, ai: 0.28, dc: "#b8c8ff", di: 0.75, star: 1, sun: 0, exp: 1.05 };
   const DAWN = { top: "#27346a", mid: "#9a7aa8", low: "#f6a878", fog: "#6e5c7e", hs: "#ffd0c0", hg: "#5a4030", hi: 1.6, ai: 0.6, dc: "#ffc49a", di: 1.6, star: 0.25, sun: 0.6, exp: 1.05 };
   const DAY = { top: "#3d78c4", mid: "#a3c8ea", low: "#f4e6c8", fog: "#b4c4d4", hs: "#e6eeff", hg: "#6e5c40", hi: 1.5, ai: 0.7, dc: "#fff4dc", di: 2.3, star: 0, sun: 1, exp: 0.95 };
   const DUSK = { top: "#232458", mid: "#b0607a", low: "#ffa25a", fog: "#5e405e", hs: "#ffc2a8", hg: "#4a3426", hi: 1.6, ai: 0.55, dc: "#ffb27a", di: 1.6, star: 0.35, sun: 0.5, exp: 1.05 };
@@ -692,13 +694,15 @@ export async function createWorld(container, hooks = {}) {
     starMat.opacity = n("star");
     const sun = n("sun");
     moon.material.color.set(0xfff1cf).lerp(cb.set(0xfff8e6), sun);
-    moon.scale.setScalar(40 + sun * 30);
-    moonCore.scale.setScalar(12 + sun * 10);
+    moon.scale.setScalar(70 - sun * 10);
+    moonCore.scale.setScalar(20 - sun * 4);
     renderer.toneMappingExposure = n("exp");
     // Độ sáng cho mặt nước (shader không dùng đèn của cảnh): tối dần về đêm.
     waterLight = 0.42 + 0.58 * sun;
+    nightLevel = 1 - sun;
+    night?.setNight(nightLevel);
   }
-  let waterLight = 1;
+  let waterLight = 1, night = null, nightLevel = 0;
   applySky();
 
   // ---------- Núi, sân các tầng, bậc đá ----------
@@ -1122,6 +1126,7 @@ export async function createWorld(container, hooks = {}) {
     camDist = a < 0.8 ? 17.9 : 14.5;
     camera.updateProjectionMatrix();
     renderer.setSize(W(), H());
+    night?.setSize(W(), H());
   }
   // indoor (0–1): độ "ở trong điện", kéo camera lại gần và thấp hơn.
   let indoor = 0;
@@ -1586,6 +1591,16 @@ export async function createWorld(container, hooks = {}) {
   addEventListener("keyup", e => { const k = KEYMAP[e.code]; if (k) keys.delete(k); });
   addEventListener("blur", () => keys.clear());
 
+  // ---------- Ban đêm: phát sáng, quầng đèn, đom đóm quanh ao và bồn hoa ----------
+  night = await makeNight(renderer, scene, camera, tex.glow, {
+    fireflySpots: [
+      ...BEDS.map(([x, z]) => [x, groundY(x, z), z, 3]),
+      [POND.x, 0, POND.z, 6],
+      ...[[WATER.spring, 18], [WATER.pool2, 9], [WATER.pool1, 0]].map(([p, y]) => [p.x, y, p.z, 5])
+    ]
+  });
+  night.setNight(nightLevel);
+
   // ---------- Vòng lặp ----------
   const clock = new THREE.Clock();
   renderer.setAnimationLoop(() => {
@@ -1594,7 +1609,8 @@ export async function createWorld(container, hooks = {}) {
     updateCamera(dt, t);
     updateAmbient(dt, t);
     updateRemotes(dt);
-    renderer.render(scene, camera);
+    night.update(t);
+    night.render();
   });
 
   const faceYaw = z => Math.atan2(FOCUS[z].x - pos.x, FOCUS[z].z - pos.z);

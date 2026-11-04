@@ -194,6 +194,8 @@ export function makeNaturalPond(rx, rz, waterMat, { seed = 3, lilies = true } = 
   geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
   geo.setIndex(idx);
+  // Cần pháp tuyến cho đáy ao (vật liệu có ánh sáng); thiếu thì ánh sáng ra NaN, hậu kỳ phát sáng loang thành mảng đen.
+  geo.computeVertexNormals();
   const water = new THREE.Mesh(geo, waterMat);
   water.position.y = 0.14;
   water.renderOrder = 2;
@@ -316,6 +318,7 @@ export function makeRockField(points) {
 // Mây mù lững lờ quanh sườn núi và chân thác.
 export function makeMist(points, opacity = 0.45) {
   const mat = new THREE.SpriteMaterial({ map: cloudTexture(), transparent: true, depthWrite: false, opacity, fog: true });
+  mat.userData.cloud = true;
   const g = new THREE.Group();
   points.forEach(([x, y, z, size]) => {
     const s = new THREE.Sprite(mat);
@@ -471,6 +474,7 @@ export function makeClouds(scene) {
   sea.rotation.x = -Math.PI / 2;
   scene.add(sea);
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.95 });
+  mat.userData.cloud = true;
   for (let i = 0; i < 30; i++) {
     const a = Math.random() * Math.PI * 2, r = 38 + Math.random() * 120;
     const s = new THREE.Sprite(mat);
