@@ -8,3 +8,4 @@ Thumbs.db
 .vscode/
 .claude/settings.local.json
 .playwright-mcp/
+__pycache__/
