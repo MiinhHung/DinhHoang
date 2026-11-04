@@ -1,0 +1,82 @@
+# Đình Hoàng Online
+
+Đạo quán 3D chạy trên trình duyệt: thắp hương ở Tam Thanh Điện, rút xăm Nguyệt Lão, xin quẻ Tài Thần, gieo quẻ Kinh Dịch ở Bốc Dịch Đài, rồi nhận một lá bùa độc bản để lưu hoặc chia sẻ. Chỉ mang tính giải trí.
+
+Trang web tĩnh hoàn toàn, không cần build, không cần máy chủ riêng.
+
+## Chạy thử trên máy
+
+Trang tải nội dung bằng `fetch`, nên **không mở thẳng file `index.html`** được — cần một web server tĩnh bất kỳ:
+
+```bash
+npx serve .          # hoặc
+python -m http.server 8080
+```
+
+Rồi mở địa chỉ server in ra (ví dụ `http://localhost:3000`).
+
+## Đưa lên mạng
+
+Tải nguyên thư mục lên bất kỳ nơi nào phục vụ file tĩnh (Netlify, Vercel, Cloudflare Pages, GitHub Pages, hosting thường). Sau đó điền `siteUrl` trong `config.js` để link chia sẻ trỏ đúng địa chỉ.
+
+## Link vào thẳng một điện, mã QR
+
+Thêm `?dien=<điện>` vào địa chỉ thì người mới bấm cổng sẽ được đưa thẳng tới điện đó và mở luôn nghi lễ. Các điện: `tam-thanh`, `nguyet-lao`, `tai-than`, `boc-dich`. Link chia sẻ từ lá bùa tự gắn tham số này.
+
+Ví dụ mã QR in ở sự kiện cho Tài Thần Điện:
+
+```
+https://ten-mien-cua-ban/?dien=tai-than&utm_source=qr&utm_medium=offline&utm_campaign=ten-su-kien
+```
+
+## Cấu hình — `config.js`
+
+| Mục | Ý nghĩa |
+| --- | --- |
+| `siteName` | Tên hiển thị trên lá bùa và lời chia sẻ |
+| `siteUrl` | Địa chỉ web chính thức; để trống thì lấy địa chỉ đang chạy |
+| `hashtags` | Gắn vào cuối lời chia sẻ |
+| `supabase.url`, `supabase.anonKey` | Bật chế độ thấy người chơi khác trong đình. Để trống = chơi một mình |
+| `supabase.maxVisiblePlayers` | Số người tối đa hiển thị cùng lúc |
+| `analytics.ga4Id` | Mã Google Analytics 4 (`G-XXXXXXX`); để trống = tắt |
+| `birthYear` | Khoảng năm sinh hợp lệ |
+
+### Người chơi online (Supabase)
+
+Chỉ dùng Realtime (presence + broadcast), **không cần tạo bảng**. Tạo một project Supabase, vào *Project Settings → API*, chép `Project URL` và `anon public key` vào `config.js`. Chỉ danh xưng, màu áo và vị trí nhân vật được gửi đi — họ tên thật và năm sinh không bao giờ rời khỏi máy người chơi.
+
+## Sửa nội dung quẻ — thư mục `content/`
+
+Không cần đụng vào code; sửa JSON rồi tải lại trang.
+
+- `nguyet-lao.json` — các thẻ xăm Nguyệt Lão (`single` / `dating` / `couple` là lời luận theo tình trạng).
+- `tai-than.json` — các quẻ Tài Thần (`timing`: `tien` nên tiến, `thu` nên thủ, `giu` giữ nhịp).
+- `boc-dich.json` — đủ 64 quẻ Kinh Dịch. **Không xóa quẻ nào**: mỗi tổ hợp `upper`/`lower` phải có mặt, nếu không gieo ra quẻ thiếu sẽ lỗi.
+- `van-phong.json` — câu mở đầu, câu kết, lời chúc, lời khuyên theo ngành nghề, chủ đề hỏi Dịch, lời chúc Tam Thanh.
+
+Trong câu chữ có thể dùng các biến: `{ten}` (tên gọi), `{hoten}` (họ tên đầy đủ), `{canchi}`, `{menh}`, `{mong}` (điều mong), `{nghe}`, `{chude}`. Biến nào không có giá trị sẽ để trống (riêng `{ten}` thành “thí chủ”). Ở phần Bốc Dịch không có `{canchi}`/`{menh}`.
+
+## Cấu trúc
+
+```
+index.html        Khung trang, cổng vào, HUD, các bảng
+config.js         Cấu hình cho đội vận hành
+css/style.css     Giao diện
+js/main.js        Điều phối: cổng, nghi lễ từng điện, kết quả, chia sẻ
+js/world.js       Cảnh 3D (three.js): sân đình, bốn điện, nhân vật, hiệu ứng
+js/oracle.js      Bộ máy rút quẻ và ráp lời luận
+js/lunar.js       Can chi, mệnh nạp âm, giờ âm lịch
+js/charm.js       Vẽ lá bùa 1080×1920 (khung Story 9:16) trên canvas
+js/share.js       Chia sẻ (Web Share, Facebook, chép lời), link có UTM
+js/audio.js       Chuông, mõ, nhạc thiền tổng hợp bằng Web Audio
+js/online.js      Người chơi online qua Supabase Realtime
+js/analytics.js   Ghi nhận UTM, gửi sự kiện GA4
+content/          Nội dung quẻ (JSON)
+assets/           Icon và ảnh xem trước khi chia sẻ (og.png)
+```
+
+## Điều khiển
+
+- Điện thoại: kéo cần điều khiển góc trái, hoặc chạm xuống sân để đi tới đó.
+- Máy tính: W A S D / phím mũi tên, hoặc bấm chuột xuống sân; phím **E** để vào nghi lễ khi đứng trước điện.
+- Nút 🗺 để đi nhanh tới các điện, ⛩ về Chính Điện, 🔊 bật/tắt âm thanh.

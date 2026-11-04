@@ -1,0 +1,160 @@
+{
+  "nguyetLao": {
+    "openings": [
+      "Nguyệt Lão vuốt chòm râu bạc, lần giở cuốn sổ nhân duyên, dừng lại ở trang có tên {hoten}.",
+      "Sợi chỉ đỏ trong tay Nguyệt Lão khẽ rung khi {ten} vừa khấn xong.",
+      "Dưới trăng, ông Tơ mỉm cười: “Người tuổi {canchi} này, ta nhớ rồi.”",
+      "Hương trầm vừa bén, ống xăm đã trao cho {ten} một quẻ — đọc chậm thôi, từng chữ đều có ý.",
+      "Hợp Hoan Cung đêm nay sáng đèn, Nguyệt Lão đã nghe lời {ten} khấn."
+    ],
+    "mong": [
+      "Điều {ten} mong — “{mong}” — đã được ghi vào sổ. Nguyệt Lão không hứa hẹn ngày giờ, chỉ dặn: lòng thật thì duyên thật.",
+      "Về điều “{mong}”, quẻ nói: hãy làm phần của mình trước, phần còn lại để trời lo.",
+      "Lời khấn “{mong}” đã theo khói hương bay lên. Giữ lòng nhẹ nhàng, đừng ép mình phải có câu trả lời ngay."
+    ],
+    "menh": {
+      "Kim": ["Người mệnh Kim cứng cỏi, rõ ràng — trong tình cảm, đôi khi nên mềm đi một chút để người kia thấy được sự ấm áp bên trong.", "Mệnh Kim của {ten} sáng như chuông đồng: thẳng thắn là điểm mạnh, chỉ cần nhớ nói thẳng mà dịu dàng."],
+      "Mộc": ["Người mệnh Mộc giàu lòng bao dung, như cây cho bóng mát. Hãy nhớ chính mình cũng cần được tưới tắm.", "Mệnh Mộc của {ten} mang khí xuân: duyên đến khi {ten} đang lớn lên, đang học điều mới."],
+      "Thủy": ["Người mệnh Thủy tinh tế, nhạy cảm, dễ hiểu lòng người. Đừng để mình chìm trong suy nghĩ quá lâu — hãy hành động.", "Mệnh Thủy của {ten} mềm mà bền: tình cảm nhẹ nhàng nhưng sâu, ai hiểu được sẽ quý mãi."],
+      "Hỏa": ["Người mệnh Hỏa nồng nhiệt, yêu hết lòng. Giữ lửa vừa phải để không ai bị bỏng — kể cả chính mình.", "Mệnh Hỏa của {ten} sáng rực: người kia thường bị cuốn bởi năng lượng ấy. Hãy để họ có chỗ được tỏa sáng cùng."],
+      "Thổ": ["Người mệnh Thổ vững vàng, đáng tin, là chỗ dựa cho người khác. Đừng ngại để người khác làm chỗ dựa cho mình.", "Mệnh Thổ của {ten} như đất lành: duyên đến chậm nhưng một khi bén rễ thì rất khó lay."]
+    },
+    "closings": [
+      "Duyên do trời, phận do mình. Giữ lòng thiện lành là cách cầu duyên tốt nhất.",
+      "Nhớ rằng: người phù hợp sẽ không khiến {ten} phải nghi ngờ giá trị của mình.",
+      "Tơ hồng đã buộc, phần còn lại là những ngày bình thường {ten} sống thật đẹp.",
+      "Quẻ chỉ là ngọn đèn soi, đường vẫn do chính {ten} bước."
+    ],
+    "blessings": [
+      "Nguyện cho {ten} gặp người thương mình như thương chính họ.",
+      "Chỉ hồng bền chặt, tình thắm trăm năm.",
+      "Mong {ten} yêu và được yêu, bình yên và được bình yên.",
+      "Trăng tròn, người đủ, lòng vui.",
+      "Nguyện duyên lành tìm đến, nguyện lòng {ten} luôn ấm áp."
+    ]
+  },
+
+  "taiThan": {
+    "openings": [
+      "Tài Thần Triệu Công Minh ngồi trên lưng hổ, tay cầm roi vàng, gật đầu khi thấy {hoten} bước vào.",
+      "Chuông đồng ngân ba hồi, kim tiền leng keng — quẻ của {ten} đã định.",
+      "Hương vừa bén, ống quẻ đã rơi ra một thẻ cho người tuổi {canchi}.",
+      "Tài Thần Điện sáng đèn vàng; quẻ này dành riêng cho {ten} trong thời điểm này.",
+      "Lão giữ điện lật thẻ quẻ, mỉm cười: “Quẻ này hợp với người làm {nghe} lắm.”"
+    ],
+    "menh": {
+      "Kim": ["Mệnh Kim hợp những việc cần sự chính xác, rõ ràng. Tiền của {ten} đến từ uy tín và sự chỉn chu.", "Người mệnh Kim nên giữ chữ tín như giữ vàng — đó là vốn quý nhất."],
+      "Mộc": ["Mệnh Mộc hợp những việc nuôi trồng, phát triển lâu dài. Tài lộc của {ten} lớn dần như cây.", "Người mệnh Mộc làm giàu bằng sự sáng tạo và lòng kiên nhẫn."],
+      "Thủy": ["Mệnh Thủy hợp giao thương, kết nối. Tiền của {ten} chảy qua các mối quan hệ.", "Người mệnh Thủy linh hoạt, nhạy bén — hãy tin vào cảm nhận đầu tiên của mình về con người."],
+      "Hỏa": ["Mệnh Hỏa hợp những việc cần nhiệt huyết, truyền cảm hứng. Năng lượng của {ten} chính là thương hiệu.", "Người mệnh Hỏa nên giữ sức bền: cháy đều thì sáng lâu."],
+      "Thổ": ["Mệnh Thổ hợp những việc tích lũy, quản lý, bất động. Tài lộc của {ten} đến từ sự vững vàng.", "Người mệnh Thổ được người khác tin cậy — hãy để niềm tin đó thành cơ hội."]
+    },
+    "closings": [
+      "Tiền bạc là phương tiện, bình an mới là gốc. Giữ sức khỏe để hưởng lộc.",
+      "Lộc nhiều hay ít là do trời, giữ được hay không là do mình.",
+      "Làm ăn tử tế, lộc đến lâu bền.",
+      "Quẻ chỉ mang tính giải trí — mọi quyết định tài chính, {ten} hãy cân nhắc kỹ và hỏi người có chuyên môn."
+    ],
+    "nghe": {
+      "kinhdoanh": {
+        "label": "Kinh doanh, buôn bán",
+        "advice": ["Chăm sóc khách quen chu đáo; một khách hài lòng mang đến ba khách mới.", "Kiểm tra lại hàng tồn và dòng tiền; buôn bán giỏi là biết hàng nào nên dừng.", "Mặt tiền sạch sẽ, sáng sủa — khách vào là thấy vui."],
+        "wishes": ["Buôn may bán đắt, khách đến như nước.", "Mua một bán mười, tiền vào như nước.", "Cửa hàng rộn ràng, tài lộc đầy kho."]
+      },
+      "vanphong": {
+        "label": "Làm công ăn lương",
+        "advice": ["Chủ động nhận một việc khó; người trên đang để ý ai dám làm.", "Sắp xếp lại bàn làm việc và danh sách việc cần làm; đầu óc gọn thì việc trôi.", "Giữ quan hệ tốt với đồng nghiệp — quý nhân của {ten} có thể ngồi ngay bàn bên."],
+        "wishes": ["Công việc hanh thông, thăng tiến vững vàng.", "Lương tăng, thưởng đầy, sếp quý, đồng nghiệp thương.", "Việc nhẹ lương cao, an nhàn thư thái."]
+      },
+      "dautu": {
+        "label": "Đầu tư",
+        "advice": ["Chỉ dùng tiền nhàn rỗi — phần mà nếu mất đi {ten} vẫn ngủ ngon.", "Hiểu rõ thứ mình bỏ tiền vào; điều gì chưa hiểu thì chưa vội.", "Tránh xa những lời hứa lãi cao, nhanh và chắc chắn — Tài Thần chưa từng hứa như thế với ai."],
+        "wishes": ["Vốn vững lời đều, tâm an trí sáng.", "Tiền sinh tiền, lộc sinh lộc, an nhiên mà giàu.", "Quyết đoán đúng lúc, bình tâm mọi lúc."]
+      },
+      "online": {
+        "label": "Bán hàng online",
+        "advice": ["Đăng bài đều đặn hơn là đăng nhiều một lúc; khách nhớ người xuất hiện thường xuyên.", "Trả lời tin nhắn nhanh và tử tế — đó là “mặt tiền” của cửa hàng online.", "Chụp lại ảnh sản phẩm dưới ánh sáng tự nhiên; ảnh đẹp là nửa phần chốt đơn."],
+        "wishes": ["Đơn về như mưa, ship không kịp nghỉ.", "Livestream đông vui, đơn nổ liên tục.", "Khách quen nhớ mãi, khách mới tìm về."]
+      },
+      "sangtao": {
+        "label": "Sáng tạo nội dung, tự do",
+        "advice": ["Gom các sản phẩm tốt nhất thành một bộ hồ sơ gọn đẹp; cơ hội đến khi người ta thấy được {ten} làm gì.", "Đặt giá đúng với giá trị — người làm tự do cần trân trọng thời gian của chính mình.", "Dành một buổi mỗi tuần để học hoặc làm dự án riêng; cảm hứng cần được nuôi."],
+        "wishes": ["Ý tưởng dồi dào, khách hàng tử tế.", "Tác phẩm vang xa, thu nhập vững vàng.", "Tự do mà sung túc, sáng tạo mà an yên."]
+      },
+      "kythuat": {
+        "label": "Kỹ thuật, tay nghề",
+        "advice": ["Giữ tay nghề sắc như dao mới mài: học thêm một kỹ thuật, một công cụ mới.", "Làm kỹ từng việc nhỏ; người thợ giỏi được nhớ nhờ những chỗ không ai để ý.", "Ghi lại kinh nghiệm của mình — một ngày nó sẽ thành bài giảng, thành nghề phụ."],
+        "wishes": ["Tay nghề vững vàng, việc làm không ngớt.", "Làm đâu chắc đó, tiếng lành đồn xa.", "Công trình suôn sẻ, an toàn, đầy đủ."]
+      },
+      "hocsinh": {
+        "label": "Học sinh, sinh viên",
+        "advice": ["Lộc lớn nhất của tuổi đi học là kiến thức — đầu tư vào một kỹ năng sẽ sinh lời cả đời.", "Lập một ngân sách nhỏ cho mình; biết giữ tiền từ sớm là lợi thế lớn.", "Một công việc bán thời gian hợp ngành sẽ mở ra nhiều cửa hơn {ten} nghĩ."],
+        "wishes": ["Học đâu nhớ đó, thi đâu đỗ đó.", "Học bổng gõ cửa, thầy quý bạn thương.", "Đầu óc minh mẫn, tương lai rộng mở."]
+      },
+      "khac": {
+        "label": "Nghề khác",
+        "advice": ["Làm tốt việc đang làm hôm nay — đó là nền móng cho tài lộc ngày mai.", "Để ý những việc người khác hay nhờ {ten} giúp; đó có thể là nguồn thu mới.", "Giữ sức khỏe và tinh thần; người khỏe mới đi đường dài."],
+        "wishes": ["Vạn sự như ý, tài lộc dồi dào.", "Tiền vào đều đặn, chi tiêu hợp lý, an tâm sống vui.", "Năm mới phát tài, an khang thịnh vượng."]
+      }
+    }
+  },
+
+  "bocDich": {
+    "openings": [
+      "Lão đạo sĩ vuốt râu, xếp sáu hào thành quẻ, rồi chậm rãi nói với {ten}:",
+      "Ba đồng xu sáu lần gieo, trời đất đã cho {ten} một quẻ. Nghe đây:",
+      "Đài Bốc Dịch lặng gió, quẻ hiện ra rõ ràng. Lão đạo sĩ gật đầu:",
+      "“Quẻ không nói thay con đường, quẻ chỉ soi đèn,” lão đạo sĩ nhắc {ten} trước khi giải."
+    ],
+    "doiHao": [
+      "Có hào động — việc đang chuyển biến, chưa đứng yên.",
+      "Quẻ có hào động, nghĩa là tình thế sẽ thay đổi theo hướng mới.",
+      "Hào động như cánh cửa đang hé: hiện tại dẫn sang một quẻ khác."
+    ],
+    "closings": [
+      "Kinh Dịch dạy rằng mọi thứ đều biến đổi. Quẻ hôm nay là lời nhắc, không phải lời phán.",
+      "Lão đạo sĩ dặn thêm: quẻ tốt không làm thay, quẻ xấu không cản bước. Người quyết định vẫn là {ten}.",
+      "Hãy đọc quẻ như đọc một lời khuyên của người bạn già — giữ lấy điều hợp, bỏ qua điều chưa hợp.",
+      "Âm dương xoay vần, biết thời biết thế là biết đạo."
+    ],
+    "chude": {
+      "congviec": {
+        "label": "Công việc",
+        "lines": ["Về công việc, quẻ khuyên {ten} nhìn kỹ thời thế trước khi đổi hướng; việc đang làm còn nhiều điều để học.", "Trong công việc, đây là lúc xây nền: kỹ năng, uy tín, các mối quan hệ.", "Công việc sẽ có chuyển động trong thời gian tới; chuẩn bị sẵn sàng để đón."]
+      },
+      "tinhcam": {
+        "label": "Tình cảm",
+        "lines": ["Về tình cảm, quẻ nói lòng thành là gốc; đừng đoán ý nhau, hãy hỏi và lắng nghe.", "Chuyện tình cảm của {ten} cần thời gian và sự kiên nhẫn hơn là những quyết định vội.", "Trong tình cảm, điều {ten} trao đi sẽ quay về — hãy trao điều tốt đẹp."]
+      },
+      "taichinh": {
+        "label": "Tiền bạc",
+        "lines": ["Về tiền bạc, quẻ khuyên giữ nhịp đều, chi tiêu có kế hoạch, tránh những khoản vội vàng.", "Tài lộc đến từ sự bền bỉ hơn là may rủi; {ten} hãy tin vào công sức của mình.", "Tiền bạc lúc này nên giữ hơn nên tiêu; tích lũy nhỏ sẽ thành lớn."]
+      },
+      "hoctap": {
+        "label": "Học hành, thi cử",
+        "lines": ["Về học hành, quẻ khuyên chăm chỉ đều đặn mỗi ngày hơn là dồn sức phút chót.", "Việc học của {ten} sẽ tiến bộ khi tìm được người hướng dẫn phù hợp.", "Thi cử cần tâm tĩnh; ngủ đủ, ôn kỹ phần nền, đừng lo những điều ngoài tầm tay."]
+      },
+      "giadao": {
+        "label": "Gia đạo",
+        "lines": ["Về gia đạo, quẻ khuyên dành thời gian cho người thân; một bữa cơm chung hóa giải nhiều điều.", "Trong nhà, lời nói nhẹ nhàng là chìa khóa; nhường nhau một câu, ấm cả mái nhà.", "Gia đạo yên ổn khi mỗi người được lắng nghe; {ten} hãy là người mở lời trước."]
+      },
+      "binhan": {
+        "label": "Bình an",
+        "lines": ["Về bình an, quẻ nhắc {ten} chăm sóc bản thân: ngủ đủ, ăn lành, đi chậm lại.", "Sự bình an đến từ bên trong; mười phút tĩnh lặng mỗi ngày đáng giá hơn mọi lá bùa.", "Đi đường cẩn thận, làm việc vừa sức — bình an là phúc lớn nhất."]
+      }
+    }
+  },
+
+  "tamThanh": {
+    "blessings": [
+      "Tâm an thì cảnh an. Nguyện thí chủ một năm bình an, thân tâm thư thái.",
+      "Đạo ở trong lòng, phúc ở trong nhà. Nguyện gia đạo an khang.",
+      "Thượng thiện nhược thủy — sống như nước, mềm mà bền, lành mà mạnh.",
+      "Biết đủ thì vui, biết dừng thì an. Nguyện thí chủ thân khỏe, lòng nhẹ.",
+      "Một nén tâm hương, vạn điều an lành.",
+      "Nguyện cho người thí chủ thương được bình an, người thương thí chủ được hạnh phúc.",
+      "Gió thuận mưa hòa, mọi việc như ý.",
+      "Lòng thiện như đèn, đi đâu cũng sáng."
+    ]
+  }
+}

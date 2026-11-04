@@ -1,0 +1,424 @@
+{
+  "que": [
+    {
+      "id": 1,
+      "lv": "Thượng cát",
+      "ten": "Kim kê báo hiểu",
+      "tho": [
+        "Gà vàng gáy sớm đầu non,",
+        "Ai dậy sớm đã có phần lộc tươi."
+      ],
+      "meaning": "Gà vàng gáy sáng báo một khởi đầu thuận. Quẻ cho thấy {ten} đang đứng trước một cơ hội mới, và người nhanh tay sẽ được phần.",
+      "timing": "tien",
+      "timingText": "Thời điểm nên tiến: những việc đã chuẩn bị kỹ có thể bắt đầu ngay, đừng đợi “hoàn hảo” mới làm.",
+      "advice": "Bắt đầu ngày sớm hơn thường lệ một chút; những việc quan trọng nhất làm vào buổi sáng.",
+      "secret": "Trong tuần này, một tin nhắn hoặc cuộc gọi buổi sáng sẽ mở ra một cơ hội cho {ten}. Đừng để nó trôi."
+    },
+    {
+      "id": 2,
+      "lv": "Thượng thượng",
+      "ten": "Chiêu tài tiến bảo",
+      "tho": [
+        "Cửa mở đón gió phương Đông,",
+        "Tài vào như nước theo dòng về sông."
+      ],
+      "meaning": "Quẻ đẹp nhất của Tài Thần Điện: “vời tài, đón báu”. Đường tài lộc của {ten} đang mở rộng như cửa đón gió.",
+      "timing": "tien",
+      "timingText": "Thời điểm thuận để mở rộng: giới thiệu mình nhiều hơn, nhận thêm khách, nói về điều mình làm giỏi.",
+      "advice": "Cửa mở thì tài vào: hãy để nhiều người biết {ten} đang làm gì và làm tốt đến đâu.",
+      "secret": "Hãy dọn sạch lối vào nhà hoặc bàn làm việc trong ba ngày tới — gọn gàng giúp đầu óc sáng và việc trôi chảy."
+    },
+    {
+      "id": 3,
+      "lv": "Trung cát",
+      "ten": "Nước chảy đá mòn",
+      "tho": [
+        "Giọt nhỏ chảy mãi thành dòng,",
+        "Đá kia rồi cũng mòn trong tháng ngày."
+      ],
+      "meaning": "Tài lộc của {ten} không đến như thác đổ, mà như dòng suối đều. Sự kiên trì là chìa khóa.",
+      "timing": "giu",
+      "timingText": "Giữ nhịp đều: tiếp tục những việc đang làm tốt, chưa cần thay đổi lớn.",
+      "advice": "Một thói quen nhỏ lặp lại mỗi ngày đáng giá hơn một nỗ lực lớn rồi bỏ dở.",
+      "secret": "Chọn một việc nhỏ có ích cho công việc và làm nó đúng 21 ngày liên tiếp. {ten} sẽ thấy khác biệt."
+    },
+    {
+      "id": 4,
+      "lv": "Trung bình",
+      "ten": "Thuyền chờ con nước",
+      "tho": [
+        "Thuyền neo bến đợi nước lên,",
+        "Vội chèo lúc cạn lại thêm nhọc người."
+      ],
+      "meaning": "Nước chưa lên mà chèo thì chỉ mắc cạn. Quẻ khuyên {ten} chờ thêm một chút trước những quyết định lớn về tiền bạc.",
+      "timing": "thu",
+      "timingText": "Nên thủ: giữ những gì đang có, tránh chi tiêu lớn hay cam kết vội trong thời gian này.",
+      "advice": "Dùng thời gian chờ để chuẩn bị: học thêm, tính toán kỹ, sửa sang thuyền.",
+      "secret": "Trước khi chi một khoản lớn, hãy đợi đủ 72 giờ. Nếu vẫn muốn mua, đó mới là điều {ten} thật sự cần."
+    },
+    {
+      "id": 5,
+      "lv": "Thượng cát",
+      "ten": "Ruộng tốt mùa vàng",
+      "tho": [
+        "Gieo đều tay, giữ đều lòng,",
+        "Mùa sau lúa trĩu đầy đồng vàng tươi."
+      ],
+      "meaning": "Những gì {ten} gieo trồng thời gian qua đang đến mùa gặt. Quẻ báo thành quả xứng đáng với công sức.",
+      "timing": "tien",
+      "timingText": "Thời điểm thu hoạch: mạnh dạn nhận phần xứng đáng của mình — một đề nghị tăng giá, một lời đề nghị nâng vị trí.",
+      "advice": "Đừng ngại nói về giá trị của mình. Người làm tốt xứng đáng được trả tốt.",
+      "secret": "Hãy liệt kê ba việc {ten} đã làm tốt trong năm qua. Danh sách đó là vũ khí cho cuộc trò chuyện sắp tới."
+    },
+    {
+      "id": 6,
+      "lv": "Trung cát",
+      "ten": "Quý nhân phù trợ",
+      "tho": [
+        "Đường xa có bạn cùng đi,",
+        "Gặp người tri kỷ việc gì cũng xong."
+      ],
+      "meaning": "Quẻ báo {ten} có quý nhân. Tài lộc lúc này đến qua con người — một người thầy, một khách hàng, một người bạn cũ.",
+      "timing": "tien",
+      "timingText": "Nên tiến qua các mối quan hệ: gặp gỡ, hỏi han, nhờ giúp và giúp lại.",
+      "advice": "Liên lạc lại với ba người cũ từng làm việc tốt với {ten}. Một lời hỏi thăm có thể mở ra cả một con đường.",
+      "secret": "Quý nhân của {ten} trong tháng này có thể là người lớn tuổi hơn, hoặc người làm ở một lĩnh vực hoàn toàn khác."
+    },
+    {
+      "id": 7,
+      "lv": "Tiểu cát",
+      "ten": "Tích tiểu thành đại",
+      "tho": [
+        "Con kiến tha mãi cũng đầy,",
+        "Đồng xu góp lại có ngày thành kho."
+      ],
+      "meaning": "Quẻ của sự tích lũy. Tài lộc của {ten} lớn lên từ những khoản nhỏ biết giữ.",
+      "timing": "giu",
+      "timingText": "Giữ nhịp tích lũy: để dành đều đặn quan trọng hơn kiếm thêm thật nhiều.",
+      "advice": "Thử để riêng một phần nhỏ thu nhập ngay khi nhận, trước khi tiêu bất cứ thứ gì.",
+      "secret": "Đặt một chiếc hũ hay một tài khoản nhỏ tên là “hũ lộc”. Mỗi lần có niềm vui, bỏ vào một khoản tượng trưng."
+    },
+    {
+      "id": 8,
+      "lv": "Trung bình",
+      "ten": "Giữ lửa trong lò",
+      "tho": [
+        "Lửa nhỏ giữ ấm qua đông,",
+        "Đừng thổi quá mạnh kẻo không còn than."
+      ],
+      "meaning": "Quẻ khuyên {ten} giữ sức. Đừng vì muốn nhanh mà đốt hết vốn liếng, sức khỏe hay các mối quan hệ.",
+      "timing": "thu",
+      "timingText": "Nên thủ: ưu tiên ổn định, cắt bớt những khoản và những việc không cần thiết.",
+      "advice": "Nghỉ ngơi cũng là một phần của làm giàu. Người kiệt sức không giữ được lửa.",
+      "secret": "Hãy rà lại các khoản đăng ký, thuê bao hằng tháng. Có ít nhất một khoản {ten} không còn dùng tới."
+    },
+    {
+      "id": 9,
+      "lv": "Thượng cát",
+      "ten": "Cá chép vượt Vũ Môn",
+      "tho": [
+        "Chép vàng vượt sóng Vũ Môn,",
+        "Một phen gắng sức, mãi còn vinh hoa."
+      ],
+      "meaning": "Quẻ của bước nhảy. {ten} đang đứng trước một thử thách mà nếu vượt qua sẽ lên một tầm mới.",
+      "timing": "tien",
+      "timingText": "Nên tiến mạnh: đây là lúc dồn sức cho một mục tiêu lớn — một kỳ thi, một dự án, một lời ứng tuyển.",
+      "advice": "Chuẩn bị kỹ rồi dốc toàn lực. Đừng chia sức cho quá nhiều việc cùng lúc.",
+      "secret": "Hãy nói mục tiêu của mình với một người đáng tin. Có người chứng kiến, {ten} sẽ bền chí hơn."
+    },
+    {
+      "id": 10,
+      "lv": "Trung cát",
+      "ten": "Cây kim tiền",
+      "tho": [
+        "Kim tiền xanh lá quanh năm,",
+        "Tưới bằng chăm chỉ, chẳng cầm bằng mơ."
+      ],
+      "meaning": "Cây kim tiền chỉ xanh khi được chăm. Quẻ nhắc {ten}: tài lộc đến từ việc làm, không đến từ mong ước suông.",
+      "timing": "giu",
+      "timingText": "Giữ nhịp chăm sóc: tập trung vào chất lượng việc đang làm, khách hàng đang có.",
+      "advice": "Chăm khách cũ tốt hơn đi tìm khách mới. Một lời cảm ơn đúng lúc mang lại nhiều hơn {ten} nghĩ.",
+      "secret": "Hãy đặt một chậu cây xanh nhỏ ở nơi làm việc và tự tay chăm nó — mỗi lần tưới cây là một lần nhắc mình kiên trì."
+    },
+    {
+      "id": 11,
+      "lv": "Tiểu cát",
+      "ten": "Vá lưới chờ mùa",
+      "tho": [
+        "Mùa này ngồi vá lưới thưa,",
+        "Mùa sau ra biển cá vừa đầy khoang."
+      ],
+      "meaning": "Không phải mùa nào cũng là mùa đánh bắt. Quẻ cho thấy đây là lúc {ten} chuẩn bị, sửa sang, học hỏi.",
+      "timing": "thu",
+      "timingText": "Nên thủ và chuẩn bị: đầu tư vào kỹ năng, công cụ, sức khỏe của chính mình.",
+      "advice": "Học một kỹ năng mới liên quan đến công việc. Mùa sau nó sẽ thành lưới bắt cá.",
+      "secret": "Một khóa học ngắn hoặc một cuốn sách {ten} định đọc từ lâu chính là món đầu tư sinh lời nhất lúc này."
+    },
+    {
+      "id": 12,
+      "lv": "Thượng cát",
+      "ten": "Đông phong tống noãn",
+      "tho": [
+        "Gió đông đưa ấm về nhà,",
+        "Lộc xuân nảy khắp cành hoa trước thềm."
+      ],
+      "meaning": "Gió xuân mang hơi ấm, quẻ báo một mùa khởi sắc cho {ten}. Những việc tưởng bế tắc sẽ dần thông.",
+      "timing": "tien",
+      "timingText": "Thời điểm thuận: những việc bị trì hoãn nên được khởi động lại.",
+      "advice": "Bắt tay lại một kế hoạch cũ đã gác. Thời thế đã khác, cơ hội cũng khác.",
+      "secret": "Một khoản tiền hoặc một món quà bất ngờ có thể đến với {ten} từ người thân."
+    },
+    {
+      "id": 13,
+      "lv": "Trung cát",
+      "ten": "Tiền vào cửa trước",
+      "tho": [
+        "Tiền vào cửa trước thong dong,",
+        "Chớ để cửa sau ai không khép giùm."
+      ],
+      "meaning": "Quẻ cho thấy thu nhập của {ten} không tệ, nhưng cần để ý những khoản rò rỉ.",
+      "timing": "giu",
+      "timingText": "Giữ nhịp và khép cửa sau: ghi lại chi tiêu trong một tháng để thấy tiền đi đâu.",
+      "advice": "Kiếm thêm khó hơn giữ lại. Giữ được là đã có lộc.",
+      "secret": "Khoản rò rỉ lớn nhất của {ten} có thể nằm ở những món nhỏ mua vì buồn chán. Thay bằng một cuộc đi bộ."
+    },
+    {
+      "id": 14,
+      "lv": "Trung bình",
+      "ten": "Nghỉ chân giữa đèo",
+      "tho": [
+        "Lưng đèo dừng lại nghỉ chân,",
+        "Nhìn đường đã vượt, thêm phần vững tâm."
+      ],
+      "meaning": "{ten} đã đi được một đoạn đường dài. Quẻ khuyên dừng lại nhìn lại trước khi leo tiếp.",
+      "timing": "thu",
+      "timingText": "Nên thủ một nhịp: tổng kết, sắp xếp lại ưu tiên, chưa nên mở thêm hướng mới.",
+      "advice": "Viết ra điều đã làm được và điều chưa được. Bản đồ rõ thì bước tiếp sẽ nhẹ.",
+      "secret": "Một quyết định {ten} đang phân vân nên đợi sau ngày rằm tới mới chốt."
+    },
+    {
+      "id": 15,
+      "lv": "Thượng cát",
+      "ten": "Ngũ phúc lâm môn",
+      "tho": [
+        "Năm điều phúc đến trước sân,",
+        "Phú, quý, thọ, khang, ninh cùng một nhà."
+      ],
+      "meaning": "Năm phúc đến cửa: giàu, sang, thọ, khỏe, yên. Quẻ báo tài lộc của {ten} đi cùng bình an cho cả gia đình.",
+      "timing": "tien",
+      "timingText": "Thời điểm tốt cho những việc chung của gia đình: sửa nhà, sắm sửa, lên kế hoạch dài.",
+      "advice": "Chia lộc cho người thân, lộc sẽ quay về gấp đôi.",
+      "secret": "Hãy mời cả nhà một bữa cơm trong tuần này; quẻ nói đó là cách “giữ phúc” của {ten}."
+    },
+    {
+      "id": 16,
+      "lv": "Trung cát",
+      "ten": "Thêm một nghề trong tay",
+      "tho": [
+        "Biết thêm một nghề trong tay,",
+        "Như thêm giếng nước những ngày nắng khan."
+      ],
+      "meaning": "Quẻ khuyên {ten} đừng dựa vào một nguồn thu duy nhất. Một kỹ năng phụ sẽ là giếng nước lúc trời hạn.",
+      "timing": "giu",
+      "timingText": "Giữ nghề chính vững, đồng thời nuôi thêm một nghề phụ nhỏ.",
+      "advice": "Bắt đầu từ điều {ten} đã giỏi và người khác hay nhờ. Đó chính là nghề phụ tiềm năng.",
+      "secret": "Người đầu tiên trả tiền cho kỹ năng phụ của {ten} có thể là một người bạn — hãy thử nói về nó."
+    },
+    {
+      "id": 17,
+      "lv": "Thượng cát",
+      "ten": "Thuận buồm xuôi gió",
+      "tho": [
+        "Buồm căng gió thuận ra khơi,",
+        "Thuyền đầy cá bạc, rạng ngời mùa sau."
+      ],
+      "timing": "tien",
+      "meaning": "Gió đã thuận, buồm đã căng. Những việc {ten} chuẩn bị lâu nay đang gặp thời.",
+      "timingText": "Thời điểm nên tiến: hoàn tất những kế hoạch đã ấp ủ, nhưng vẫn giữ một khoản dự phòng phòng khi gió đổi chiều.",
+      "advice": "Gió thuận là lúc chạy, nhưng người lái thuyền giỏi vẫn luôn nhìn trời.",
+      "secret": "Trong tuần này, hãy chốt một việc {ten} đã trì hoãn quá lâu."
+    },
+    {
+      "id": 18,
+      "lv": "Trung cát",
+      "ten": "Giếng sâu nước mát",
+      "tho": [
+        "Giếng sâu nước mát quanh năm,",
+        "Mạch ngầm chẳng cạn, âm thầm nuôi cây."
+      ],
+      "timing": "giu",
+      "meaning": "Giếng sâu thì nước bền. Quẻ khuyên {ten} đừng chạy theo những nguồn thu ào ạt mà nhất thời; nguồn thu đều đặn, lâu dài mới là gốc.",
+      "timingText": "Giữ nhịp: tiếp tục những việc đang mang lại thu nhập ổn định, chưa cần đổi hướng lớn.",
+      "advice": "Chăm cho nguồn thu chính thật vững trước khi tìm thêm nguồn mới.",
+      "secret": "Ghi lại mọi khoản thu trong một tháng; {ten} sẽ thấy nguồn nào đáng chăm hơn."
+    },
+    {
+      "id": 19,
+      "lv": "Thượng thượng",
+      "ten": "Tài nguyên quảng tiến",
+      "tho": [
+        "Bốn phương tài lộc đổ về,",
+        "Cửa nhà rộng mở, bộn bề niềm vui."
+      ],
+      "timing": "tien",
+      "meaning": "Quẻ thượng thượng: nguồn tài mở rộng bốn phía. Vận làm ăn của {ten} đang sáng, nhiều mối quan hệ có thể thành cơ hội.",
+      "timingText": "Thời điểm nên tiến: mở rộng quan hệ, nhận thêm việc, gặp gỡ đối tác — nhớ chọn việc vừa sức mình.",
+      "advice": "Vận lên thì càng phải giữ chữ tín; lộc đến từ những người tin mình.",
+      "secret": "Gửi lời cảm ơn tới một khách hàng hoặc một người đã giúp {ten} trong năm nay."
+    },
+    {
+      "id": 20,
+      "lv": "Trung bình",
+      "ten": "Trăng non chờ rằm",
+      "tho": [
+        "Trăng non mới nhú đầu cành,",
+        "Đợi qua mươi bữa mới thành trăng rằm."
+      ],
+      "timing": "thu",
+      "meaning": "Trăng mới nhú, chưa đến lúc tròn. Tài vận của {ten} đang trong giai đoạn tích lũy, chưa phải lúc thu hoạch.",
+      "timingText": "Thời điểm nên thủ: hạn chế các khoản chi lớn hay cam kết mới; dành sức cho việc học và chuẩn bị.",
+      "advice": "Chưa tròn thì đừng ép tròn. Mỗi ngày tiến một chút cũng là tiến.",
+      "secret": "Đặt một mục tiêu tiết kiệm nhỏ cho tháng này và đánh dấu mỗi lần làm được."
+    },
+    {
+      "id": 21,
+      "lv": "Thượng cát",
+      "ten": "Mã đáo thành công",
+      "tho": [
+        "Ngựa hồng phi giữa đường quan,",
+        "Tới nơi cờ mở, vó vang tin mừng."
+      ],
+      "timing": "tien",
+      "meaning": "Ngựa tới là việc thành. Những việc {ten} đang theo đuổi sắp có kết quả.",
+      "timingText": "Thời điểm nên tiến: đẩy nhanh những việc đã gần xong, đừng bỏ dở ở chặng cuối.",
+      "advice": "Chặng cuối là chặng dễ nản nhất; giữ nhịp thêm một chút.",
+      "secret": "Viết ra ba việc {ten} sẽ hoàn thành trong tháng này và dán ở chỗ dễ thấy."
+    },
+    {
+      "id": 22,
+      "lv": "Trung cát",
+      "ten": "Chum gạo đầy",
+      "tho": [
+        "Chum gạo đầy góc bếp nhà,",
+        "Có ăn có để mới là lộc lâu."
+      ],
+      "timing": "giu",
+      "meaning": "Nhà có gạo thì lòng không lo. Tài lộc bền nhất của {ten} là có của để dành.",
+      "timingText": "Giữ nhịp: thu nhập đủ ổn, ưu tiên xây quỹ dự phòng hơn là chi cho những thứ chưa cần.",
+      "advice": "Trích riêng một phần thu nhập ngay khi nhận, trước khi tiêu.",
+      "secret": "Mở một hũ (hoặc một tài khoản) tiết kiệm riêng và đặt cho nó một cái tên vui."
+    },
+    {
+      "id": 23,
+      "lv": "Tiểu cát",
+      "ten": "Đường vòng qua núi",
+      "tho": [
+        "Đường lên núi phải đi vòng,",
+        "Chậm mà chắc bước, khỏi lòng gian nan."
+      ],
+      "timing": "thu",
+      "meaning": "Lối thẳng lên núi thì dốc, lối vòng thì xa mà an. Quẻ khuyên {ten} chọn cách chắc chắn hơn cách nhanh.",
+      "timingText": "Thời điểm nên thủ: tránh những lời mời “làm giàu nhanh”, những cơ hội nghe tốt quá mức.",
+      "advice": "Cẩn trọng với việc vay hoặc cho vay trong thời gian này.",
+      "secret": "Trước khi quyết một khoản chi lớn, {ten} hãy đợi qua ba đêm rồi hãy quyết."
+    },
+    {
+      "id": 24,
+      "lv": "Thượng cát",
+      "ten": "Ong làm mật ngọt",
+      "tho": [
+        "Đàn ong chăm chỉ sớm hôm,",
+        "Mật vàng ngọt lịm đầy thơm tổ nhà."
+      ],
+      "timing": "tien",
+      "meaning": "Đàn ong cần mẫn thì tổ đầy mật. Quẻ khen sự chăm chỉ của {ten} và báo công sức sắp đổi thành thành quả.",
+      "timingText": "Thời điểm nên tiến: công việc đang có đà; nhận thêm trách nhiệm sẽ được ghi nhận.",
+      "advice": "Làm cùng người khác như đàn ong — một mình khó thành tổ.",
+      "secret": "Rủ một người cùng chí hướng bàn một ý tưởng làm ăn nhỏ trong tuần này."
+    },
+    {
+      "id": 25,
+      "lv": "Trung cát",
+      "ten": "Nén trầm cháy chậm",
+      "tho": [
+        "Nén trầm cháy chậm mà thơm,",
+        "Hơn ngàn ngọn lửa đống rơm tắt liền."
+      ],
+      "timing": "giu",
+      "meaning": "Trầm cháy chậm nhưng hương lâu; lửa rơm bùng to rồi tắt. Tài vận của {ten} thuộc loại bền chứ không ào ạt.",
+      "timingText": "Giữ nhịp: đều đặn quan trọng hơn bứt phá; đừng so tốc độ với người khác.",
+      "advice": "Xây uy tín từng chút; uy tín là thứ khó mua nhất.",
+      "secret": "Nhìn lại một năm trước: {ten} đã đi được bao xa? Tự thưởng cho mình một điều nhỏ."
+    },
+    {
+      "id": 26,
+      "lv": "Trung bình",
+      "ten": "Đông về cất lúa",
+      "tho": [
+        "Đông về cất lúa vào kho,",
+        "Đợi xuân gieo mạ, chẳng lo đói nghèo."
+      ],
+      "timing": "thu",
+      "meaning": "Mùa đông không phải mùa gieo trồng. Quẻ khuyên {ten} giữ những gì đã có, chờ mùa thuận rồi mới mở rộng.",
+      "timingText": "Thời điểm nên thủ: giữ tiền mặt, giảm nợ, xem lại các khoản chi định kỳ.",
+      "advice": "Cắt bớt một khoản chi đều đặn mà {ten} không thật sự cần.",
+      "secret": "Hủy một gói đăng ký hay dịch vụ mà {ten} quên mất là mình vẫn đang trả tiền."
+    },
+    {
+      "id": 27,
+      "lv": "Thượng cát",
+      "ten": "Rồng gặp mây lành",
+      "tho": [
+        "Rồng xanh gặp hội mây lành,",
+        "Bay lên chín cõi, rạng danh bốn bề."
+      ],
+      "timing": "tien",
+      "meaning": "Rồng gặp mây thì bay cao — tài năng gặp thời. {ten} sắp có dịp thể hiện và được người có tiếng nói để ý.",
+      "timingText": "Thời điểm nên tiến: xin tham gia dự án lớn, giới thiệu sản phẩm, ứng tuyển vị trí mới.",
+      "advice": "Chuẩn bị sẵn một bản giới thiệu ngắn về mình; cơ hội thường đến bất ngờ.",
+      "secret": "Cập nhật hồ sơ, trang giới thiệu hoặc bộ sản phẩm mẫu của {ten} ngay trong tuần này."
+    },
+    {
+      "id": 28,
+      "lv": "Tiểu cát",
+      "ten": "Hạt mầm dưới đất",
+      "tho": [
+        "Hạt mầm nằm dưới đất nâu,",
+        "Âm thầm bén rễ, mai sau thành rừng."
+      ],
+      "timing": "giu",
+      "meaning": "Mầm chưa nhô lên nhưng rễ đã bén. Những gì {ten} đang làm chưa thấy kết quả, nhưng không hề uổng.",
+      "timingText": "Giữ nhịp: tiếp tục học, tiếp tục làm; thành quả đến chậm nhưng chắc.",
+      "advice": "Bồi đắp kiến thức và sức khỏe — hai thứ sinh lời lâu nhất.",
+      "secret": "Đăng ký một khóa học hoặc đọc một cuốn sách về nghề của {ten} trong tháng này."
+    },
+    {
+      "id": 29,
+      "lv": "Trung cát",
+      "ten": "Chợ phiên đông khách",
+      "tho": [
+        "Chợ phiên rộn rã sớm mai,",
+        "Hàng ngon giá phải, ai ai cũng tìm."
+      ],
+      "timing": "tien",
+      "meaning": "Chợ đông thì hàng tốt dễ bán. Nhu cầu quanh {ten} đang có, việc còn lại là cho người ta biết mình có gì.",
+      "timingText": "Thời điểm nên tiến: mạnh dạn giới thiệu sản phẩm, dịch vụ hoặc năng lực của mình.",
+      "advice": "Lắng nghe điều khách hàng phàn nàn; đó là gợi ý cho sản phẩm tiếp theo.",
+      "secret": "Hỏi ba người quen: “Nếu trả tiền cho mình làm một việc, bạn sẽ chọn việc gì?”"
+    },
+    {
+      "id": 30,
+      "lv": "Trung bình",
+      "ten": "Cầu tre lắt lẻo",
+      "tho": [
+        "Cầu tre lắt lẻo gập ghềnh,",
+        "Bước đi chậm rãi, chênh vênh cũng qua."
+      ],
+      "timing": "thu",
+      "meaning": "Cầu tre khó đi nhưng đi chậm thì qua. {ten} đang ở đoạn đường khó về tài chính, cần bình tĩnh hơn là vội vàng.",
+      "timingText": "Thời điểm nên thủ: ưu tiên những khoản thiết yếu, tránh quyết định lớn khi đang lo lắng.",
+      "advice": "Kể khó khăn của mình với một người đáng tin; nhiều khi chỉ cần một góc nhìn khác.",
+      "secret": "Liệt kê những gì {ten} đang có: sức khỏe, người thân, tay nghề. Của cải không chỉ là tiền."
+    }
+  ]
+}

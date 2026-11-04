@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1b1730">
+<title>Đình Hoàng Online — Thắp hương, rút quẻ, nhận bùa</title>
+<meta name="description" content="Đạo quán 3D trực tuyến: thắp nén tâm hương, rút xăm Nguyệt Lão, gieo quẻ Tài Thần, bốc quẻ Kinh Dịch. Chỉ mang tính giải trí.">
+<meta property="og:title" content="Đình Hoàng Online — Xin một quẻ, nhận một lá bùa">
+<meta property="og:description" content="Thắp hương ảo, rút xăm Nguyệt Lão, gieo quẻ Tài Thần. Mỗi người một quẻ độc bản. Chỉ mang tính giải trí.">
+<meta property="og:image" content="assets/og.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&text=三清殿玉上太財神趙公明月老合歡宮卜易台道緣福卦招進寶天作之合金錢吉祥喜紅線壽祿&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<div id="app">
+  <div id="scene"></div>
+
+  <!-- Cổng vào -->
+  <section id="gate" class="screen">
+    <div class="gate-inner">
+      <div class="gate-seal">道</div>
+      <h1>Đình Hoàng <span>Online</span></h1>
+      <p class="gate-sub">Thắp nén tâm hương · Rút một quẻ duyên · Nhận một lá bùa</p>
+      <label class="field">
+        <span>Danh xưng của thí chủ <em>(tùy chọn, hiện trên đầu nhân vật)</em></span>
+        <input id="gate-name" maxlength="20" placeholder="Ví dụ: Thiện Tâm" autocomplete="off">
+      </label>
+      <div class="field">
+        <span>Màu áo</span>
+        <div class="chips" id="gate-colors"></div>
+      </div>
+      <button id="gate-enter" class="btn primary big" disabled>Đang mở cổng đình…</button>
+      <p class="gate-note">Không cần đăng nhập. Thông tin chỉ dùng để luận quẻ và lưu tạm trên máy của bạn.
+        <a href="#" data-open="privacy">Quyền riêng tư</a></p>
+      <p class="gate-ent">Chỉ mang tính giải trí — không thay thế tín ngưỡng thật.</p>
+    </div>
+  </section>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div id="zone-name" class="zone-name">Sân Đình</div>
+      <div class="hud-btns">
+        <span id="online" class="online hidden"></span>
+        <button id="btn-map" class="icon-btn" title="Đi nhanh" aria-label="Đi nhanh">🗺</button>
+        <button id="btn-home" class="icon-btn" title="Về Chính Điện" aria-label="Về Chính Điện">⛩</button>
+        <button id="btn-sound" class="icon-btn" title="Bật/tắt âm thanh" aria-label="Bật/tắt âm thanh">🔊</button>
+      </div>
+    </div>
+    <div id="hint" class="hint"></div>
+    <div id="joy" class="joy"><div class="joy-knob"></div></div>
+    <button id="btn-act" class="act-btn hidden"></button>
+  </div>
+
+  <!-- Bảng nghi lễ / kết quả -->
+  <section id="sheet" class="sheet hidden" aria-live="polite">
+    <button class="sheet-close" id="sheet-close" aria-label="Đóng">✕</button>
+    <div id="sheet-body" class="sheet-body"></div>
+  </section>
+
+  <!-- Đi nhanh -->
+  <section id="map" class="modal hidden">
+    <div class="modal-card">
+      <h3>Đi nhanh tới</h3>
+      <div class="map-list">
+        <button data-go="tam-thanh"><b>Tam Thanh Điện</b><small>Chính điện · thắp hương, dâng lễ</small></button>
+        <button data-go="tai-than"><b>Tài Thần Điện</b><small>Triệu Công Minh · cầu tài</small></button>
+        <button data-go="nguyet-lao"><b>Nguyệt Lão Điện</b><small>Hợp Hoan Cung · cầu duyên</small></button>
+        <button data-go="boc-dich"><b>Bốc Dịch Đài</b><small>Gieo quẻ Kinh Dịch</small></button>
+      </div>
+      <button class="btn ghost" data-close>Đóng</button>
+    </div>
+  </section>
+
+  <!-- Quyền riêng tư -->
+  <section id="privacy" class="modal hidden">
+    <div class="modal-card">
+      <h3>Quyền riêng tư</h3>
+      <ul class="plain">
+        <li>Không đăng nhập, không thu thập tài khoản.</li>
+        <li>Họ tên, năm sinh, ngành nghề, tình trạng chỉ dùng để luận quẻ ngay trên trình duyệt của bạn và được lưu tạm trong phiên (đóng tab là hết).</li>
+        <li>Ảnh bùa được vẽ ngay trên máy bạn, không gửi lên máy chủ.</li>
+        <li>Nếu chế độ "người chơi online" được bật, chỉ danh xưng, màu áo và vị trí nhân vật được chia sẻ với người cùng trong đình; không gửi tên thật hay năm sinh.</li>
+        <li>Chúng tôi có thể đo nguồn truy cập (UTM) ở dạng ẩn danh để cải thiện trải nghiệm.</li>
+      </ul>
+      <p class="muted">Mọi lời luận chỉ mang tính giải trí, chữa lành; không phải lời tiên đoán, không thay thế tín ngưỡng thật hay tư vấn chuyên môn.</p>
+      <button class="btn primary" data-close>Đã hiểu</button>
+    </div>
+  </section>
+
+  <div id="toast" class="toast"></div>
+  <div id="veil" class="veil"></div>
+  <div id="fx2d" class="fx2d"></div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

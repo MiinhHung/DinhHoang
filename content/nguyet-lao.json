@@ -1,0 +1,454 @@
+{
+  "cards": [
+    {
+      "id": 1,
+      "lv": "Thượng cát",
+      "ten": "Tơ hồng đã se",
+      "tho": [
+        "Ông Tơ đã buộc chỉ hồng,",
+        "Duyên lành chẳng sớm cũng không muộn màng."
+      ],
+      "meaning": "Quẻ này báo sợi tơ hồng của {ten} đã được se sẵn. Việc cần làm không phải là đi tìm cho bằng được, mà là sống sao cho khi gặp, mình đã sẵn sàng.",
+      "single": "Người hợp với {ten} có thể đã ở rất gần — trong một nhóm bạn quen, một nơi làm việc cũ, hoặc một lần hẹn tưởng chừng bình thường. Hãy mở lòng với những cuộc trò chuyện nhỏ.",
+      "dating": "Mối quan hệ đang tìm hiểu có nền móng tốt. Đừng vội đặt tên cho nó; cứ để những lần gặp gỡ tự nói thay.",
+      "couple": "Hai người được quẻ này là đôi có duyên nợ. Giữ những thói quen nhỏ cùng nhau — một bữa cơm, một lời hỏi han — chính là cách buộc chặt sợi tơ.",
+      "advice": "Chăm chút bản thân, giữ một nụ cười dễ gần. Duyên thường tìm đến người đang vui.",
+      "secret": "Trong tháng này, hãy nhận lời một lời mời mà bình thường {ten} sẽ từ chối."
+    },
+    {
+      "id": 2,
+      "lv": "Thượng cát",
+      "ten": "Trăng rằm bến hẹn",
+      "tho": [
+        "Trăng rằm soi sáng bến sông,",
+        "Người thương đã hẹn, thuyền không lỡ đò."
+      ],
+      "meaning": "Trăng tròn là lúc mọi thứ rõ ràng. Chuyện tình cảm của {ten} đang đi vào giai đoạn sáng tỏ: điều còn mơ hồ sẽ sớm có lời đáp.",
+      "single": "Một cuộc hẹn — có thể do bạn bè mai mối — đáng để {ten} nhận lời. Đừng đến với tâm thế chấm điểm; hãy đến để tò mò về một con người.",
+      "dating": "Đã đến lúc nói rõ lòng mình. Người kia cũng đang chờ một tín hiệu, chỉ là chưa ai dám mở lời trước.",
+      "couple": "Một lời hẹn cũ giữa hai người — một chuyến đi, một dự định chung — nên được lấy ra thực hiện. Lời hẹn giữ được là sợi chỉ bền nhất.",
+      "advice": "Nói điều mình muốn bằng giọng nhẹ nhàng. Sự rõ ràng là một món quà.",
+      "secret": "Đêm rằm tới, hãy nhắn cho người {ten} nghĩ tới đầu tiên một câu hỏi thăm, không cần lý do."
+    },
+    {
+      "id": 3,
+      "lv": "Trung cát",
+      "ten": "Hoa nở đúng mùa",
+      "tho": [
+        "Đào kia chưa nở vội chi,",
+        "Xuân về tự khắc xuân thì đầy cây."
+      ],
+      "meaning": "Quẻ khuyên {ten} đừng so nhịp yêu của mình với người khác. Mỗi cây có mùa hoa riêng, và mùa của {ten} đang tới gần.",
+      "single": "Thay vì lo mình đã muộn, hãy dùng thời gian này để làm đầy chính mình: một sở thích mới, một nhóm bạn mới. Người hợp sẽ đến từ những nơi đó.",
+      "dating": "Đừng thúc ép mối quan hệ phải nhanh hơn. Sự chậm rãi lúc này giúp hai người hiểu nhau thật.",
+      "couple": "Hai người đang ở mùa ươm mầm. Kiên nhẫn với nhau qua những ngày bình thường, rồi sẽ đến ngày nở hoa.",
+      "advice": "Tưới cây bằng sự kiên nhẫn, không bằng sự lo âu.",
+      "secret": "Hãy viết ra ba điều {ten} mong ở một nửa của mình, rồi tự hỏi mình đã làm được điều nào cho chính bản thân chưa."
+    },
+    {
+      "id": 4,
+      "lv": "Thượng thượng",
+      "ten": "Thiên tác chi hợp",
+      "tho": [
+        "Trời xe nên mối lương duyên,",
+        "Hai bờ một nhịp cầu hiền nối nhau."
+      ],
+      "meaning": "Quẻ đẹp bậc nhất trong ống xăm: “trời làm nên mối hợp”. Những gì đến với {ten} trong chuyện tình cảm lúc này mang nhiều phúc phận.",
+      "single": "Có một người mang năng lượng rất hợp với {ten}. Khi gặp, cảm giác sẽ quen thuộc như đã biết nhau từ lâu — đừng bỏ qua cảm giác đó.",
+      "dating": "Người đang tìm hiểu có nhiều điểm bù trừ cho {ten}. Những khác biệt nhỏ chính là chỗ hai người học được từ nhau.",
+      "couple": "Đôi này được trời thương. Đây là lúc tốt cho những quyết định lớn chung: về nhà cửa, về tương lai, về một cột mốc mới.",
+      "advice": "Biết ơn người bên cạnh, nói lời cảm ơn thường xuyên hơn.",
+      "secret": "Hãy giữ lá bùa này ở nơi {ten} hay nhìn thấy; mỗi lần thấy, nhớ nghĩ một điều tốt về người mình thương."
+    },
+    {
+      "id": 5,
+      "lv": "Trung bình",
+      "ten": "Gió đổi chiều",
+      "tho": [
+        "Gió đưa mây trắng qua đồi,",
+        "Có tan có hợp, lòng thôi đừng phiền."
+      ],
+      "meaning": "Quẻ báo một giai đoạn chuyển mình. Có điều gì đó trong chuyện tình cảm của {ten} đang thay đổi, và thay đổi không phải lúc nào cũng là mất mát.",
+      "single": "Có thể {ten} đang dần buông một người cũ trong lòng. Cứ để gió đưa đi; chỗ trống sẽ là chỗ cho điều mới.",
+      "dating": "Mối quan hệ đang gặp khúc quanh. Thay vì đoán ý nhau, hãy hỏi thẳng một câu chân thành.",
+      "couple": "Hai người có thể đang bất đồng vì những chuyện nhỏ. Gió đổi chiều thì thuyền đổi buồm — cùng nhau điều chỉnh, đừng ai giữ phần thắng.",
+      "advice": "Đừng quyết định lớn khi lòng đang rối. Đợi ba ngày rồi hãy nói.",
+      "secret": "Một cuộc đi dạo không điện thoại sẽ hóa giải điều {ten} đang lấn cấn."
+    },
+    {
+      "id": 6,
+      "lv": "Trung cát",
+      "ten": "Chén trà ấm",
+      "tho": [
+        "Chén trà ấm lúc mưa dầm,",
+        "Người thương chẳng nói mà thầm hiểu nhau."
+      ],
+      "meaning": "Tình cảm của {ten} không cần ồn ào. Quẻ nói về thứ yêu thương nằm trong những việc nhỏ, bền bỉ, ấm áp.",
+      "single": "Người hợp với {ten} không phải người làm mình choáng ngợp, mà là người làm mình thấy bình yên. Để ý những ai khiến {ten} thấy dễ thở.",
+      "dating": "Người kia thể hiện tình cảm qua hành động hơn lời nói. Hãy nhìn những gì họ làm, đừng chỉ đợi họ nói.",
+      "couple": "Sự quan tâm thầm lặng đang giữ cho hai người vững vàng. Thỉnh thoảng nói thành lời điều mình vẫn thầm nghĩ, người kia sẽ rất vui.",
+      "advice": "Một bữa cơm nấu cho nhau quý hơn món quà đắt tiền.",
+      "secret": "Hãy pha cho ai đó một chén trà, một ly cà phê trong tuần này — duyên đến từ những lần ngồi lại."
+    },
+    {
+      "id": 7,
+      "lv": "Tiểu cát",
+      "ten": "Duyên muộn mà bền",
+      "tho": [
+        "Cây muộn trái ngọt hơn đường,",
+        "Duyên về muộn chút mà thương dài lâu."
+      ],
+      "meaning": "Có những mối duyên cần thời gian chín. Quẻ này báo cho {ten} rằng điều tốt đẹp không đến nhanh, nhưng sẽ đến chắc.",
+      "single": "Đừng vì sợ muộn mà chọn vội. Người đáng để chờ sẽ không làm {ten} phải nghi ngờ giá trị của mình.",
+      "dating": "Mối quan hệ này cần thêm thời gian để đâm rễ. Đừng đòi hỏi câu trả lời cuối cùng ngay lúc này.",
+      "couple": "Hai người càng đi lâu càng hợp. Những năm tháng đã qua là vốn quý, hãy trân trọng chúng.",
+      "advice": "Chậm mà chắc. Bền lòng là cách đẹp nhất để yêu.",
+      "secret": "Một người từng quen ở quá khứ có thể quay lại với một lời chào. Hãy đón nhận bằng sự bình thản."
+    },
+    {
+      "id": 8,
+      "lv": "Thượng cát",
+      "ten": "Đôi chim liền cánh",
+      "tho": [
+        "Đôi chim chung một nhành mai,",
+        "Bay cao chẳng ngại đường dài gió sương."
+      ],
+      "meaning": "Quẻ của sự đồng hành. Người hợp với {ten} là người cùng nhìn về một hướng, cùng muốn bay xa.",
+      "single": "{ten} dễ gặp duyên khi đang theo đuổi một mục tiêu — một khóa học, một chuyến đi, một dự án. Người đi cùng đường sẽ thành người đi cùng đời.",
+      "dating": "Hai người có chung những giấc mơ. Thử lên kế hoạch cho một việc nhỏ cùng làm để biết mình hợp nhau đến đâu.",
+      "couple": "Đôi này mạnh nhất khi cùng có một mục tiêu chung. Hãy đặt ra một điều muốn cùng làm được trong năm nay.",
+      "advice": "Yêu là cùng nhau nhìn về một phía, không chỉ nhìn nhau.",
+      "secret": "Hãy rủ người {ten} quý mến cùng làm một việc tử tế — duyên sẽ nảy từ đó."
+    },
+    {
+      "id": 9,
+      "lv": "Trung cát",
+      "ten": "Cầu Ô Thước",
+      "tho": [
+        "Cầu ô thước bắc qua sông,",
+        "Người xa rồi cũng một lòng tìm nhau."
+      ],
+      "meaning": "Khoảng cách không phải trở ngại với người có lòng. Quẻ nói về những mối duyên xa — xa đường, xa hoàn cảnh — nhưng có cầu nối.",
+      "single": "Duyên của {ten} có thể đến từ một nơi xa: một người ở thành phố khác, một người quen qua mạng, hoặc một người cách mình vài năm tuổi.",
+      "dating": "Đừng để khoảng cách làm nguội lòng. Một cuộc gọi đều đặn là chiếc cầu nhỏ nhưng bền.",
+      "couple": "Nếu hai người đang xa nhau vì công việc hay hoàn cảnh, hãy cùng hẹn một ngày gặp lại cụ thể. Có ngày để chờ thì chờ không thấy dài.",
+      "advice": "Giữ lời hứa nhỏ, cầu sẽ không sập.",
+      "secret": "Một tin nhắn từ phương xa trong tuần này mang theo tin vui cho {ten}."
+    },
+    {
+      "id": 10,
+      "lv": "Trung bình",
+      "ten": "Mây che trăng",
+      "tho": [
+        "Mây kia che khuất vầng trăng,",
+        "Chờ cơn gió thoảng là trăng lại về."
+      ],
+      "meaning": "Có một hiểu lầm hoặc một nỗi lo đang che khuất chuyện tình cảm của {ten}. Mây không ở mãi; trăng vẫn còn đó.",
+      "single": "Có thể {ten} đang tự che mình bằng những lo lắng — sợ bị từ chối, sợ tổn thương. Hãy cho phép mình được thử.",
+      "dating": "Một điều chưa nói rõ đang tạo khoảng cách. Gió ở đây là sự thẳng thắn: nói ra, mây sẽ tan.",
+      "couple": "Đừng để chuyện người ngoài, mạng xã hội hay áp lực công việc che mất người bên cạnh. Dành một buổi tối chỉ cho hai người.",
+      "advice": "Nói thật lòng, nghe thật lòng.",
+      "secret": "Câu {ten} ngại nói nhất lại là câu người kia mong nghe nhất."
+    },
+    {
+      "id": 11,
+      "lv": "Thượng cát",
+      "ten": "Hồng tuyến tương khiên",
+      "tho": [
+        "Một sợi chỉ đỏ mong manh,",
+        "Buộc hai đầu nhớ nên đường yêu thương."
+      ],
+      "meaning": "Sợi chỉ đỏ của Nguyệt Lão đã nối {ten} với một người. Chỉ mảnh nhưng không đứt; xa mấy cũng kéo về gần.",
+      "single": "Có người đang nghĩ về {ten} nhiều hơn {ten} tưởng. Để ý những ai thường nhớ chuyện nhỏ của mình.",
+      "dating": "Hai người được nối bằng một sợi chỉ thật. Nếu đang phân vân, quẻ nghiêng về phía tiến thêm một bước.",
+      "couple": "Duyên nợ của đôi này sâu. Những lúc giận nhau, nhớ lại lần đầu gặp để thấy sợi chỉ vẫn còn đó.",
+      "advice": "Đừng kéo sợi chỉ quá căng. Yêu cũng cần khoảng thở.",
+      "secret": "Buộc một sợi chỉ đỏ nhỏ vào móc khóa hay ví — để mỗi lần thấy, {ten} nhớ giữ lòng mình dịu dàng."
+    },
+    {
+      "id": 12,
+      "lv": "Tiểu cát",
+      "ten": "Thương mình trước đã",
+      "tho": [
+        "Thương mình trước đã, mới mong",
+        "Người thương mình lại bằng lòng thương sâu."
+      ],
+      "meaning": "Quẻ không nói về người khác, mà nói về chính {ten}. Muốn được yêu đúng cách, trước hết hãy đối xử tử tế với bản thân.",
+      "single": "Đây là lúc tốt để {ten} chăm sóc mình: ngủ đủ, ăn ngon, làm điều mình thích. Người hợp sẽ bị thu hút bởi một {ten} đang sống vui.",
+      "dating": "Đừng đánh mất mình để làm vừa lòng người kia. Mối quan hệ tốt là nơi cả hai được là chính mình.",
+      "couple": "Mỗi người cần có khoảng riêng. Ủng hộ nhau có thời gian cho bản thân sẽ làm hai người gần nhau hơn.",
+      "advice": "Lòng mình đầy thì mới có cái để trao.",
+      "secret": "Hãy tặng chính {ten} một món quà nhỏ trong tuần này, kèm một lời khen thật lòng cho bản thân."
+    },
+    {
+      "id": 13,
+      "lv": "Trung cát",
+      "ten": "Lời chưa ngỏ",
+      "tho": [
+        "Lời thương giữ mãi trong lòng,",
+        "Chẳng nói ra được thì mong ai tường."
+      ],
+      "meaning": "Có một điều {ten} đang giữ trong lòng. Quẻ khuyên: điều tốt đẹp thì nên được nói ra.",
+      "single": "Nếu {ten} đang thầm mến ai đó, một cử chỉ nhỏ — một lời khen, một lời mời — là đủ để mở cửa. Không cần tỏ tình ngay.",
+      "dating": "Người kia đang đợi {ten} nói rõ cảm xúc. Chân thành sẽ được đáp lại bằng chân thành.",
+      "couple": "Đã lâu rồi {ten} chưa nói “thương” thành lời? Hôm nay là một ngày đẹp để nói.",
+      "advice": "Lời ấm áp không bao giờ là thừa.",
+      "secret": "Hãy viết một mẩu giấy nhỏ cho người {ten} thương và để ở nơi họ sẽ tình cờ thấy."
+    },
+    {
+      "id": 14,
+      "lv": "Thượng cát",
+      "ten": "Hợp Hoan",
+      "tho": [
+        "Cây hợp hoan nở trước sân,",
+        "Nhà đầy tiếng nói, xa gần chung vui."
+      ],
+      "meaning": "Quẻ mang tên chính cung Hợp Hoan — sự hòa hợp, vui vầy. Chuyện tình cảm của {ten} gắn với niềm vui của cả gia đình, bạn bè.",
+      "single": "Duyên của {ten} có thể đến qua người thân hoặc bạn bè giới thiệu. Đừng ngại những buổi tụ họp đông người.",
+      "dating": "Đã đến lúc giới thiệu người ấy với bạn bè thân. Sự đón nhận của những người xung quanh sẽ làm mối quan hệ vững hơn.",
+      "couple": "Gia đình hai bên là chỗ dựa. Một bữa cơm chung với người nhà sẽ mang lại nhiều may mắn.",
+      "advice": "Yêu thương lớn lên khi được chia sẻ với những người mình quý.",
+      "secret": "Trong một buổi tụ họp sắp tới, {ten} sẽ nghe được một câu chuyện làm mình mỉm cười suốt cả tuần."
+    },
+    {
+      "id": 15,
+      "lv": "Trung bình",
+      "ten": "Buông để nhận",
+      "tho": [
+        "Tay buông chiếc lá úa vàng,",
+        "Mới mong đón được mùa sang lá hồng."
+      ],
+      "meaning": "Quẻ nhắc {ten}: muốn nhận điều mới, tay phải rỗng. Có điều gì cũ đang chiếm chỗ trong lòng?",
+      "single": "Một kỷ niệm cũ, một người cũ có thể vẫn khiến {ten} chưa sẵn sàng. Không cần quên, chỉ cần đặt xuống.",
+      "dating": "Đừng mang nỗi đau cũ vào mối quan hệ mới. Người này không phải người kia.",
+      "couple": "Có một chuyện cũ giữa hai người chưa được tha thứ trọn vẹn. Buông nó xuống, hai người sẽ nhẹ hơn nhiều.",
+      "advice": "Tha thứ là để lòng mình được tự do.",
+      "secret": "Hãy dọn một góc phòng hoặc xóa một album ảnh cũ — dọn nhà cũng là dọn lòng."
+    },
+    {
+      "id": 16,
+      "lv": "Thượng cát",
+      "ten": "Bách niên giai lão",
+      "tho": [
+        "Trăm năm như một sớm mai,",
+        "Tay trong tay vẫn hẹn hoài kiếp sau."
+      ],
+      "meaning": "Quẻ của sự bền lâu. Điều {ten} vun đắp hôm nay có khả năng đi rất xa — đến tận lúc tóc bạc.",
+      "single": "Người {ten} sắp gặp có thể không rực rỡ ngay từ đầu, nhưng là kiểu người ở lại. Hãy để ý sự bền bỉ hơn là sự lấp lánh.",
+      "dating": "Mối quan hệ này có tiềm năng lâu dài. Hãy cùng nhau nói chuyện về tương lai — nhẹ nhàng, không áp lực.",
+      "couple": "Đôi này có tướng bạc đầu cùng nhau. Giữ thói quen nắm tay khi đi dạo, dù đã quen nhau bao lâu.",
+      "advice": "Bền lâu không đến từ may mắn, mà từ mỗi ngày chọn lại nhau.",
+      "secret": "Hỏi người thương của {ten} (hoặc chính {ten}) một câu: “Năm năm nữa mình muốn ở đâu?” — câu trả lời sẽ bất ngờ đấy."
+    },
+    {
+      "id": 17,
+      "lv": "Thượng cát",
+      "ten": "Trăng soi giếng ngọc",
+      "tho": [
+        "Giếng trong soi bóng trăng tròn,",
+        "Lòng ngay ắt gặp người còn đợi ta."
+      ],
+      "meaning": "Trăng chỉ in rõ trên mặt giếng lặng. Quẻ nhắc {ten}: khi lòng mình trong và yên, người phù hợp sẽ nhìn thấy mình rõ nhất.",
+      "single": "Bớt lướt, bớt so sánh, dành thời gian cho những việc khiến mình thấy bình yên. Người đến với {ten} trong lúc ấy thường là người ở lại lâu.",
+      "dating": "Đừng thử lòng nhau bằng im lặng hay những lần ghen bóng gió. Nói thật điều mình nghĩ, người kia sẽ thấy rõ {ten} hơn.",
+      "couple": "Hai người hợp nhau nhất trong những buổi tối yên tĩnh. Thỉnh thoảng tắt điện thoại, ngồi cạnh nhau mà chẳng cần làm gì.",
+      "advice": "Lòng tĩnh thì duyên tỏ. Bớt vội vàng, thêm chân thành.",
+      "secret": "Tối rằm tới, {ten} hãy ra ngắm trăng mười phút và nghĩ về một người mình muốn cảm ơn."
+    },
+    {
+      "id": 18,
+      "lv": "Trung cát",
+      "ten": "Thuyền nan sang sông",
+      "tho": [
+        "Thuyền nan nhẹ mái sang sông,",
+        "Có người chèo hộ, chẳng mong một mình."
+      ],
+      "meaning": "Thuyền nhỏ, sông rộng, nhưng có người cùng chèo thì bến nào cũng tới. Quẻ nói về sự đồng hành nhiều hơn là những phút lãng mạn.",
+      "single": "Người hợp với {ten} là người cùng mình làm một việc gì đó — một nhóm thiện nguyện, một lớp học, một chuyến đi. Duyên nảy mầm từ việc chung.",
+      "dating": "Thử cùng nhau làm một việc nhỏ có mục tiêu: nấu một bữa, lên kế hoạch một chuyến đi. Cách hai người phối hợp sẽ nói lên nhiều điều.",
+      "couple": "Chia việc nhà, chia cả lo toan. Khi một người mệt, người kia cầm chèo thêm một đoạn.",
+      "advice": "Tình bền khi hai người cùng nhìn về một hướng.",
+      "secret": "Rủ một người {ten} quý cùng làm một việc nhỏ trong tuần này, dù chỉ là đi chợ."
+    },
+    {
+      "id": 19,
+      "lv": "Thượng thượng",
+      "ten": "Loan phượng hòa minh",
+      "tho": [
+        "Loan kêu phượng đáp trên cành,",
+        "Tiếng lòng hòa một, ngọt lành trăm năm."
+      ],
+      "meaning": "Loan và phượng cất tiếng hòa nhau — quẻ thượng thượng của Nguyệt Lão. {ten} đang ở thời vận tình cảm rất sáng, lời nói và tấm lòng dễ được đón nhận.",
+      "single": "Đây là lúc nên xuất hiện nhiều hơn: nhận lời mời, gặp gỡ bạn mới. Sự tự tin của {ten} lúc này rất cuốn hút.",
+      "dating": "Hai người đang hiểu nhau nhanh. Nếu có điều muốn ngỏ, thời điểm này thuận.",
+      "couple": "Một giai đoạn đẹp để cùng lên kế hoạch lớn: một chuyến đi, một tổ ấm, hoặc đơn giản là một lời hứa mới.",
+      "advice": "Vận đang thuận, nhưng tình vẫn cần vun — đừng vì thuận mà lơ là.",
+      "secret": "Viết ra ba điều {ten} trân trọng ở người thương (hoặc người mình sẽ thương), cất đi, một năm sau mở lại đọc."
+    },
+    {
+      "id": 20,
+      "lv": "Tiểu cát",
+      "ten": "Mưa bóng mây",
+      "tho": [
+        "Mưa bóng mây chợt rồi tan,",
+        "Giận hờn một thoáng, nắng vàng lại lên."
+      ],
+      "meaning": "Mưa bóng mây đến nhanh, đi nhanh. Quẻ báo có chút hiểu lầm, dỗi hờn nhỏ — không đáng lo nếu {ten} không để nó đọng lại.",
+      "single": "Có thể {ten} vừa thất vọng vì một người. Cứ buồn một chút rồi thôi, đừng vội kết luận rằng mình không có duyên.",
+      "dating": "Một hiểu lầm nhỏ đang treo lơ lửng. Hỏi thẳng, nhẹ nhàng, thay vì đoán.",
+      "couple": "Đừng để cơn giận qua đêm. Một câu “mình xin lỗi” đúng lúc đáng giá hơn mười câu đúng lý.",
+      "advice": "Hờn giận như mưa bóng mây — để nó đi, đừng giữ lại.",
+      "secret": "Lần tới khi bực, {ten} hãy đợi đủ mười hơi thở rồi mới trả lời tin nhắn."
+    },
+    {
+      "id": 21,
+      "lv": "Trung cát",
+      "ten": "Cành đào trước ngõ",
+      "tho": [
+        "Đào tơ nở trước hiên nhà,",
+        "Người quen ngõ cũ ghé qua hỏi chào."
+      ],
+      "meaning": "Hoa đào nở ngay trước ngõ — duyên ở gần, trong vòng quen biết cũ. Quẻ nhắc {ten} nhìn lại những người đã quen mà chưa từng để ý.",
+      "single": "Một người bạn cũ, đồng nghiệp hay hàng xóm có thể đã lặng lẽ quan tâm {ten} bấy lâu. Thử hỏi han nhiều hơn.",
+      "dating": "Giới thiệu nhau với bạn bè sẽ giúp mối quan hệ vững hơn; người quen là cầu nối tốt.",
+      "couple": "Về thăm nơi hai người gặp nhau lần đầu, hoặc hẹn lại những người bạn chung. Kỷ niệm cũ làm ấm tình hiện tại.",
+      "advice": "Duyên không phải lúc nào cũng ở xa; đôi khi chỉ cần quay đầu.",
+      "secret": "Nhắn hỏi thăm một người quen cũ mà {ten} đã lâu không liên lạc."
+    },
+    {
+      "id": 22,
+      "lv": "Trung bình",
+      "ten": "Gương chưa lau",
+      "tho": [
+        "Gương mờ chưa thấy bóng hình,",
+        "Lau trong lòng trước, tự mình sáng ra."
+      ],
+      "meaning": "Gương còn bụi thì soi chẳng rõ. Chuyện tình cảm của {ten} chưa sáng tỏ vì còn vướng vài điều chưa gỡ trong lòng.",
+      "single": "Có thể {ten} còn mang theo một mối tình cũ. Gỡ dần nó ra, người mới mới có chỗ bước vào.",
+      "dating": "Hai người còn đoán ý nhau nhiều. Chưa cần vội tiến, hãy hiểu nhau thêm.",
+      "couple": "Có một điều hai người né nói lâu nay. Chọn lúc bình tĩnh, nói ra từng chút một.",
+      "advice": "Trước khi tìm người hiểu mình, hãy tự hiểu mình trước.",
+      "secret": "Viết ra một điều {ten} chưa buông được, rồi xé tờ giấy ấy đi."
+    },
+    {
+      "id": 23,
+      "lv": "Thượng cát",
+      "ten": "Song hỷ lâm môn",
+      "tho": [
+        "Hai chữ hỷ dán cửa son,",
+        "Tin vui gõ cửa, lòng còn ngẩn ngơ."
+      ],
+      "meaning": "Song hỷ đến cửa — quẻ báo tin vui về tình cảm: một lời tỏ bày, một lần gặp gỡ, hay một bước tiến mới với {ten}.",
+      "single": "Sắp có người tỏ ra quan tâm {ten} rõ ràng hơn. Đón nhận nhẹ nhàng, không cần trả lời ngay.",
+      "dating": "Mối quan hệ có thể sắp được gọi tên. Nếu lòng đã chắc, đừng ngại bước tới.",
+      "couple": "Một dịp vui của hai người đang tới gần — ngày kỷ niệm, ra mắt gia đình, hay một kế hoạch chung. Chuẩn bị chu đáo nhé.",
+      "advice": "Tin vui đến với người biết đón — mở lòng, mở cửa.",
+      "secret": "Mặc một món đồ màu đỏ hoặc hồng trong buổi hẹn kế tiếp của {ten}."
+    },
+    {
+      "id": 24,
+      "lv": "Tiểu cát",
+      "ten": "Đèn lồng đợi gió",
+      "tho": [
+        "Đèn lồng treo trước hiên xưa,",
+        "Đợi cơn gió nhẹ đung đưa ánh vàng."
+      ],
+      "meaning": "Đèn đã thắp, chỉ chờ gió đưa. {ten} đã sẵn sàng, chỉ còn đợi đúng thời điểm.",
+      "single": "Đừng sốt ruột so với bạn bè. Thời của mỗi người mỗi khác; giữ ngọn đèn của mình sáng là đủ.",
+      "dating": "Người kia có thể còn chậm hơn {ten} một nhịp. Cho nhau thêm thời gian.",
+      "couple": "Có việc chung đang chờ — nhà cửa, công việc, dự định. Kiên nhẫn cùng nhau, đừng đổ lỗi cho nhau.",
+      "advice": "Kiên nhẫn không phải là chờ suông, mà là chờ trong khi vẫn sống tốt.",
+      "secret": "Thắp một ngọn nến thơm vào tối thứ Sáu và dành trọn buổi tối ấy cho chính {ten}."
+    },
+    {
+      "id": 25,
+      "lv": "Trung cát",
+      "ten": "Chỉ hồng buộc ngón",
+      "tho": [
+        "Ngón tay buộc sợi chỉ hồng,",
+        "Xa xôi mấy dặm cũng chung một đường."
+      ],
+      "meaning": "Tích xưa kể Nguyệt Lão buộc chỉ hồng vào ngón tay hai người có duyên, xa mấy cũng gặp. Quẻ nói về duyên xa: người ở thành phố khác, người quen qua mạng, người được giới thiệu.",
+      "single": "Người hợp với {ten} có thể ở xa — gặp qua một chuyến đi, một cộng đồng trên mạng, hoặc nhờ người quen giới thiệu.",
+      "dating": "Khoảng cách không đáng sợ bằng sự im lặng. Giữ một nhịp liên lạc đều đặn.",
+      "couple": "Nếu đang xa nhau, hãy cùng làm một việc nhỏ dù khác nơi: xem chung một bộ phim, đọc chung một cuốn sách.",
+      "advice": "Sợi chỉ đã buộc thì không đứt vì xa, chỉ lỏng vì lơ là.",
+      "secret": "Gửi một tấm ảnh bầu trời nơi {ten} đang đứng cho một người ở xa."
+    },
+    {
+      "id": 26,
+      "lv": "Thượng cát",
+      "ten": "Sen nở cành đôi",
+      "tho": [
+        "Đầm sen nở một cành đôi,",
+        "Bùn sâu chẳng nhuốm, thơm trôi xa gần."
+      ],
+      "meaning": "Sen nở đôi trên một cuống — tượng của tình chân thành, trong sạch. Quẻ khen tấm lòng {ten} và báo duyên lành đến từ sự tử tế.",
+      "single": "Người sẽ đến với {ten} là người quý sự tử tế của mình. Đừng thay đổi bản thân chỉ để vừa lòng ai.",
+      "dating": "Mối quan hệ trong trẻo, ít toan tính. Giữ sự thật thà ấy, đó là gốc rễ.",
+      "couple": "Hai người giữ được sự tôn trọng nhau qua bao chuyện — đó là điều quý nhất. Hãy nói lời cảm ơn nhau nhiều hơn.",
+      "advice": "Thật lòng là lá bùa duyên mạnh nhất.",
+      "secret": "Làm một việc tốt nhỏ mà không kể cho ai biết, trong ba ngày tới."
+    },
+    {
+      "id": 27,
+      "lv": "Trung bình",
+      "ten": "Lá rụng về cội",
+      "tho": [
+        "Lá vàng rụng xuống gốc cây,",
+        "Mùa sau lộc mới xanh đầy cành non."
+      ],
+      "meaning": "Lá rụng không phải để kết thúc, mà để nhường chỗ cho lộc non. Quẻ nói về một giai đoạn khép lại để điều mới mở ra với {ten}.",
+      "single": "Một mối duyên cũ đã qua thật rồi. Cho phép mình tiếc một chút, rồi chăm lại mảnh vườn của chính mình.",
+      "dating": "Nếu mối quan hệ này khiến {ten} mệt nhiều hơn vui, hãy thật lòng hỏi mình: có nên đi tiếp?",
+      "couple": "Hai người đang qua một mùa đông nhỏ. Đừng vội phán xét; mùa nào rồi cũng qua nếu cả hai cùng giữ gốc.",
+      "advice": "Biết buông đúng lúc cũng là một cách thương mình.",
+      "secret": "Dọn một ngăn kéo hay một thư mục ảnh cũ — dọn được bên ngoài, lòng cũng nhẹ đi."
+    },
+    {
+      "id": 28,
+      "lv": "Tiểu cát",
+      "ten": "Bánh phu thê",
+      "tho": [
+        "Lá dong gói chặt đôi bề,",
+        "Ngọt bùi có đủ, phu thê vẹn tròn."
+      ],
+      "meaning": "Bánh phu thê vuông vức, gói ghém kỹ càng — tượng của sự chăm chút. Quẻ nhắc {ten} rằng tình cảm được gói ghém bằng những việc nhỏ.",
+      "single": "Học nấu một món ngon, chăm một chậu cây — người biết chăm chút sẽ được chăm chút lại.",
+      "dating": "Để ý những điều nhỏ người kia thích: món uống, bài hát, giờ hay rảnh. Nhớ được là đã thương.",
+      "couple": "Một món quà nhỏ không cần dịp: hộp bánh, bó hoa, mẩu giấy dặn dò. Nhỏ mà ấm.",
+      "advice": "Tình không cần lớn lao, chỉ cần đều đặn.",
+      "secret": "Mua một món ngọt tặng người {ten} muốn gần hơn, không cần lý do."
+    },
+    {
+      "id": 29,
+      "lv": "Thượng cát",
+      "ten": "Đôi sao hội ngộ",
+      "tho": [
+        "Hai sao lấp lánh trời đêm,",
+        "Vòng quay vạn dặm êm đềm gặp nhau."
+      ],
+      "meaning": "Hai vì sao đi trên hai quỹ đạo rồi cũng có lúc gặp. Quẻ báo một cuộc gặp gỡ đúng lúc, như được sắp đặt từ trước, đang đến với {ten}.",
+      "single": "Hãy đi những con đường khác thường ngày: quán mới, lớp học mới, sự kiện mới. Cuộc gặp đang chờ ở chỗ lạ.",
+      "dating": "Hai người hợp nhau ở những điều sâu: cách sống, cách đối xử với người khác. Đó là nền móng tốt.",
+      "couple": "Kể cho nhau nghe lại chuyện lần đầu gặp. Nhắc lại duyên ban đầu làm tình thêm bền.",
+      "advice": "Duyên đến khi mình chịu bước ra khỏi vùng quen thuộc.",
+      "secret": "Trong bảy ngày tới, {ten} hãy thử về nhà bằng một con đường khác."
+    },
+    {
+      "id": 30,
+      "lv": "Trung cát",
+      "ten": "Thơ đề trên quạt",
+      "tho": [
+        "Quạt nan đề một câu thơ,",
+        "Trao tay người ấy đợi chờ hồi âm."
+      ],
+      "meaning": "Xưa người ta đề thơ lên quạt để gửi gắm tâm tình. Lời chân thành của {ten} sẽ được hồi âm, nếu dám gửi đi.",
+      "single": "Có điều gì {ten} muốn nói với một người mà chưa dám? Một lời khen thật lòng là bước đầu dễ nhất.",
+      "dating": "Viết cho nhau một tin nhắn dài hơn thường lệ; chữ viết đôi khi nói được điều lời nói còn ngại.",
+      "couple": "Thử viết cho nhau một lá thư tay. Những điều quen thuộc, viết ra sẽ thành mới.",
+      "advice": "Đừng để lời thương nằm mãi trong lòng.",
+      "secret": "Gửi một lời khen thật lòng cho một người trước khi hết ngày hôm nay."
+    }
+  ]
+}
