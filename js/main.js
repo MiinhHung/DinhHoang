@@ -4,6 +4,7 @@ import { createWorld, ZONES } from "./world.js";
 import * as audio from "./audio.js";
 import { loadContent, content, session, validYear, readLove, readWealth, readIching, tossLine, tamThanhBlessing, loveStatuses, TRIGRAM_NAME } from "./oracle.js";
 import { yearInfo, gioAm, ngayVN } from "./lunar.js";
+import { occasion } from "./calendar.js";
 import { drawCharm, drawMoment } from "./charm.js";
 import { canvasBlob, saveBlob, shareBlob, shareText, shareUrl, facebookUrl, copyText, fileName } from "./share.js";
 import { initAnalytics, track } from "./analytics.js";
@@ -559,9 +560,10 @@ function talkDaoSi() {
   const st = progress.state(), d = content.dao;
   const h = new Date().getHours();
   const greets = d.greetings[h < 11 ? "sang" : h < 14 ? "trua" : h < 18 ? "chieu" : "toi"];
+  const occ = occasion(), L = occ.lunar;
   const teach = d.teachings[dayIdx(d.teachings.length)];
   const allDone = TASKS.every(t => st.done.includes(t.id));
-  openSheet(`<div class="npc-head"><div class="npc-ava">道</div><div><h2>Lão Đạo Sĩ</h2><p class="sub">${esc(withName(greets[dayIdx(greets.length)]))}</p></div></div>
+  openSheet(`<div class="npc-head"><div class="npc-ava">道</div><div><h2>Lão Đạo Sĩ</h2><p class="sub">${esc(withName(greets[dayIdx(greets.length)]))}</p><p class="sub">Hôm nay ngày ${L.day} tháng ${L.month}${L.leap ? " nhuận" : ""} âm lịch.${occ.greet ? " " + esc(occ.greet) : ""}</p></div></div>
     ${st.visits <= 1 && !st.pts ? `<p class="sub">${esc(d.newcomer)}</p>` : ""}
     <div class="teach"><span class="lv">Lời dạy hôm nay</span><blockquote>${esc(teach.text)}</blockquote><cite>— ${esc(teach.src)}</cite><p>${esc(teach.giang)}</p></div>
     <p class="sub">🏮 Mỗi tối ${FEST.hour}:00 có lễ hoa đăng chung ở Ao Sen, thả một chiếc được thêm ${FEST.bonus} công đức.</p>
@@ -868,6 +870,11 @@ function enter() {
   $("#hud").classList.remove("hidden");
   world.enter({ name: me.name || "Thí chủ", color: me.color });
   const firstVisit = progress.visit();
+  // Mùa và ngày lễ âm lịch: đổi hoa lá rơi, cỡ trăng; chào dịp lễ. ?ngay=YYYY-MM-DD để xem thử.
+  const q = new URLSearchParams(location.search).get("ngay");
+  const occ = occasion(q ? new Date(q + "T12:00") : new Date());
+  world.setSeason(occ);
+  if (occ.greet) setTimeout(() => !sheetOpen() && toastSeq(["🏮 " + occ.greet]), 7000);
   checkFestival();
   setInterval(checkFestival, 15000);
   const ribbons = progress.state().ribbons;

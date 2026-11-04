@@ -92,7 +92,7 @@ function makeTextures() {
     g.strokeStyle = "rgba(90,58,8,.6)"; g.lineWidth = 2; g.strokeRect(25, 25, 14, 14);
   });
   const petal = canvasTex(32, 32, (g) => {
-    g.fillStyle = "#ffc2d4";
+    g.fillStyle = "#ffffff";
     g.beginPath(); g.ellipse(16, 16, 12, 7, 0.6, 0, Math.PI * 2); g.fill();
   });
   const shadow = canvasTex(64, 64, (g) => {
@@ -695,15 +695,15 @@ export async function createWorld(container, hooks = {}) {
     starMat.opacity = n("star");
     const sun = n("sun");
     moon.material.color.set(0xfff1cf).lerp(cb.set(0xfff8e6), sun);
-    moon.scale.setScalar(70 - sun * 10);
-    moonCore.scale.setScalar(20 - sun * 4);
+    moon.scale.setScalar((70 - sun * 10) * (1 + (moonBoost - 1) * (1 - sun)));
+    moonCore.scale.setScalar((20 - sun * 4) * (1 + (moonBoost - 1) * (1 - sun)));
     renderer.toneMappingExposure = n("exp");
     // Độ sáng cho mặt nước (shader không dùng đèn của cảnh): tối dần về đêm.
     waterLight = 0.42 + 0.58 * sun;
     nightLevel = 1 - sun;
     night?.setNight(nightLevel);
   }
-  let waterLight = 1, night = null, nightLevel = 0;
+  let waterLight = 1, night = null, nightLevel = 0, moonBoost = 1;
   applySky();
 
   // ---------- Núi, sân các tầng, bậc đá ----------
@@ -1136,11 +1136,14 @@ export async function createWorld(container, hooks = {}) {
   });
 
   // Cánh hoa rơi
-  const PN = 160, parr = new Float32Array(PN * 3);
+  const PN = 420, parr = new Float32Array(PN * 3);
   for (let i = 0; i < PN; i++) parr.set([(Math.random() - 0.5) * 56, Math.random() * 14, (Math.random() - 0.5) * 56], i * 3);
   const pgeo = new THREE.BufferGeometry();
   pgeo.setAttribute("position", new THREE.BufferAttribute(parr, 3));
-  const petals = new THREE.Points(pgeo, new THREE.PointsMaterial({ map: tex.petal, size: 0.28, transparent: true, depthWrite: false, opacity: 0.9 }));
+  // Hoa lá rơi đổi theo mùa (setSeason): đào hồng, sen phớt, lá vàng cam, mai trắng; dịp Tết rơi dày hơn.
+  const petalMat = new THREE.PointsMaterial({ map: tex.petal, color: "#ffc2d4", size: 0.28, transparent: true, depthWrite: false, opacity: 0.9 });
+  const petals = new THREE.Points(pgeo, petalMat);
+  pgeo.setDrawRange(0, 160);
   scene.add(petals);
 
   const marker = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.5, 24), new THREE.MeshBasicMaterial({ color: 0xf7d98b, transparent: true, opacity: 0, toneMapped: false }));
@@ -1754,6 +1757,15 @@ export async function createWorld(container, hooks = {}) {
     // Giờ đang dùng trong game (giờ máy, hoặc giờ đặt bằng ?gio=).
     hour() { const d = new Date(); return hourOverride ?? d.getHours() + d.getMinutes() / 60; },
     festival: setFestival,
+    // occ từ calendar.occasion(): kiểu hoa lá rơi, độ dày, cỡ trăng đêm rằm.
+    setSeason(occ) {
+      const P = { dao: ["#ffc2d4", 0.28], sen: ["#ffdbe6", 0.26], la: ["#f0a040", 0.34], mai: ["#fff6e0", 0.24] }[occ.petal] || ["#ffc2d4", 0.28];
+      petalMat.color.set(P[0]);
+      petalMat.size = P[1];
+      pgeo.setDrawRange(0, Math.min(PN, Math.round(160 * occ.density)));
+      moonBoost = occ.moon || 1;
+      applySky();
+    },
     setHour(h) { hourOverride = Number.isFinite(h) ? ((h % 24) + 24) % 24 : null; applySky(); },
     bow() { bowT = 0; },
     getState() { return { x: +pos.x.toFixed(2), z: +pos.z.toFixed(2), ry: +yaw.toFixed(2) }; },
