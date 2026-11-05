@@ -1274,7 +1274,8 @@ export async function createWorld(container, hooks = {}) {
   let spinBoost = 0;
   // Camera xoay quanh nhân vật: camYaw = 0 là đứng phía nam nhìn về chính điện.
   // Kéo chuột / vuốt để xoay, lăn chuột / chụm hai ngón để phóng to thu nhỏ.
-  const PITCH_MIN = 0.22, PITCH_MAX = 1.15, ZOOM_MIN = 0.55, ZOOM_MAX = 1.5;
+  // Góc âm: camera hạ sát đất sau lưng nhân vật và ngước nhìn lên trời.
+  const PITCH_MIN = -1.0, PITCH_MAX = 1.15, ZOOM_MIN = 0.55, ZOOM_MAX = 1.5;
   let camYaw = 0, camYawWant = 0, camPitch = 0.6, camPitchWant = 0.6, camDist = 14.5, zoom = 1, zoomWant = 1;
 
   function fitCamera() {
@@ -1287,10 +1288,13 @@ export async function createWorld(container, hooks = {}) {
     night?.setSize(W(), H());
   }
   // indoor (0–1): độ "ở trong điện", kéo camera lại gần và thấp hơn.
-  let indoor = 0;
+  let indoor = 0, lookUpAng = 0;
   function updateCamOff(k = 0) {
-    const d = THREE.MathUtils.lerp(camDist * zoom, Math.min(camDist * zoom, 8.5), k);
-    const pitch = THREE.MathUtils.lerp(camPitch, Math.min(camPitch, 0.36), k);
+    // Ngước lên (camPitch < 0.12): camera thấp dần, gần lại, còn điểm nhìn nâng lên theo góc ngước.
+    lookUpAng = Math.max(0, 0.12 - camPitch);
+    const near = 1 - 0.45 * Math.min(1, lookUpAng / 0.9);
+    const d = THREE.MathUtils.lerp(camDist * zoom * near, Math.min(camDist * zoom * near, 8.5), k);
+    const pitch = THREE.MathUtils.lerp(Math.max(camPitch, 0.06), Math.min(Math.max(camPitch, 0.06), 0.36), k);
     const flat = Math.cos(pitch) * d;
     camOff.set(Math.sin(camYaw) * flat, Math.sin(pitch) * d, Math.cos(camYaw) * flat);
   }
@@ -1539,7 +1543,10 @@ export async function createWorld(container, hooks = {}) {
     // Không để camera chui xuống sườn núi.
     camWant.y = Math.max(terrainY(camWant.x, camWant.z) + 1.2, gy + 1.2, camWant.y);
     camera.position.copy(camWant);
-    camera.lookAt(look);
+    if (lookUpAng > 0) {
+      const flat = Math.hypot(look.x - camWant.x, look.z - camWant.z);
+      camera.lookAt(look.x, look.y + Math.tan(lookUpAng) * flat * (1 - indoor * 0.5), look.z);
+    } else camera.lookAt(look);
     if (debugView) { camera.position.fromArray(debugView[0]); camera.lookAt(...debugView[1]); }
   }
 
