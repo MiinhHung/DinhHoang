@@ -39,10 +39,26 @@ export const WATER = {
   pool2: { x: 13, z: 27, w: 7, d: 5 },
   bridge: { z0: 54.2, z1: 57.8 },
   pool1: { x: 14, z: 97, w: 10, d: 8 },
-  // Mỏm đá đầu nguồn sau suối nguồn (thác nhỏ đổ xuống), và dòng tràn từ ao thác ra mép núi phía đông.
-  source: { x: 13, z: -6.2, h: 4 },
-  outflow: { z: 97, x0: 19.4, x1: 34.6 }
+  // Dòng tràn từ ao thác ra mép núi phía đông.
+  outflow: { z: 97, x0: 19.4, x1: 34.6 },
+  // Đầu nguồn: vách núi cao nhất (hai trụ đá) sau Tam Thanh; nước phun ra từ khe giữa hai trụ ở độ cao `cleft.y`,
+  // văng ra với vận tốc ngang `jet` rồi rơi tự do xuống hồ chân thác `plunge` trên tầng 3.
+  crag: { x: 27, z: -56 },
+  cleft: { x: 27.2, y: 39.5, z: -51, jet: 4.3 },
+  plunge: { x: 27, z: -39.5, w: 9, d: 6.5 },
+  // Suối tầng 3 từ hồ chân thác về suối nguồn (các điểm [x, z]).
+  route3: [[27, -30], [27, -12], [25.5, -6.5], [21.5, -3]],
+  // Lòng khe khoét vào sườn núi giữa hai tầng: nước đổ qua mép vách tầng trên rồi chảy ghềnh xuống mép tầng dưới.
+  chutes: [{ x: 13, z0: 8, y0: 18, z1: 22, y1: 9 }, { x: 13, z0: 70, y0: 9, z1: 84, y1: 0 }]
 };
+// Độ cao lòng khe theo z: rơi gần thẳng đứng ở 18% đầu (mép vách), sau đó dốc thoải dần (ghềnh).
+export function chuteY(c, z) {
+  const t = Math.min(1, Math.max(0, (z - c.z0) / (c.z1 - c.z0))), H = c.y0 - c.y1;
+  return c.y0 - H * (t < 0.18 ? Math.pow(t / 0.18, 1.6) * 0.58 : 0.58 + 0.42 * Math.pow((t - 0.18) / 0.82, 0.85));
+}
+// Cầu vòm bắc qua suối tầng 3 (nhịp theo trục x) để sang khu phía đông của tầng.
+export const BRIDGE3 = { x: 27, z: -22, len: 7, width: 3, rise: 0.8 };
+export const bridge3DeckY = dx => BRIDGE3.rise * Math.max(0, 1 - (2 * dx / BRIDGE3.len) ** 2);
 // Cầu vòm bán nguyệt bắc ngang suối tầng 2: dài `len` theo trục x, rộng theo z, đỉnh cao `rise`.
 export const BRIDGE = { x: WATER.x, z: (WATER.bridge.z0 + WATER.bridge.z1) / 2, len: 8.4, width: WATER.bridge.z1 - WATER.bridge.z0, rise: 1.9 };
 // Mặt cầu cong parabol: dốc nhất ở hai đầu (≈ 0.9), vẫn đi bộ được.
@@ -110,6 +126,18 @@ export function terrainY(x, z) {
     const v = l.y - cliff - slope + rough * Math.min(1, Math.max(0, (d - CLIFF_W * 0.6) / 5));
     if (v > y) y = Math.min(v, l.y);
   }
+  // Lòng khe giữa các tầng: đáy khoét thấp hơn mặt nước, hai bên bờ đá nhô lên rồi thoải dần ra sườn núi.
+  for (const c of WATER.chutes) {
+    if (z < c.z0 - 0.5 || z > c.z1 + 0.5) continue;
+    const dx = Math.abs(x - c.x);
+    if (dx > 14) continue;
+    const cy = chuteY(c, z), bed = cy - 0.4;
+    // Vách khe cao dần từ hai đầu (không nhô lên khỏi mặt sân hai tầng).
+    const wallH = 1.9 * Math.max(0, Math.min(1, (z - c.z0) / 1.5, (c.z1 - z) / 1.5));
+    if (dx < 1.7) y = bed;
+    else if (dx < 3.8) { const s = (dx - 1.7) / 2.1; y = Math.max(z >= c.z0 && z <= c.z1 ? -99 : y, bed + wallH * s * s * (3 - 2 * s)); if (wallH === 0) y = Math.min(y, bed + 0.3); }
+    else if (z >= c.z0 && z <= c.z1) y = Math.max(y, bed + wallH - (dx - 3.8) * 0.6 + rough * 0.2 * Math.min(1, (dx - 3.8) / 3));
+  }
   return y;
 }
 
@@ -121,6 +149,7 @@ const levelAt = (x, z) => LEVELS.find(l => inPoly(l.poly, x, z));
 // Phần nền nổi trên mặt tầng: nền điện và bậc trước điện, Bốc Dịch Đài và bậc của đài.
 function featureY(x, z) {
   if (Math.abs(z - BRIDGE.z) <= BRIDGE.width / 2 - 0.15 && Math.abs(x - BRIDGE.x) <= BRIDGE.len / 2) return bridgeDeckY(x - BRIDGE.x);
+  if (Math.abs(z - BRIDGE3.z) <= BRIDGE3.width / 2 - 0.15 && Math.abs(x - BRIDGE3.x) <= BRIDGE3.len / 2) return bridge3DeckY(x - BRIDGE3.x);
   if (Math.abs(x - BRIDGE2.x) <= BRIDGE2.width / 2 - 0.15 && Math.abs(z - BRIDGE2.z) <= BRIDGE2.len / 2) return bridge2DeckY(z - BRIDGE2.z);
   if (Math.abs(x - TEA.x) <= TEA.w / 2 && Math.abs(z - TEA.z) <= TEA.d / 2) return TEA.floor;
   for (const k in HALL) {
