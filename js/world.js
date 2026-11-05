@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { V, lam, mesh, box, cyl, ball, canvasTex, roundRect, HAN, SERIF, boardTexture, boardMesh, hipRoof } from "./build.js";
 import {
   grassPatch, makeBush, makeRoundTree, makeBalustrade, makeClouds, makePeak, makeTerrain, makeCourtyard, makeStairs,
-  makeWaterPath, makeWaterMaterials, makeStreamBanks, makeBoulders, makeCrag, terrainMaterial, makeNaturalPond, makeGardenBed, makeRockField, makeMist, makeFoam, makeMoonBridge, makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate, makePavilionLamp, makeTeaPavilion
+  makeWaterPath, makeWaterMaterials, makeStreamBanks, makeBoulders, makeCrag, terrainMaterial, makeNaturalPond, makeGardenBed, makeRockField, makeMist, makeFoam, makeMoonBridge, makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate, makePavilionLamp, makeStoneLantern, makeTeaPavilion
 } from "./landscape.js";
 import {
   LEVELS, STAIRS, HALL, ALTAR, WATER, POND, BRIDGE, bridgeDeckY, BRIDGE2, bridge2DeckY, BRIDGE3, bridge3DeckY, chuteY, TEA, BIG_TREE, GATE_Z, SPAWN as SPAWN_XZ, hallFloor, altarBase,
@@ -361,15 +361,8 @@ function makeTree(kind = "pine") {
   return g;
 }
 
-function makeStoneLamp() {
-  const g = new THREE.Group();
-  const s = lam("#7d766b");
-  g.add(box(0.6, 0.2, 0.6, s, 0, 0.1, 0));
-  g.add(box(0.25, 0.9, 0.25, s, 0, 0.65, 0));
-  g.add(box(0.55, 0.45, 0.55, lam("#e8c27a", "#8a5a10"), 0, 1.32, 0));
-  g.add(mesh(new THREE.ConeGeometry(0.55, 0.4, 4), s, 0, 1.75, 0).rotateY(Math.PI / 4));
-  return g;
-}
+// Đèn đá xám dọc lối đi và đầu các bậc thang.
+const makeStoneLamp = () => makeStoneLantern({ scale: 1.05 });
 
 function makeBagua() {
   const g = new THREE.Group();

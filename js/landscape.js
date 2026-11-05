@@ -984,15 +984,61 @@ export function makeIngots() {
 }
 
 // Đèn đá mái xanh ở góc ao.
-export function makePavilionLamp() {
-  const g = new THREE.Group();
-  const s = lam("#d9d2c4");
-  g.add(box(0.7, 0.3, 0.7, s, 0, 0.15, 0));
-  g.add(box(0.3, 1.2, 0.3, s, 0, 0.9, 0));
-  g.add(box(0.6, 0.55, 0.6, lam("#ffd98a", "#a86a10"), 0, 1.75, 0));
-  g.add(hipRoof(1.2, 1.2, 0.55, lam("#2f4f8f"), 0.1).translateY(2.02));
-  g.add(ball(0.08, lam("#f2c14e"), 0, 2.62, 0, 6));
+// Đèn đá (thạch đăng): đế bát giác hai tầng có cánh sen, trụ tròn có đốt, đài sen đỡ lồng đèn lục giác
+// (khung đá, giấy sáng bên trong), mái lục giác cong lõm, sáu góc đầu đao vểnh, chóp búp sen.
+// glow/emissive: màu lồng đèn (night.js nhận theo màu phát sáng để thêm quầng sáng về đêm).
+export function makeStoneLantern({ stone = "#8d867b", dark = "#6f695f", roof = null, glow = "#e8c27a", emissive = "#8a5a10", tip = null, scale = 1 } = {}) {
+  const g = new THREE.Group(), S = lam(stone), D = lam(dark), R = roof ? lam(roof) : S;
+  // Đế.
+  g.add(cyl(0.36, 0.42, 0.12, D, 0, 0.06, 0, 8), cyl(0.27, 0.32, 0.1, S, 0, 0.17, 0, 8));
+  const petal = new THREE.SphereGeometry(0.09, 8, 6);
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * Math.PI * 2, m = mesh(petal, S, Math.cos(a) * 0.22, 0.23, Math.sin(a) * 0.22);
+    m.scale.set(1, 0.55, 1.4); m.rotation.y = -a; g.add(m);
+  }
+  // Trụ có đốt giữa.
+  g.add(cyl(0.11, 0.13, 0.75, S, 0, 0.62, 0, 12), cyl(0.15, 0.15, 0.06, D, 0, 0.42, 0, 12), cyl(0.15, 0.15, 0.06, D, 0, 0.72, 0, 12));
+  // Đài sen đỡ lồng đèn.
+  g.add(cyl(0.3, 0.14, 0.14, S, 0, 1.06, 0, 12));
+  for (let i = 0; i < 10; i++) {
+    const a = i / 10 * Math.PI * 2, m = mesh(petal, S, Math.cos(a) * 0.27, 1.12, Math.sin(a) * 0.27);
+    m.scale.set(0.8, 0.9, 1.2); m.rotation.set(0, -a, 0.5); g.add(m);
+  }
+  g.add(cyl(0.34, 0.34, 0.05, D, 0, 1.15, 0, 6));
+  // Lồng đèn: giấy sáng bên trong, khung đá sáu cột góc, thanh ngang giữa.
+  g.add(cyl(0.22, 0.22, 0.38, lam(glow, emissive), 0, 1.37, 0, 6));
+  for (let i = 0; i < 6; i++) {
+    const a = i / 6 * Math.PI * 2;
+    g.add(box(0.05, 0.42, 0.05, D, Math.cos(a) * 0.26, 1.37, Math.sin(a) * 0.26).rotateY(-a));
+  }
+  g.add(cyl(0.29, 0.29, 0.03, D, 0, 1.37, 0, 6));
+  g.add(cyl(0.33, 0.33, 0.05, D, 0, 1.6, 0, 6));
+  // Mái cong lõm (tiện quanh trục, sáu cạnh) và sáu đầu đao vểnh lên.
+  const prof = [];
+  for (let i = 0; i <= 10; i++) { const t = i / 10; prof.push(new THREE.Vector2(0.03 + 0.5 * t, 0.42 * (1 - t) ** 1.8)); }
+  prof.push(new THREE.Vector2(0.56, 0.05), new THREE.Vector2(0.5, -0.02), new THREE.Vector2(0.2, -0.02));
+  const roofGeo = new THREE.LatheGeometry(prof, 6);
+  roofGeo.computeVertexNormals();
+  const rf = mesh(roofGeo, R, 0, 1.64, 0);
+  rf.rotation.y = Math.PI / 6;
+  g.add(rf);
+  for (let i = 0; i < 6; i++) {
+    const a = i / 6 * Math.PI * 2 + Math.PI / 6 + Math.PI / 2;
+    const c = mesh(new THREE.ConeGeometry(0.03, 0.12, 5), R, Math.sin(a) * 0.55, 1.73, Math.cos(a) * 0.55);
+    c.rotation.set(Math.cos(a) * 0.35, 0, -Math.sin(a) * 0.35);
+    g.add(c);
+  }
+  // Chóp búp sen.
+  const T = tip ? lam(tip) : S;
+  g.add(cyl(0.06, 0.08, 0.08, T, 0, 2.08, 0, 8));
+  const bud = ball(0.09, T, 0, 2.18, 0, 10); bud.scale.set(1, 1.3, 1); g.add(bud);
+  g.scale.setScalar(scale);
   return g;
+}
+
+// Đèn quanh Ao Sen: đá trắng, mái lưu ly xanh, chóp vàng.
+export function makePavilionLamp() {
+  return makeStoneLantern({ stone: "#ddd6c8", dark: "#b8b0a2", roof: "#2f4f8f", glow: "#ffd98a", emissive: "#a86a10", tip: "#f2c14e", scale: 1.25 });
 }
 
 // Ao sen chữ nhật bo góc có lan can, lá sen và hoa sen; trả về group và bán kính hoa đăng trôi.
