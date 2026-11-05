@@ -980,11 +980,12 @@ function enter() {
     // Đến từ link chia sẻ của một điện: đưa thẳng tới đó và mở nghi lễ.
     setTimeout(() => veil(() => { world.teleport(deepZone); openRitual(deepZone); }), 700);
   } else if (firstVisit) {
-    showHint("Đi qua cổng, Lão Đạo Sĩ đang đứng chờ ngay bên phải — lại gần để hỏi chuyện", 6000);
-    setTimeout(() => !sheetOpen() && showHint(isTouch ? "Cần điều khiển để đi · vuốt màn hình để xoay góc nhìn · chụm hai ngón để phóng to" : "W A S D để đi · kéo chuột để xoay góc nhìn · lăn chuột để phóng to", 5200), 6500);
+    // Đợi camera bay xuống tới cổng rồi mới nhắc.
+    setTimeout(() => !sheetOpen() && showHint("Đi qua cổng, Lão Đạo Sĩ đang đứng chờ ngay bên phải — lại gần để hỏi chuyện", 6000), 4400);
+    setTimeout(() => !sheetOpen() && showHint(isTouch ? "Cần điều khiển để đi · vuốt màn hình để xoay góc nhìn · chụm hai ngón để phóng to" : "W A S D để đi · kéo chuột để xoay góc nhìn · lăn chuột để phóng to", 5200), 10900);
   } else {
     const left = TASKS.filter(t => !progress.state().done.includes(t.id)).length;
-    showHint(left ? `Hôm nay còn ${left} việc lành chưa làm — mở 📜 để xem` : "Hôm nay thí chủ đã đủ việc lành. Cứ thong thả dạo đình.", 5200);
+    setTimeout(() => showHint(left ? `Hôm nay còn ${left} việc lành chưa làm — mở 📜 để xem` : "Hôm nay thí chủ đã đủ việc lành. Cứ thong thả dạo đình.", 5200), 4400);
   }
   track("enter", { color: me.color, ...(deepZone ? { zone: deepZone } : {}) });
   connectOnline(config.supabase, me, world, n => {

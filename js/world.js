@@ -1557,7 +1557,7 @@ export async function createWorld(container, hooks = {}) {
   }
   function updatePlayer(dt) {
     let mx = 0, mz = 0;
-    if (!paused) {
+    if (!paused && !intro) {
       mx = (keys.has("r") ? 1 : 0) - (keys.has("l") ? 1 : 0) + joy.x;
       mz = (keys.has("d") ? 1 : 0) - (keys.has("u") ? 1 : 0) + joy.y;
     }
@@ -1684,6 +1684,41 @@ export async function createWorld(container, hooks = {}) {
     if (k >= 1 && !captureReq) captureReq = cine.resolve;
   }
 
+  // Bay vào đình: từ góc nhìn toàn cảnh trên cao (lúc ở màn hình chào) lượn xuống phía trước tam quan rồi
+  // hạ về sau lưng nhân vật. Đường bay Bézier bậc ba, điểm nhìn trượt từ giữa núi về cổng rồi về nhân vật.
+  let intro = null;
+  const bez3 = (a, b, c, d, t, out) => {
+    const u = 1 - t;
+    return out.set(0, 0, 0).addScaledVector(a, u * u * u).addScaledVector(b, 3 * u * u * t).addScaledVector(c, 3 * u * t * t).addScaledVector(d, t * t * t);
+  };
+  const bez2 = (a, b, c, t, out) => { const u = 1 - t; return out.set(0, 0, 0).addScaledVector(a, u * u).addScaledVector(b, 2 * u * t).addScaledVector(c, t * t); };
+  function startIntro() {
+    // Đích: đúng vị trí camera theo sau nhân vật như khi chơi bình thường.
+    updateCamOff(0);
+    const endLook = V(pos.x, 1.3 + groundY(pos.x, pos.z), pos.z - 2.5), end = endLook.clone().add(camOff);
+    const p0 = camera.position.clone();
+    intro = {
+      t: 0, dur: 4.6,
+      p: [p0, V(p0.x * 0.35, Math.max(p0.y, 70), p0.z * 0.35 + 60), V(0, 26, GATE_Z + 70), end],
+      l: [V(0, 8, 20), V(0, 5, GATE_Z - 6), endLook]
+    };
+  }
+  function updateIntro(dt) {
+    intro.t = Math.min(1, intro.t + dt / intro.dur);
+    // Êm ở hai đầu (smootherstep): bắt đầu chậm, lướt nhanh giữa chừng, hạ xuống nhẹ nhàng.
+    const x = intro.t, e = x * x * x * (x * (x * 6 - 15) + 10);
+    bez3(...intro.p, e, camera.position);
+    camera.lookAt(bez2(...intro.l, Math.min(1, e * 1.08), hit));
+    gate.visible = true;
+    if (intro.t >= 1) {
+      look.copy(intro.l[2]);
+      lookWant.copy(look);
+      intro = null;
+      hooks.onIntroDone?.();
+    }
+  }
+  const skipIntro = () => { if (intro && intro.t > 0.05) intro.t = Math.max(intro.t, 0.999); };
+
   function updateCamera(dt, t) {
     if (!entered) {
       // Trước khi vào đình: bay vòng quanh cả ngọn núi.
@@ -1692,6 +1727,7 @@ export async function createWorld(container, hooks = {}) {
       camera.lookAt(0, 8, 20);
       return;
     }
+    if (intro) { updateIntro(dt); return; }
     if (cine) { updateCine(dt); return; }
     // Ẩn tam quan khi nó chắn giữa camera và nhân vật đã đi vào trong sân.
     gate.visible = !(camera.position.z > GATE_Z - 0.5 && pos.z < GATE_Z - 0.5);
@@ -1961,6 +1997,7 @@ export async function createWorld(container, hooks = {}) {
     const tap = down && !dragging && down.button === 0;
     const d = down;
     down = null;
+    if (intro) { skipIntro(); return; }
     if (!tap || !entered || paused) return;
     const moved = Math.hypot(e.clientX - d.x, e.clientY - d.y), quick = performance.now() - d.t < 450;
     if (moved > 12 || !quick) return;
@@ -1999,6 +2036,7 @@ export async function createWorld(container, hooks = {}) {
   addEventListener("keydown", e => {
     const k = KEYMAP[e.code];
     if (!k || typing(e) || !entered || paused) return;
+    if (intro) skipIntro();
     keys.add(k);
     e.preventDefault();
   });
@@ -2054,6 +2092,7 @@ export async function createWorld(container, hooks = {}) {
       camYaw = camYawWant = 0;
       look.set(pos.x, 1.3, pos.z - 2.5);
       entered = true;
+      startIntro();
       hooks.onZone?.(zone);
     },
     setPaused(p) { paused = p; if (p) { keys.clear(); target = null; } },
@@ -2063,7 +2102,7 @@ export async function createWorld(container, hooks = {}) {
       pos.copy(s);
       target = null;
       route = [];
-      seat = standing = null; sitW = 0; arriveZone = null; camSaved = null;
+      seat = standing = null; sitW = 0; arriveZone = null; camSaved = null; intro = null;
       act.pour = act.sip = 0; act.breath = null;
       if (FOCUS[z]) {
         yaw = wantYaw = faceYaw(z);
