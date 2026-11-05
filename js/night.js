@@ -52,6 +52,8 @@ export async function makeNight(renderer, scene, camera, glowTex, { fireflySpots
   // ---- Mây và mù (sprite không chịu ánh sáng): nhuộm tối theo đêm để khỏi trắng toát ----
   const cloudMats = new Set();
   scene.traverse(o => { if (o.isSprite && o.material.userData.cloud) cloudMats.add(o.material); });
+  const seaMats = new Set();
+  scene.traverse(o => { if (o.isMesh && o.material.userData?.cloudSea) seaMats.add(o.material); });
   const dayCloud = new THREE.Color("#ffffff"), nightCloud = new THREE.Color("#3c4068");
 
   // ---- Đom đóm ----
@@ -79,6 +81,7 @@ export async function makeNight(renderer, scene, camera, glowTex, { fireflySpots
       haloMats.forEach(m => { m.opacity = n * 0.85; });
       if (bloom) bloom.strength = n * 0.95;
       cloudMats.forEach(m => m.color.copy(dayCloud).lerp(nightCloud, n * 0.85));
+      seaMats.forEach(m => m.uniforms.uTint.value.copy(dayCloud).lerp(nightCloud, n * 0.85));
       flies.visible = n > 0.05;
     },
     update(t) {

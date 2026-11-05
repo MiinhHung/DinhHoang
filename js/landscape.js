@@ -26,21 +26,76 @@ export function pavingTexture(unit = 4) {
   return t;
 }
 
-function cloudTexture() {
-  const t = canvasTex(256, 256, (g) => {
-    for (let i = 0; i < 18; i++) {
-      const x = 50 + Math.random() * 156, y = 90 + Math.random() * 80, r = 30 + Math.random() * 46;
-      const gr = g.createRadialGradient(x, y, 0, x, y, r);
-      gr.addColorStop(0, "rgba(255,255,255,.95)"); gr.addColorStop(0.6, "rgba(255,255,255,.55)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+// Mây: cụm nhiều bọt tròn chồng lên nhau, đáy phẳng, mặt trên sáng trắng, đáy ngả xám xanh (bóng của mây).
+const cloudTexCache = [];
+function cloudTexture(variant = 0) {
+  if (cloudTexCache[variant]) return cloudTexCache[variant];
+  let s = 1234 + variant * 977;
+  const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const t = canvasTex(512, 256, (g, w, h) => {
+    const base = h * 0.78;
+    const blobs = [];
+    for (let i = 0; i < 16; i++) {
+      const x = w * (0.14 + rnd() * 0.72), r = h * (0.14 + rnd() * 0.22) * (1 - Math.abs(x / w - 0.5) * 0.9);
+      blobs.push([x, base - r * (0.35 + rnd() * 0.75), r]);
+    }
+    for (const [x, y, r] of blobs) {
+      const gr = g.createRadialGradient(x, y - r * 0.2, r * 0.1, x, y, r);
+      gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.7, "rgba(255,255,255,.9)"); gr.addColorStop(1, "rgba(255,255,255,0)");
       g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
     }
+    // Cắt phẳng đáy và làm mềm.
+    g.globalCompositeOperation = "destination-out";
+    const cutG = g.createLinearGradient(0, base - 8, 0, base + 14);
+    cutG.addColorStop(0, "rgba(0,0,0,0)"); cutG.addColorStop(1, "rgba(0,0,0,1)");
+    g.fillStyle = cutG; g.fillRect(0, base - 8, w, h - base + 8);
+    // Bóng đáy mây.
+    g.globalCompositeOperation = "source-atop";
+    const sh = g.createLinearGradient(0, h * 0.25, 0, base);
+    sh.addColorStop(0, "rgba(255,255,255,0)"); sh.addColorStop(0.55, "rgba(196,204,226,.35)"); sh.addColorStop(1, "rgba(150,160,196,.75)");
+    g.fillStyle = sh; g.fillRect(0, 0, w, h);
+    g.globalCompositeOperation = "source-over";
   });
+  cloudTexCache[variant] = t;
   return t;
 }
 
 // ---------- Núi nhiều tầng ----------
-// Mặt đất núi: lưới đỉnh lấy độ cao từ heightFn, tô màu cỏ ở chỗ thoải, đá ở chỗ dốc, đá xám ở chân núi.
-export function makeTerrain(heightFn, { x0 = -120, x1 = 120, z0 = -160, z1 = 210, res = 2 } = {}) {
+// Vân chi tiết phủ theo toạ độ thế giới (không cần UV): chỗ thoải là cỏ, chỗ dốc là đá phân tầng (chiếu theo hai
+// mặt đứng để vân đá nằm ngang trên vách). Màu nền vẫn từ màu đỉnh; ảnh vân chỉ làm sáng tối chi tiết.
+const texLoader = new THREE.TextureLoader();
+function detailTex(url) {
+  const t = texLoader.load(url);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 4;
+  return t;
+}
+export function terrainMaterial() {
+  const grass = detailTex("assets/textures/grass_detail.jpg"), rock = detailTex("assets/textures/rock_detail.jpg");
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+  m.onBeforeCompile = sh => {
+    sh.uniforms.grassMap = { value: grass };
+    sh.uniforms.rockMap = { value: rock };
+    sh.vertexShader = sh.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying vec3 vWPos; varying vec3 vWNorm;")
+      .replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz; vWNorm = normalize(mat3(modelMatrix) * objectNormal);");
+    sh.fragmentShader = sh.fragmentShader
+      .replace("#include <common>", "#include <common>\nuniform sampler2D grassMap; uniform sampler2D rockMap; varying vec3 vWPos; varying vec3 vWNorm;")
+      .replace("#include <color_fragment>", `#include <color_fragment>
+        vec3 nrm = normalize(vWNorm);
+        float g1 = texture2D(grassMap, vWPos.xz / 5.0).r, g2 = texture2D(grassMap, vWPos.xz / 23.0 + 0.37).r;
+        float gd = mix(g1, g2, 0.35);
+        vec2 w = abs(nrm.xz) + 1e-3; w /= (w.x + w.y);
+        float rd = texture2D(rockMap, vec2(vWPos.z, vWPos.y) / 9.0).r * w.x + texture2D(rockMap, vec2(vWPos.x, vWPos.y) / 9.0).r * w.y;
+        float rocky = smoothstep(0.82, 0.55, nrm.y);
+        diffuseColor.rgb *= mix(gd, rd, rocky) * 1.55;`);
+  };
+  return m;
+}
+
+// Mặt đất núi: lưới đỉnh lấy độ cao từ heightFn. Màu: cỏ xanh loang hai tông ở chỗ thoải, đá vôi xám ấm ở vách,
+// rêu ở chân vách, đá xám xanh khi chìm dần vào mây.
+export function makeTerrain(heightFn, { x0 = -130, x1 = 130, z0 = -170, z1 = 220, res = 1.25 } = {}) {
   const nx = Math.round((x1 - x0) / res), nz = Math.round((z1 - z0) / res);
   const geo = new THREE.PlaneGeometry(x1 - x0, z1 - z0, nx, nz);
   geo.rotateX(-Math.PI / 2);
@@ -49,16 +104,22 @@ export function makeTerrain(heightFn, { x0 = -120, x1 = 120, z0 = -160, z1 = 210
   for (let i = 0; i < p.count; i++) p.setY(i, heightFn(p.getX(i), p.getZ(i)));
   geo.computeVertexNormals();
   const n = geo.attributes.normal, cols = new Float32Array(p.count * 3);
-  const grass = new THREE.Color("#6fa64a"), grass2 = new THREE.Color("#4f8a3a"), rock = new THREE.Color("#9c958a"), deep = new THREE.Color("#7f8796"), c = new THREE.Color();
+  const grass = new THREE.Color("#79b04e"), grass2 = new THREE.Color("#4e8f3c"), dry = new THREE.Color("#a6ad5a");
+  const rock = new THREE.Color("#b5ab9b"), rock2 = new THREE.Color("#8f877c"), moss = new THREE.Color("#5f7d4a"), deep = new THREE.Color("#8a93a6"), c = new THREE.Color();
   for (let i = 0; i < p.count; i++) {
-    const y = p.getY(i), up = n.getY(i), v = Math.sin(p.getX(i) * 0.37) * Math.sin(p.getZ(i) * 0.29);
-    c.copy(grass).lerp(grass2, 0.5 + v * 0.5);
-    c.lerp(rock, Math.min(1, Math.max(0, (0.86 - up) * 4)));
-    c.lerp(deep, Math.min(1, Math.max(0, (-6 - y) / 18)));
+    const x = p.getX(i), z = p.getZ(i), y = p.getY(i), up = n.getY(i);
+    const v1 = Math.sin(x * 0.11 + Math.sin(z * 0.07) * 2) * 0.5 + 0.5, v2 = Math.sin(z * 0.19 + x * 0.05) * 0.5 + 0.5;
+    c.copy(grass).lerp(grass2, v1 * 0.8).lerp(dry, Math.max(0, v2 - 0.7) * 1.2);
+    const rk = Math.min(1, Math.max(0, (0.84 - up) * 3.2));
+    const rc = rock.clone().lerp(rock2, Math.sin(y * 0.9) * 0.5 + 0.5);
+    c.lerp(rc, rk);
+    // Rêu ở gờ thoải giữa vách.
+    if (rk > 0.2 && rk < 0.7) c.lerp(moss, 0.25);
+    c.lerp(deep, Math.min(1, Math.max(0, (-8 - y) / 22)));
     cols.set([c.r, c.g, c.b], i * 3);
   }
   geo.setAttribute("color", new THREE.BufferAttribute(cols, 3));
-  return new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  return new THREE.Mesh(geo, terrainMaterial());
 }
 
 // Sân lát đá phủ mặt một tầng.
@@ -467,42 +528,115 @@ export function makeBalustrade(points, { closed = true, step = 2, y = 0 } = {}) 
 }
 
 // ---------- Biển mây, núi xa, thác nước ----------
+// Biển mây: mặt phẳng rộng dùng shader nhiễu nhiều lớp trôi chậm; chỗ mây dày sáng trắng, khe mây ngả xám xanh,
+// có viền sáng phía mặt trời; uTint đổi theo giờ (night.js). Cụm mây nổi xếp nhiều lớp bọt, mỗi cụm vài sprite.
+const SEA_VS = `
+varying vec3 vWPos;
+#include <fog_pars_vertex>
+void main() {
+  vec4 wp = modelMatrix * vec4(position, 1.0); vWPos = wp.xyz;
+  vec4 mvPosition = viewMatrix * wp;
+  gl_Position = projectionMatrix * mvPosition;
+  #include <fog_vertex>
+}`;
+const SEA_FS = `
+uniform float uTime; uniform vec3 uTint;
+varying vec3 vWPos;
+#include <fog_pars_fragment>
+float h(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float n(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + 1.0), f.x), f.y); }
+float fbm(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { s += a * n(p); p = p * 2.07 + 13.1; a *= 0.5; } return s; }
+void main() {
+  vec2 p = vWPos.xz / 70.0 + vec2(uTime * 0.006, uTime * 0.003);
+  float d = fbm(p + fbm(p * 0.7 + uTime * 0.004) * 0.8);
+  float lit = fbm(p + vec2(0.04, 0.03));
+  vec3 shadow = vec3(0.70, 0.75, 0.86), bright = vec3(1.0, 0.99, 0.97);
+  vec3 col = mix(shadow, bright, smoothstep(0.32, 0.68, d));
+  col += vec3(0.06, 0.05, 0.03) * clamp((d - lit) * 8.0, 0.0, 1.0);
+  gl_FragColor = vec4(col * uTint, 1.0);
+  #include <fog_fragment>
+}`;
 export function makeClouds(scene) {
-  const tex = cloudTexture();
-  const puffs = [];
-  const sea = mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshLambertMaterial({ color: "#f4f2f8", emissive: "#3a3848" }), 0, -22, 0);
+  const seaMat = new THREE.ShaderMaterial({
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uTint: { value: new THREE.Color(1, 1, 1) } }]),
+    vertexShader: SEA_VS, fragmentShader: SEA_FS, fog: true
+  });
+  seaMat.userData.cloudSea = true;
+  const sea = new THREE.Mesh(new THREE.PlaneGeometry(1800, 1800), seaMat);
   sea.rotation.x = -Math.PI / 2;
+  sea.position.y = -22;
   scene.add(sea);
-  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.95 });
-  mat.userData.cloud = true;
-  for (let i = 0; i < 30; i++) {
-    const a = Math.random() * Math.PI * 2, r = 38 + Math.random() * 120;
-    const s = new THREE.Sprite(mat);
-    const size = 22 + Math.random() * 30;
-    s.scale.set(size, size * 0.55, 1);
-    s.position.set(Math.cos(a) * r, -16 + Math.random() * 12, Math.sin(a) * r);
-    scene.add(s);
-    puffs.push({ s, a, r, speed: 0.004 + Math.random() * 0.006 });
+  const mats = [0, 1, 2].map(v => {
+    const m = new THREE.SpriteMaterial({ map: cloudTexture(v), transparent: true, depthWrite: false, opacity: 0.96 });
+    m.userData.cloud = true;
+    return m;
+  });
+  let s = 99;
+  const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const puffs = [];
+  for (let i = 0; i < 46; i++) {
+    const a = rnd() * Math.PI * 2, r = 70 + rnd() * 240, y = -19 + rnd() * 10 + (rnd() < 0.2 ? 22 + rnd() * 18 : 0);
+    const size = 26 + rnd() * 40, cluster = new THREE.Group();
+    for (let k = 0; k < 3; k++) {
+      const sp = new THREE.Sprite(mats[(i + k) % 3]);
+      const sk = size * (1 - k * 0.22);
+      sp.scale.set(sk, sk * 0.5, 1);
+      sp.position.set((k - 1) * size * 0.32, k === 1 ? size * 0.06 : 0, (rnd() - 0.5) * 4);
+      cluster.add(sp);
+    }
+    cluster.position.set(Math.cos(a) * r, y, 25 + Math.sin(a) * r);
+    scene.add(cluster);
+    puffs.push({ g: cluster, a, r, speed: (0.002 + rnd() * 0.004) * (r < 150 ? 1 : 0.6) });
   }
+  let time = 0;
   return dt => {
+    time += dt;
+    seaMat.uniforms.uTime.value = time;
     for (const p of puffs) {
       p.a += p.speed * dt;
-      p.s.position.x = Math.cos(p.a) * p.r;
-      p.s.position.z = Math.sin(p.a) * p.r;
+      p.g.position.x = Math.cos(p.a) * p.r;
+      p.g.position.z = 25 + Math.sin(p.a) * p.r;
     }
   };
 }
 
-// Núi đá vôi tròn đầu, có mũ cây xanh, chân chìm trong mây.
-export function makePeak(h, r) {
+// Núi đá vôi: khối cầu lưới tam giác kéo cao, vát dần lên đỉnh, phồng lõm theo nhiễu, có gờ ngang; mặt phẳng
+// (flat shading) cho vẻ tạc đá. Mặt hướng lên (gờ, đỉnh) phủ xanh cây; vách là đá xám có vân. Chân chìm trong mây.
+export function makePeak(h, r, seed = 1) {
+  let s = Math.floor(seed * 1e5) % 2147483646 + 1;
+  const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const ph = [rnd() * 6, rnd() * 6, rnd() * 6, rnd() * 6];
+  const geo = new THREE.IcosahedronGeometry(1, 3);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i), t = (y + 1) / 2, a = Math.atan2(z, x);
+    let rr = (1 - 0.55 * t * t) * (1 + 0.12 * Math.sin(3 * a + ph[0]) + 0.08 * Math.sin(5 * a + ph[1] + t * 4));
+    rr *= 1 + 0.07 * Math.sin(t * 22 + ph[2]);
+    rr *= y < -0.6 ? 1.15 : 1;
+    p.setXYZ(i, x * r * rr, t * h + 0.08 * h * Math.sin(a * 2 + ph[3]) * t, z * r * rr);
+  }
+  // IcosahedronGeometry vốn không đánh chỉ số: mỗi mặt có đỉnh riêng, tô màu theo mặt được ngay.
+  const g2 = geo;
+  g2.computeVertexNormals();
+  const n = g2.attributes.normal, q = g2.attributes.position, cols = new Float32Array(q.count * 3);
+  const rock = new THREE.Color("#a7a9a6"), rock2 = new THREE.Color("#8b8f94"), green = new THREE.Color("#4f8a46"), green2 = new THREE.Color("#3d7340"), c = new THREE.Color();
+  for (let i = 0; i < q.count; i += 3) {
+    const up = (n.getY(i) + n.getY(i + 1) + n.getY(i + 2)) / 3, y = (q.getY(i) + q.getY(i + 1) + q.getY(i + 2)) / 3;
+    c.copy(rock).lerp(rock2, Math.sin(y * 0.7 + ph[0]) * 0.5 + 0.5);
+    if (up > 0.45) c.copy(green).lerp(green2, rnd());
+    for (let k = 0; k < 3; k++) cols.set([c.r, c.g, c.b], (i + k) * 3);
+  }
+  g2.setAttribute("color", new THREE.BufferAttribute(cols, 3));
   const g = new THREE.Group();
-  const prof = [[r, 0], [r * 0.92, h * 0.3], [r * 0.7, h * 0.6], [r * 0.55, h * 0.8], [r * 0.38, h * 0.93], [0.01, h]].map(([x, y]) => new THREE.Vector2(x, y));
-  g.add(new THREE.Mesh(new THREE.LatheGeometry(prof, 9), lam("#9aa0a8")));
-  const green = lam("#4f8a4a");
-  g.add(ball(r * 0.42, green, 0, h * 0.94, 0, 8));
-  for (let i = 0; i < 4; i++) {
-    const a = i * 1.7 + Math.random();
-    g.add(ball(r * 0.25, green, Math.cos(a) * r * 0.55, h * (0.66 + Math.random() * 0.15), Math.sin(a) * r * 0.55, 7));
+  g.add(new THREE.Mesh(g2, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })));
+  // Vài chùm cây trên đỉnh.
+  const tree = new THREE.MeshLambertMaterial({ color: "#3f7a40", flatShading: true });
+  for (let i = 0; i < 5; i++) {
+    const a = rnd() * Math.PI * 2, rr = r * 0.3 * rnd();
+    const t = new THREE.Mesh(new THREE.ConeGeometry(r * 0.12, r * 0.4, 5), tree);
+    t.position.set(Math.cos(a) * rr, h * 0.97 + r * 0.1, Math.sin(a) * rr);
+    g.add(t);
   }
   return g;
 }

@@ -80,15 +80,35 @@ function distToPoly(poly, x, z) {
   }
   return best;
 }
-const noise = (x, z) => Math.sin(x * 0.21 + Math.sin(z * 0.13) * 2) * 0.6 + Math.sin(z * 0.17 + x * 0.07) * 0.5 + Math.sin((x + z) * 0.41) * 0.25;
+// Nhiễu giá trị nhiều lớp (fbm), tất định theo toạ độ: dùng cho sườn núi gồ ghề.
+const hash2 = (x, z) => { const s = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return s - Math.floor(s); };
+function vnoise(x, z) {
+  const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi;
+  const u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
+  const a = hash2(xi, zi), b = hash2(xi + 1, zi), c = hash2(xi, zi + 1), d = hash2(xi + 1, zi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+export function fbm(x, z, oct = 4) {
+  let s = 0, a = 0.5, f = 1;
+  for (let i = 0; i < oct; i++) { s += a * vnoise(x * f, z * f); f *= 2.03; a *= 0.5; }
+  return s;
+}
 
-// Độ cao mặt đất nhìn thấy: mặt phẳng ở mỗi tầng, ngoài mép thì dốc xuống như sườn núi (gặp tầng dưới đúng mép).
+// Độ cao mặt đất nhìn thấy: mặt phẳng ở mỗi tầng; ra khỏi mép là vách đá gần như dựng đứng (~8 m),
+// dưới chân vách là sườn núi thoải dần, gồ ghề, có gờ và khe; tầng nào cao hơn thì lấy tầng đó.
+const CLIFF_W = 3.2, CLIFF_DROP = 2.6;
 export function terrainY(x, z) {
-  let y = -60;
+  let y = -70;
+  const rough = (fbm(x * 0.09, z * 0.09) - 0.47) * 6 + (fbm(x * 0.35, z * 0.35, 2) - 0.37) * 1.2;
+  const gentle = 0.38 + 0.3 * fbm(x * 0.03 + 7, z * 0.03 + 3, 2);
   for (const l of LEVELS) {
     const d = distToPoly(l.poly, x, z);
-    const v = l.y - d * 0.66 - (d > 0 ? Math.min(1, d / 6) * (1.2 + noise(x, z)) : 0);
-    if (v > y) y = v;
+    if (d === 0) { y = Math.max(y, l.y); continue; }
+    // Vách: tụt nhanh trong CLIFF_W đầu; chân vách lởm chởm theo nhiễu.
+    const cliff = Math.min(d, CLIFF_W) * CLIFF_DROP;
+    const slope = Math.max(0, d - CLIFF_W) * gentle;
+    const v = l.y - cliff - slope + rough * Math.min(1, Math.max(0, (d - CLIFF_W * 0.6) / 5));
+    if (v > y) y = Math.min(v, l.y);
   }
   return y;
 }

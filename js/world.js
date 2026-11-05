@@ -723,7 +723,7 @@ export async function createWorld(container, hooks = {}) {
   const driftClouds = makeClouds(scene);
   for (let i = 0; i < 26; i++) {
     const a = i / 26 * Math.PI * 2 + Math.random() * 0.15, r = 230 + Math.random() * 110;
-    const pk = makePeak(60 + Math.random() * 50, 18 + Math.random() * 14);
+    const pk = makePeak(60 + Math.random() * 50, 18 + Math.random() * 14, i + 1);
     pk.position.set(Math.cos(a) * r, -50, 25 + Math.sin(a) * r);
     scene.add(pk);
   }
@@ -992,13 +992,13 @@ export async function createWorld(container, hooks = {}) {
   // Núi đá vôi gần hơn, chân chìm trong mây, và một vòng mây mù quanh sườn núi.
   for (let i = 0; i < 12; i++) {
     const a = i / 12 * Math.PI * 2 + 0.3, r = 135 + rnd() * 40;
-    const pk = makePeak(34 + rnd() * 26, 9 + rnd() * 7);
+    const pk = makePeak(34 + rnd() * 26, 9 + rnd() * 7, i + 40);
     pk.position.set(Math.cos(a) * r, -40, 25 + Math.sin(a) * r);
     scene.add(pk);
   }
   for (let i = 0; i < 26; i++) {
-    const a = i / 26 * Math.PI * 2, r = 62 + rnd() * 26;
-    mistPts.push([Math.cos(a) * r * 0.75, -12 + rnd() * 16, 25 + Math.sin(a) * r * 1.2, 26 + rnd() * 18]);
+    const a = i / 26 * Math.PI * 2, r = 92 + rnd() * 30;
+    mistPts.push([Math.cos(a) * r * 0.7, -16 + rnd() * 10, 25 + Math.sin(a) * r * 1.25, 26 + rnd() * 18]);
   }
   const mist = makeMist(mistPts, 0.5);
   scene.add(mist);

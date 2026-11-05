@@ -7,3 +7,5 @@ Tất cả lấy từ Poly Haven (https://polyhaven.com), giấy phép CC0: dùn
 |---|---|---|
 | roof_tiles.jpg | https://polyhaven.com/a/clay_roof_tiles_02 | Amal Kumar |
 | paving.jpg | https://polyhaven.com/a/rectangular_paving | Dimitrios Savva |
+| grass_detail.jpg | https://polyhaven.com/a/leafy_grass | Poly Haven |
+| rock_detail.jpg | https://polyhaven.com/a/cliff_side | Poly Haven |
