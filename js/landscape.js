@@ -1218,3 +1218,82 @@ export function makeTeaPavilion() {
   g.userData.teapot = new THREE.Vector3(0.6, 0.96, 0);
   return g;
 }
+
+// Hàng rào đá thấp kiểu vườn cổ ven suối, ven hồ: trụ vuông đầu búp sen, tay vịn trên, thanh dưới, giữa mỗi nhịp
+// một con tiện hình bình. runs: các dãy điểm [x, y, z] (y = mặt đất); trụ đặt đều theo `step` mét dọc mỗi dãy.
+// Tất cả dựng bằng InstancedMesh (vài lệnh vẽ cho cả nghìn trụ).
+export function makeFence(runs, { step = 1.3, h = 0.72, stone = "#ddd5c6", dark = "#b9b0a0" } = {}) {
+  const posts = [], spans = [];
+  runs.forEach(run => {
+    if (run.length < 2) return;
+    // Lấy lại mẫu theo khoảng cách đều.
+    const pts = [run[0]];
+    let carry = 0;
+    for (let i = 1; i < run.length; i++) {
+      const [ax, ay, az] = run[i - 1], [bx, by, bz] = run[i], L = Math.hypot(bx - ax, bz - az);
+      let d = step - carry;
+      while (d <= L) { const t = d / L; pts.push([ax + (bx - ax) * t, ay + (by - ay) * t, az + (bz - az) * t]); d += step; }
+      carry = L - (d - step);
+    }
+    const last = run[run.length - 1], tail = pts[pts.length - 1];
+    if (Math.hypot(last[0] - tail[0], last[2] - tail[2]) > step * 0.35) pts.push(last);
+    pts.forEach(p => posts.push(p));
+    for (let i = 1; i < pts.length; i++) spans.push([pts[i - 1], pts[i]]);
+  });
+  const g = new THREE.Group();
+  if (!posts.length) return g;
+  const S = new THREE.MeshLambertMaterial({ color: stone }), D = new THREE.MeshLambertMaterial({ color: dark });
+  const o = new THREE.Object3D();
+  const inst = (geo, mat, n, set) => { const m = new THREE.InstancedMesh(geo, mat, n); for (let i = 0; i < n; i++) { set(i); o.updateMatrix(); m.setMatrixAt(i, o.matrix); } g.add(m); return m; };
+  const reset = () => { o.rotation.set(0, 0, 0); o.scale.set(1, 1, 1); };
+  inst(new THREE.BoxGeometry(0.15, h, 0.15).translate(0, h / 2, 0), S, posts.length, i => { reset(); o.position.set(posts[i][0], posts[i][1], posts[i][2]); });
+  inst(new THREE.BoxGeometry(0.2, 0.06, 0.2), D, posts.length, i => { reset(); o.position.set(posts[i][0], posts[i][1] + h + 0.03, posts[i][2]); });
+  const bud = new THREE.SphereGeometry(0.085, 10, 8); bud.scale(1, 1.35, 1);
+  inst(bud, S, posts.length, i => { reset(); o.position.set(posts[i][0], posts[i][1] + h + 0.15, posts[i][2]); });
+  inst(new THREE.BoxGeometry(0.2, 0.1, 0.2), D, posts.length, i => { reset(); o.position.set(posts[i][0], posts[i][1] + 0.05, posts[i][2]); });
+  // Thanh ngang: hộp dài 1 m, kéo theo chiều dài nhịp, xoay theo hướng, nghiêng theo dốc.
+  const rail = (y, th, w, mat) => inst(new THREE.BoxGeometry(1, th, w), mat, spans.length, i => {
+    const [a, b] = spans[i], L = Math.hypot(b[0] - a[0], b[2] - a[2]);
+    reset();
+    o.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + y, (a[2] + b[2]) / 2);
+    o.rotation.set(0, -Math.atan2(b[2] - a[2], b[0] - a[0]), Math.atan2(b[1] - a[1], L));
+    o.scale.set(L, 1, 1);
+  });
+  rail(h - 0.06, 0.08, 0.12, S);
+  rail(0.2, 0.07, 0.09, S);
+  // Con tiện hình bình giữa nhịp.
+  const vase = new THREE.LatheGeometry([[0, 0], [0.05, 0], [0.065, 0.06], [0.04, 0.16], [0.07, 0.27], [0.035, 0.36], [0.05, 0.39], [0, 0.39]].map(([x, y]) => new THREE.Vector2(x, y)), 10);
+  inst(vase, S, spans.length, i => { const [a, b] = spans[i]; reset(); o.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 0.235, (a[2] + b[2]) / 2); });
+  return g;
+}
+
+// Ghế đá ngắm cảnh (một hình khối gộp, màu theo đỉnh): hai chân trụ có gờ, mặt ghế dày bo cạnh, rêu ở chân.
+let benchGeo = null;
+export function stoneBenchGeometry() {
+  if (benchGeo) return benchGeo;
+  const parts = [];
+  const add = (geo, color, x, y, z) => {
+    geo.translate(x, y, z);
+    const c = new THREE.Color(color), n = geo.attributes.position.count, col = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) col.set([c.r, c.g, c.b], i * 3);
+    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    parts.push(geo.toNonIndexed());
+  };
+  [-0.62, 0.62].forEach(lx => {
+    add(new THREE.BoxGeometry(0.26, 0.34, 0.42), "#958d80", lx, 0.19, 0);
+    add(new THREE.BoxGeometry(0.32, 0.06, 0.48), "#a69e90", lx, 0.03, 0);
+    add(new THREE.BoxGeometry(0.32, 0.05, 0.5), "#b8b0a2", lx, 0.38, 0);
+    add(new THREE.BoxGeometry(0.33, 0.04, 0.49), "#6f8a52", lx, 0.075, 0);
+  });
+  add(new THREE.BoxGeometry(1.8, 0.07, 0.52), "#b8b0a2", 0, 0.44, 0);
+  add(new THREE.BoxGeometry(1.74, 0.04, 0.46), "#cbc3b5", 0, 0.495, 0);
+  // Gộp tay: nối các mảng (cùng thuộc tính position, normal, uv, color).
+  const keys = ["position", "normal", "color"], out = new THREE.BufferGeometry();
+  keys.forEach(k => {
+    const total = parts.reduce((s, p) => s + p.attributes[k].array.length, 0), arr = new Float32Array(total);
+    let off = 0;
+    parts.forEach(p => { arr.set(p.attributes[k].array, off); off += p.attributes[k].array.length; });
+    out.setAttribute(k, new THREE.BufferAttribute(arr, 3));
+  });
+  return (benchGeo = out);
+}

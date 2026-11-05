@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { V, lam, mesh, box, cyl, ball, canvasTex, roundRect, HAN, SERIF, boardTexture, boardMesh, hipRoof } from "./build.js";
 import {
   grassPatch, makeBush, makeRoundTree, makeBalustrade, makeClouds, makePeak, makeTerrain, makeCourtyard, makeStairs,
-  makeWaterPath, makeWaterMaterials, makeStreamBanks, makeBoulders, makeCrag, terrainMaterial, makeNaturalPond, makeGardenBed, makeRockField, makeMist, makeFoam, makeMoonBridge, makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate, makePavilionLamp, makeStoneLantern, makeTeaPavilion
+  makeWaterPath, makeWaterMaterials, makeStreamBanks, makeBoulders, makeCrag, terrainMaterial, makeNaturalPond, makeGardenBed, makeRockField, makeMist, makeFoam, makeMoonBridge, makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate, makePavilionLamp, makeStoneLantern, makeFence, stoneBenchGeometry, makeTeaPavilion
 } from "./landscape.js";
 import {
   LEVELS, STAIRS, HALL, ALTAR, WATER, POND, BRIDGE, bridgeDeckY, BRIDGE2, bridge2DeckY, BRIDGE3, bridge3DeckY, chuteY, TEA, BIG_TREE, GATE_Z, SPAWN as SPAWN_XZ, hallFloor, altarBase,
@@ -1058,7 +1058,50 @@ export async function createWorld(container, hooks = {}) {
   Object.keys(burners).forEach(k => circles.push({ x: BURNER[k].x, z: BURNER[k].z, r: k === "tam-thanh" ? 1.2 : 0.95 }));
   const rectOf = (p, pad = 0.4) => ({ x0: p.x - p.w / 2 - pad, x1: p.x + p.w / 2 + pad, z0: p.z - p.d / 2 - pad, z1: p.z + p.d / 2 + pad });
   const pondPad = p => Math.max(p.w, p.d) * 0.18 + 0.4;
-  obstacles.push(rectOf(POND), ...[WATER.spring, WATER.pool2, WATER.pool1, WATER.plunge].map(p => rectOf(p, pondPad(p))));
+  // ---------- Hàng rào ven hồ, ven suối (đúng chỗ có vật cản, đi tới đâu thấy rào tới đó) ----------
+  // Hồ: rào theo viền hình bầu dục ngoài thảm cỏ; vòng tròn chặn đặt dọc hàng rào thay cho hộp chặn vô hình.
+  // Ao Sen chừa lối ở mặt trước (chỗ thả hoa đăng).
+  const FENCE_K = 1.42, fenceRuns = [];
+  const ponds = [[WATER.spring, lv(3)], [WATER.pool2, lv(2)], [WATER.pool1, lv(1)], [WATER.plunge, lv(3)], [{ ...POND, w: POND.w * 0.94, d: POND.d * 0.94 }, 0, true]];
+  const inPondFence = (x, z, pad = 0) => ponds.some(([p]) => ((x - p.x) / (p.w / 2 * 1.12 * FENCE_K + pad)) ** 2 + ((z - p.z) / (p.d / 2 * 1.12 * FENCE_K + pad)) ** 2 < 1);
+  const nearStream = (x, z, r) => streamPaths.some(path => path.some(([px, pz]) => Math.hypot(px - x, pz - z) < r));
+  // Cắt một dãy điểm thành các đoạn liền nhau thoả điều kiện ok.
+  const runsOf = (pts, ok, closed = false) => {
+    const out = []; let cur = [];
+    const list = closed ? [...pts, pts[0]] : pts;
+    list.forEach(q => { if (ok(q)) cur.push(q); else { if (cur.length > 1) out.push(cur); cur = []; } });
+    if (cur.length > 1) out.push(cur);
+    if (closed && out.length > 1 && ok(pts[0]) && out[0][0] === pts[0]) { const last = out.pop(); out[0] = [...last, ...out[0].slice(1)]; }
+    return out;
+  };
+  ponds.forEach(([p, y, front]) => {
+    const rx = p.w / 2 * 1.12 * FENCE_K, rz = p.d / 2 * 1.12 * FENCE_K, pts = [];
+    for (let i = 0; i < 64; i++) { const a = i / 64 * Math.PI * 2; pts.push([p.x + Math.cos(a) * rx, y, p.z + Math.sin(a) * rz]); }
+    const ok = ([x, , z]) => !nearStream(x, z, HW + 0.9) && !(front && Math.abs(x - p.x) < 2.2 && z > p.z) && walkable(x, z);
+    runsOf(pts, ok, true).forEach(r => fenceRuns.push(r));
+    // Chặn: vòng tròn dọc hàng rào (cả chỗ suối chảy vào để không lọt qua), chừa lối trước Ao Sen.
+    pts.forEach(([x, , z]) => { if (!(front && Math.abs(x - p.x) < 2.2 && z > p.z)) circles.push({ x, z, r: 0.45 }); });
+    if (front) { // Ao Sen: chặn phần mặt nước sau lối vào để không bước xuống nước.
+      circles.push({ x: p.x, z: p.z, r: Math.min(rx, rz) * 0.95 });
+    }
+  });
+  // Suối: rào hai bên, cách tim dòng HW + 0.5 (ngay ngoài vòng chặn), chừa chỗ cầu và chỗ suối chui vào hồ.
+  streamPaths.forEach(path => [-1, 1].forEach(side => {
+    const pts = path.map(([x, z], i) => {
+      const [ax, az] = path[Math.max(0, i - 1)], [bx, bz] = path[Math.min(path.length - 1, i + 1)], L = Math.hypot(bx - ax, bz - az) || 1;
+      const nx = -(bz - az) / L * side, nz = (bx - ax) / L * side, o = HW + 0.5;
+      const qx = x + nx * o, qz = z + nz * o;
+      return [qx, groundY(qx, qz), qz];
+    });
+    runsOf(pts, ([x, , z]) => !nearBridge(x, z) && !inPondFence(x, z, -0.3) && walkable(x, z) && Math.abs(groundY(x, z) - pts[0][1]) < 0.5).forEach(r => fenceRuns.push(r));
+  }));
+  // Dòng tràn ra mép núi (tầng 1): rào dọc hai mép, chừa cầu Trà Đình.
+  [-1, 1].forEach(sd => {
+    const z = WATER.outflow.z + sd * 1.85, pts = [];
+    for (let x = WATER.pool1.x; x <= WATER.outflow.x1 - 0.6; x += 0.6) pts.push([x, 0, z]);
+    runsOf(pts, ([x, , zz]) => Math.abs(x - BRIDGE2.x) > BRIDGE2.width / 2 + 0.3 && !inPondFence(x, zz, -0.3) && walkable(x, zz)).forEach(r => fenceRuns.push(r));
+  });
+  scene.add(makeFence(fenceRuns));
   // Dòng tràn chặn hai đoạn, chừa chỗ cầu vòm nhỏ (BRIDGE2) để vào khu Trà Đình.
   [[WATER.pool1.x, BRIDGE2.x - BRIDGE2.width / 2], [BRIDGE2.x + BRIDGE2.width / 2, 40]].forEach(([x0, x1]) =>
     obstacles.push({ x0, x1, z0: WATER.outflow.z - 1.9, z1: WATER.outflow.z + 1.9 }));
@@ -1267,28 +1310,57 @@ export async function createWorld(container, hooks = {}) {
   // Ghế đá ngắm cảnh ở những góc yên tĩnh: bấm vào ghế để đi tới ngồi. [x, z, hướng nhìn khi ngồi]
   // SEATS[k]: chỗ ngồi (mặt ghế cao h), front: chỗ đứng trước ghế, cam: góc camera so với hướng ngồi.
   const SEATS = {};
-  const benchMat = lam("#b8b0a2"), benchDark = lam("#958d80");
-  [[30.4, 106, Math.PI / 2], [-31, 96, -Math.PI / 2], [-6.5, 55.5, Math.PI], [6.5, 55.5, Math.PI], [20, -31, 2.57], [-37, -12, -Math.PI / 2], [0, -91, 0]]
-    .forEach(([x, z, yaw], i) => {
-      const b = new THREE.Group();
-      [-0.62, 0.62].forEach(lx => {
-        b.add(box(0.26, 0.36, 0.44, benchDark, lx, 0.18, 0));
-        b.add(box(0.32, 0.05, 0.5, benchMat, lx, 0.375, 0));
-      });
-      b.add(box(1.8, 0.09, 0.52, benchMat, 0, 0.445, 0));
-      b.add(box(1.74, 0.03, 0.46, lam("#c9c1b3"), 0, 0.5, 0));
-      // Rêu loang ở chân ghế.
-      [-0.62, 0.62].forEach(lx => b.add(box(0.28, 0.05, 0.46, lam("#6f8a52"), lx, 0.025, 0)));
-      const k = "ghe-" + i;
-      b.userData.zone = k;
-      b.position.set(x, groundY(x, z), z);
-      b.rotation.y = yaw;
-      scene.add(b);
-      benches.push(b);
-      const fx = Math.sin(yaw), fz = Math.cos(yaw), ax = Math.cos(yaw), az = -Math.sin(yaw);
-      [-0.5, 0.5].forEach(o => circles.push({ x: x + ax * o, z: z + az * o, r: 0.42 }));
-      SEATS[k] = { zone: k, x: x - fx * 0.04, z: z - fz * 0.04, yaw, h: 0.5, front: V(x + fx * 0.95, 0, z + fz * 0.95), cam: Math.PI - 0.55 };
+  const benchMesh = new THREE.MeshLambertMaterial({ vertexColors: true }), benchGeo = stoneBenchGeometry();
+  // Còn trống đủ chỗ cho ghế (và chỗ đứng trước ghế)? Tránh điện, cây, bồn hoa, suối, hồ, đèn, bậc thang, điểm nghi lễ.
+  const roomFor = (x, z, r) => walkable(x, z) &&
+    !obstacles.some(b => x > b.x0 - r && x < b.x1 + r && z > b.z0 - r && z < b.z1 + r) &&
+    !circles.some(c => Math.hypot(x - c.x, z - c.z) < c.r + r) &&
+    !STAIRS.some(st => Math.abs(x - st.x) < st.hw + 3 && z > Math.min(st.z0, st.z1) - 4 && z < Math.max(st.z0, st.z1) + 4) &&
+    !Object.values(SPOT).some(sp => Math.hypot(x - sp.x, z - sp.z) < 3.2);
+  const addBench = (x, z, yaw, check = true) => {
+    const fx = Math.sin(yaw), fz = Math.cos(yaw), ax = Math.cos(yaw), az = -Math.sin(yaw);
+    const front = V(x + fx * 0.95, 0, z + fz * 0.95);
+    if (check && !(roomFor(x, z, 1.1) && roomFor(x + ax * 0.9, z + az * 0.9, 0.7) && roomFor(x - ax * 0.9, z - az * 0.9, 0.7) && (roomFor(front.x, front.z, 0.8) || roomFor(x - fx * 0.95, z - fz * 0.95, 0.8))
+      && Math.abs(groundY(x, z) - groundY(front.x, front.z)) < 0.05)) return false;
+    const b = new THREE.Mesh(benchGeo, benchMesh);
+    const k = "ghe-" + Object.keys(SEATS).length;
+    b.userData.zone = k;
+    b.position.set(x, groundY(x, z), z);
+    b.rotation.y = yaw;
+    scene.add(b);
+    benches.push(b);
+    b.userData.blockers = [-0.5, 0.5].map(o => ({ x: x + ax * o, z: z + az * o, r: 0.42 }));
+    circles.push(...b.userData.blockers);
+    SEATS[k] = { zone: k, x: x - fx * 0.04, z: z - fz * 0.04, yaw, h: 0.5, front, cam: Math.PI - 0.55 };
+    // Mặt sau của ghế (ghế không tựa, ngồi được cả hai phía): quay mặt ngược lại.
+    SEATS[k].back = { ...SEATS[k], x: x + fx * 0.04, z: z + fz * 0.04, yaw: yaw + Math.PI, front: V(x - fx * 0.95, 0, z - fz * 0.95) };
+    return true;
+  };
+  // Vòng ghế quanh cây đa, quay mặt vào gốc cây.
+  {
+    const T = BIG_TREE, R = T.r * T.scale + 3.5;
+    [40, 90, 140, 180, 220, 270, 320].forEach(d => { const a = d * Math.PI / 180, x = T.x + Math.sin(a) * R, z = T.z + Math.cos(a) * R; addBench(x, z, Math.atan2(T.x - x, T.z - z)); });
+  }
+  // Ven vực: dọc mép mỗi tầng, lùi vào 2.4 m, quay mặt ra biển mây; cách nhau khoảng 9 m, bỏ chỗ vướng.
+  LEVELS.forEach(l => {
+    const cx = l.poly.reduce((s2, q) => s2 + q[0], 0) / l.poly.length, cz = l.poly.reduce((s2, q) => s2 + q[1], 0) / l.poly.length;
+    l.poly.forEach(([ax, az], i) => {
+      const [bx, bz] = l.poly[(i + 1) % l.poly.length], L = Math.hypot(bx - ax, bz - az);
+      if (L < 5) return;
+      let nx = (bz - az) / L, nz = -(bx - ax) / L;
+      if ((ax + bx) / 2 * 0 + nx * ((ax + bx) / 2 - cx) + nz * ((az + bz) / 2 - cz) < 0) { nx = -nx; nz = -nz; }
+      const n = Math.max(1, Math.floor(L / 7));
+      for (let k = 0; k < n; k++) {
+        const t = (k + 0.5) / n, x = ax + (bx - ax) * t - nx * 3.0, z = az + (bz - az) * t - nz * 3.0;
+        if (l.id === 1 && z > 123) continue; // lối vào trước cổng
+        addBench(x, z, Math.atan2(nx, nz));
+      }
     });
+  });
+  // Đỉnh Bốc Dịch (tầng tròn): vòng ghế quay ra ngoài.
+  { const l4 = LEVELS.find(l => l.id === 4), c = ALTAR; for (let d = 0; d < 360; d += 30) { const a = d * Math.PI / 180; addBench(c.x + Math.sin(a) * 14.6, c.z + Math.cos(a) * 14.6, a); } }
+  // Vài chỗ ngắm cảnh đặt tay: cạnh lầu chuông, tầng 3 nhìn ra thác.
+  [[30.4, 106, Math.PI / 2], [-31, 96, -Math.PI / 2], [20, -31, 2.57], [-37, -12, -Math.PI / 2], [0, -91, 0]].forEach(([x, z, yaw]) => addBench(x, z, yaw));
   // Chỗ ngồi uống trà: bồ đoàn bên bàn trà, ngồi xếp bằng quay mặt vào bàn; camera nhìn chếch từ phía trước.
   const TEA_SEAT = { zone: "tra-dinh", x: PROP["tra-dinh"].x - 0.4, z: PROP["tra-dinh"].z - 0.7, yaw: Math.PI / 2, h: 0.17, cross: true,
     front: V(PROP["tra-dinh"].x - 1.3, 0, PROP["tra-dinh"].z - 0.4), cam: 1.05, camPitch: 0.16, camZoom: 0.42 };
@@ -1434,7 +1506,13 @@ export async function createWorld(container, hooks = {}) {
   // Lưới 1×1 phủ cả núi; ô bị chặn là chỗ không đứng được hoặc vướng vật cản. Hai ô kề nhau chỉ nối
   // được nếu đi từ ô này sang ô kia không vấp bậc cao, nên đường đi tự đi qua bậc thang và cửa điện.
   const GX0 = -46, GZ0 = -96, GW = 93, GH = 252, PAD = 0.5;
-  let grid = null;
+  let grid = null, reach = null, cellH = null;
+  // Lưới ô 1 m: ô bị chặn, và độ cao mặt đất mỗi ô (tính sẵn một lần để tìm đường nhanh).
+  function buildGrid() {
+    if (grid) return;
+    grid = new Uint8Array(GW * GH); cellH = new Float32Array(GW * GH);
+    for (let i = 0; i < grid.length; i++) { grid[i] = blockedAt(cellX(i), cellZ(i)) ? 1 : 0; if (!grid[i]) cellH[i] = heightAt(cellX(i), cellZ(i)); }
+  }
   function blockedAt(x, z) {
     if (!walkable(x, z)) return true;
     // Chừa khoảng an toàn quanh chỗ chênh độ cao (mép bậc thang, mép nền điện, vành đài, mép tầng).
@@ -1443,13 +1521,7 @@ export async function createWorld(container, hooks = {}) {
     for (const c of circles) if (Math.hypot(x - c.x, z - c.z) < c.r + PAD) return true;
     return false;
   }
-  function linkOK(ax, az, bx, bz) {
-    for (let k = 0; k < 4; k++) {
-      const x0 = ax + (bx - ax) * k / 4, z0 = az + (bz - az) * k / 4, x1 = ax + (bx - ax) * (k + 1) / 4, z1 = az + (bz - az) * (k + 1) / 4;
-      if (!canStep(x0, z0, x1, z1)) return false;
-    }
-    return true;
-  }
+
   const cellOf = (x, z) => Math.round(z - GZ0) * GW + Math.round(x - GX0);
   const cellX = i => (i % GW) + GX0, cellZ = i => Math.floor(i / GW) + GZ0;
   function nearestFree(i) {
@@ -1462,9 +1534,11 @@ export async function createWorld(container, hooks = {}) {
   }
   // A* 8 hướng với hàng đợi ưu tiên dạng heap nhị phân.
   function findPath(a, b) {
-    if (!grid) { grid = new Uint8Array(GW * GH); for (let i = 0; i < grid.length; i++) grid[i] = blockedAt(cellX(i), cellZ(i)) ? 1 : 0; }
+    buildGrid();
     const s = nearestFree(cellOf(a.x, a.z)), e = nearestFree(cellOf(b.x, b.z));
     if (s < 0 || e < 0) return null;
+    // Đích nằm ngoài vùng đi được liền với cổng: trả về ngay, khỏi quét cả bản đồ.
+    if (reach && reach[s] && !reach[e]) return null;
     const g = new Float32Array(grid.length).fill(Infinity), from = new Int32Array(grid.length).fill(-1), heap = [];
     const hx = i => Math.hypot(cellX(i) - cellX(e), cellZ(i) - cellZ(e));
     const push = (i, f) => { heap.push([f, i]); let k = heap.length - 1; while (k) { const p = (k - 1) >> 1; if (heap[p][0] <= heap[k][0]) break; [heap[p], heap[k]] = [heap[k], heap[p]]; k = p; } };
@@ -1479,7 +1553,7 @@ export async function createWorld(container, hooks = {}) {
         const nx = ix + dx, j = i + dz * GW + dx;
         if (nx < 0 || nx >= GW || j < 0 || j >= grid.length || grid[j]) continue;
         if (dx && dz && (grid[i + dx] || grid[i + dz * GW])) continue;
-        if (!linkOK(cellX(i), cellZ(i), cellX(j), cellZ(j))) continue;
+        if (Math.abs(cellH[i] - cellH[j]) > 1.0) continue;
         const ng = g[i] + (dx && dz ? Math.SQRT2 : 1);
         if (ng < g[j]) { g[j] = ng; from[j] = i; push(j, ng + hx(j)); }
       }
@@ -1523,10 +1597,11 @@ export async function createWorld(container, hooks = {}) {
   // Thêm ?debug vào địa chỉ để xem vị trí nhân vật và thử tìm đường từ console (dùng khi kiểm thử).
   let debugView = null;
   if (new URLSearchParams(location.search).has("debug")) {
-    window.__dbg = () => ({ seat: seat?.zone || null, sitW, pos: pos.toArray(), h: heightAt(pos.x, pos.z), target: target?.toArray(), route: route.length, paused, camYaw });
+    window.__dbg = () => ({ seats: Object.keys(SEATS).length, seat: seat?.zone || null, sitW, pos: pos.toArray(), h: heightAt(pos.x, pos.z), target: target?.toArray(), route: route.length, paused, camYaw });
     window.__go = (x, z) => routeTo(V(x, 0, z));
+    window.__seatsReach = (i0 = 0, i1 = 999) => Object.values(SEATS).slice(i0, i1).flatMap(st => [st, st.back].filter(Boolean)).filter(st => { const c = findPath(SPAWN, st.front); return !c || Math.hypot(c[c.length - 1].x - st.front.x, c[c.length - 1].z - st.front.z) > 0.8; }).map(st => [st.zone, +st.x.toFixed(1), +st.z.toFixed(1)]);
     // Giả lập bấm vào một điểm (điện, ghế đá…): đi tới rồi tự mở / ngồi.
-    window.__tap = z => { arriveZone = z; routeTo(SEATS[z] ? SEATS[z].front.clone() : SPOT[z].clone()); };
+    window.__tap = (z, back) => { arriveZone = z; arriveSeat = SEATS[z] ? (back && SEATS[z].back) || SEATS[z] : null; routeTo(arriveSeat ? arriveSeat.front.clone() : SPOT[z].clone()); };
     // Đặt camera cố định để chụp cảnh: __view([x, y, z], [lx, ly, lz]); __view(null) để trả lại.
     window.__view = (p, l) => { debugView = p ? [p, l] : null; };
   }
@@ -1536,7 +1611,7 @@ export async function createWorld(container, hooks = {}) {
   // Ngồi: seat = { x, z, yaw, h (mặt ngồi so với đất), cross, front: Vector3 (chỗ đứng trước ghế), zone, cam }.
   let seat = null, sitW = 0, sitMove = 0, sitFrom = null, standing = null;
   const act = { pour: 0, sip: 0, breath: null, pourW: 0, sipW: 0, breathV: 0 };
-  let arriveZone = null, camSaved = null;
+  let arriveZone = null, camSaved = null, arriveSeat = null;
   function sitAt(st) {
     if (seat === st) return;
     seat = st; sitMove = 0; sitFrom = pos.clone(); standing = null; target = null; route = [];
@@ -1599,7 +1674,7 @@ export async function createWorld(container, hooks = {}) {
     if (arriveZone && !target && sp < 0.4) {
       const z = arriveZone;
       arriveZone = null;
-      if (SEATS[z]) { if (Math.hypot(pos.x - SEATS[z].front.x, pos.z - SEATS[z].front.z) < 1.2) sitAt(SEATS[z]); }
+      if (SEATS[z]) { const st = arriveSeat || SEATS[z]; if (Math.hypot(pos.x - st.front.x, pos.z - st.front.z) < 1.2) sitAt(st); }
       else if (near === z) { if (FOCUS[z]) wantYaw = faceYaw(z); hooks.onArrive?.(z); }
     }
     // Ngồi xuống / đứng dậy: trượt từ chỗ đứng vào mặt ghế rồi hạ người (và ngược lại).
@@ -1933,6 +2008,32 @@ export async function createWorld(container, hooks = {}) {
 
   // ---------- Chạm để đi ----------
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), plane = new THREE.Plane(V(0, 1, 0), 0), hit = V();
+  // Bỏ những ghế đá không đi tới được (chỗ đứng trước ghế nằm ngoài vùng liền với cổng vào): loang trên lưới.
+  {
+    buildGrid();
+    const seen = (reach = new Uint8Array(grid.length)), q = [nearestFree(cellOf(SPAWN.x, SPAWN.z))];
+    seen[q[0]] = 1;
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h], ix = i % GW;
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = ix + dx, j = i + dz * GW + dx;
+        if (nx < 0 || nx >= GW || j < 0 || j >= grid.length || grid[j] || seen[j] || Math.abs(cellH[i] - cellH[j]) > 1.0) continue;
+        seen[j] = 1; q.push(j);
+      }
+    }
+    for (let k = benches.length - 1; k >= 0; k--) {
+      const b = benches[k], st = SEATS[b.userData.zone];
+      // Chỗ đứng trước ghế phải là ô trống thật sự (không lấy ô lân cận), nằm trong vùng đi tới được.
+      const ok = q => { const c = cellOf(q.x, q.z); return c >= 0 && c < grid.length && !grid[c] && seen[c] && walkable(q.x, q.z); };
+      const f = ok(st.front), bk = ok(st.back.front);
+      if (!bk) st.back = null;
+      if (f || bk) { if (!f) { SEATS[b.userData.zone] = { ...st.back, back: null }; } continue; }
+      scene.remove(b);
+      benches.splice(k, 1);
+      delete SEATS[b.userData.zone];
+      b.userData.blockers.forEach(o => circles.splice(circles.indexOf(o), 1));
+    }
+  }
   const clickables = [...Object.values(halls), ...Object.values(burners), altar, bagua, bellTower, pond, toHong, kimTien, daoSi.group, teaHouse, ...benches];
   // Một ngón / chuột: chạm nhanh để đi, kéo để xoay góc nhìn. Hai ngón: chụm để phóng to thu nhỏ.
   const cv = renderer.domElement, ptrs = new Map(), ROT = 0.006;
@@ -2010,8 +2111,12 @@ export async function createWorld(container, hooks = {}) {
     let t = null;
     if (z && SEATS[z]) {
       // Ghế đá: đang ngồi chính ghế này thì đứng dậy, không thì đi tới trước ghế rồi ngồi.
-      if (seat === SEATS[z]) { standUp(); return; }
-      t = SEATS[z].front.clone();
+      const S0 = SEATS[z];
+      if (seat && seat.zone === z) { standUp(); return; }
+      // Người chơi đang đứng phía nào của ghế thì ngồi quay mặt về phía đó.
+      const side = (pos.x - S0.x) * Math.sin(S0.yaw) + (pos.z - S0.z) * Math.cos(S0.yaw);
+      arriveSeat = side < 0 && S0.back ? S0.back : S0;
+      t = arriveSeat.front.clone();
     } else if (z) {
       // Đứng sẵn ở đó thì mở luôn, không cần đi.
       if (near === z && !seat) { if (FOCUS[z]) wantYaw = faceYaw(z); hooks.onArrive?.(z); return; }
