@@ -26,9 +26,9 @@ export const STAIRS = [
 // Điện: tâm, kích thước thân (w × d), chiều cao cột h, nền cao `base`; mặt tiền nhìn về +z.
 // door: nửa bề rộng lối vào giữa; cols: số cột hàng trước.
 export const HALL = {
-  "tam-thanh": { x: 0, z: -24, w: 26, d: 18, h: 8, base: 0.8, cols: 8, door: 5.6, level: 3 },
-  "tai-than": { x: -27, z: 44, w: 16, d: 12, h: 6.5, base: 0.6, cols: 6, door: 4, level: 2 },
-  "nguyet-lao": { x: 27, z: 44, w: 16, d: 12, h: 6.5, base: 0.6, cols: 6, door: 4, level: 2 }
+  "tam-thanh": { x: 0, z: -24, w: 34, d: 24, h: 11, base: 0.8, cols: 10, door: 7, level: 3 },
+  "tai-than": { x: -28, z: 44, w: 22, d: 16, h: 8.5, base: 0.6, cols: 7, door: 5, level: 2 },
+  "nguyet-lao": { x: 28, z: 44, w: 22, d: 16, h: 8.5, base: 0.6, cols: 7, door: 5, level: 2 }
 };
 export const ALTAR = { x: 0, z: -76, r: 9, h: 1.6, stairW: 2.1, stairLen: 3.6, level: 4 };
 
@@ -212,9 +212,9 @@ export function hallInterior(x, z) {
     const h = HALL[k];
     if (Math.abs(x - h.x) < h.w / 2 - 0.3 && z > h.z - h.d / 2 + 0.3 && z < h.z + h.d / 2 - 0.5) {
       const y = hallFloor(k);
-      return { k, x0: h.x - h.w / 2 + 0.6, x1: h.x + h.w / 2 - 0.6, z0: h.z - h.d / 2 + h.d * 0.32 + 0.6, z1: h.z + h.d / 2 - 1.1, ceil: y + h.h + 0.6, floor: y,
+      return { k, x0: h.x - h.w / 2 + 0.6, x1: h.x + h.w / 2 - 0.6, z0: h.z - h.d / 2 + h.d * 0.32 + 0.6, z1: h.z + h.d / 2 - 1.1, ceil: y + h.h - 1.0, floor: y,
         // Điểm nhìn trong điện (cao hơn chỗ đứng) và độ cao tối thiểu của camera, để thấy trọn tượng thần.
-        lookUp: h.w > 20 ? 1.8 : 2.6, camMin: y + (h.w > 20 ? 3 : 3.8) };
+        lookUp: h.h * 0.26, camMin: y + h.h * 0.36 };
     }
   }
   return null;

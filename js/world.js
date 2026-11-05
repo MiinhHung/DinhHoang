@@ -31,11 +31,11 @@ export const ZONES = {
 // Nghi lễ ở ba điện diễn ra bên trong điện, trước lư hương đặt giữa hai hàng cột.
 const inHall = (k, dz) => V(HALL[k].x, 0, HALL[k].z + dz);
 const BURNER = {
-  "tam-thanh": inHall("tam-thanh", -0.5), "tai-than": inHall("tai-than", 0.6), "nguyet-lao": inHall("nguyet-lao", 0.6),
+  "tam-thanh": inHall("tam-thanh", 0), "tai-than": inHall("tai-than", 1), "nguyet-lao": inHall("nguyet-lao", 1),
   "boc-dich": V(ALTAR.x, 0, ALTAR.z)
 };
 const SPOT = {
-  "tam-thanh": inHall("tam-thanh", 2.6), "tai-than": inHall("tai-than", 3), "nguyet-lao": inHall("nguyet-lao", 3),
+  "tam-thanh": inHall("tam-thanh", 3.6), "tai-than": inHall("tai-than", 4), "nguyet-lao": inHall("nguyet-lao", 4),
   "boc-dich": V(ALTAR.x, 0, ALTAR.z + 5.2),
   "dao-si": V(3.4, 0, 119.6), chuong: V(27, 0, 116), "ao-sen": V(POND.x, 0, POND.z + POND.d / 2 + 1.7),
   "to-hong": V(36, 0, 62.6), "kim-tien": V(-36, 0, 62.6), "tra-dinh": V(27.1, 0, 90.5)
@@ -961,7 +961,7 @@ export async function createWorld(container, hooks = {}) {
     .forEach(([x, z], i) => place(i % 2 ? makeTree("pine") : makeRoundTree("#3f7a3a", 0.95), x, z, 0.6));
   [[-17, 6], [8, 4], [-37, 20], [37, 20], [-24, 122], [24, 122], [-9, 86], [-20, 66], [26, 66], [-9, -50], [9, -50]]
     .forEach(([x, z]) => place(makeBush(0.75 + Math.random() * 0.3), x, z, 0.8));
-  [[-32.5, 54], [-21.5, 54]].forEach(([x, z]) => place(makeIngots(), x, z, 0.7));
+  [[-35, 58.5], [-21, 58.5]].forEach(([x, z]) => place(makeIngots(), x, z, 0.7));
   [[-26, 112, 10, 8], [24, 100, 8, 6], [-34, 50, 6, 12], [34, 36, 6, 12], [-28, -20, 8, 14], [28, -10, 8, 12], [-10, -70, 6, 6], [10, -82, 6, 6]]
     .forEach(([x, z, w, d]) => { const gp = grassPatch(w, d, x, z); gp.position.y = groundY(x, z) + 0.06; scene.add(gp); });
 
@@ -1457,7 +1457,7 @@ export async function createWorld(container, hooks = {}) {
       camWant.x = Math.min(room.x1, Math.max(room.x0, camWant.x));
       camWant.z = Math.min(room.z1, Math.max(room.z0, camWant.z));
       // Camera ngang tầm điểm nhìn (không cao quá để khỏi chúc xuống, mất đầu tượng).
-      camWant.y = Math.min(room.ceil - 0.6, look.y + (room.lookUp > 2 ? 0.6 : 1.6), Math.max(room.camMin, camWant.y));
+      camWant.y = Math.min(room.ceil, look.y + 1.2, Math.max(room.camMin, camWant.y));
     }
     // Không để camera chui xuống sườn núi.
     camWant.y = Math.max(terrainY(camWant.x, camWant.z) + 1.2, gy + 1.2, camWant.y);

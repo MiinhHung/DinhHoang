@@ -19,12 +19,12 @@ KIND = argv[1] if len(argv) > 1 else "tam-thanh"
 BASE = dict(col="#b3242a", stone="#ddd5c6", stone_dark="#b9b0a0", floor_a="#8a5a3a", floor_b="#6b3a22",
             gold="#e7b75a", panel="#2c5a6e", wood="#4a2618", skin="#ecc79c", white="#f4f1ea", silk="#c8202a", lotus="#f2b8c8")
 CFG = {
-    "tam-thanh": dict(w=26, d=18, h=8, base=0.8, cols=8, door=5.6, roof="#d6582c", ridge="#f2b84b", wall="#9a2a20", trim="#e7b75a",
+    "tam-thanh": dict(w=34, d=24, h=11, base=0.8, cols=10, door=7, roof="#d6582c", ridge="#f2b84b", wall="#9a2a20", trim="#e7b75a",
                       under="#5a2018", halo="#ffe8a0",
-                      statues=[(-4.2, "linh-bao"), (0, "nguyen-thuy"), (4.2, "dao-duc")]),
-    "tai-than": dict(w=16, d=12, h=6.5, base=0.6, cols=6, door=4, roof="#e9b02c", ridge="#ffd86a", wall="#8a3a14", trim="#ffd36b",
+                      statues=[(-5.8, "linh-bao"), (0, "nguyen-thuy"), (5.8, "dao-duc")]),
+    "tai-than": dict(w=22, d=16, h=8.5, base=0.6, cols=7, door=5, roof="#e9b02c", ridge="#ffd86a", wall="#8a3a14", trim="#ffd36b",
                      under="#5a3010", halo="#ffd86a", statues=[(0, "tai-than")]),
-    "nguyet-lao": dict(w=16, d=12, h=6.5, base=0.6, cols=6, door=4, roof="#de5a88", ridge="#ffd0dc", wall="#a3304e", trim="#f7c6d4",
+    "nguyet-lao": dict(w=22, d=16, h=8.5, base=0.6, cols=7, door=5, roof="#de5a88", ridge="#ffd0dc", wall="#a3304e", trim="#f7c6d4",
                        under="#5a1a30", halo="#ffc8d8", statues=[(0, "nguyet-lao")]),
 }
 C = {**BASE, **CFG[KIND]}
@@ -154,7 +154,7 @@ for s in (-1, 1):
 box("canopy_beam", DW * 0.92, 0.3, 0.3, 0, TOP + DH + H * 0.78, -D / 2 + DD - 0.2, "gold", 0.02)
 
 
-SC = 1.9 if BIG else 1.5
+SC = 2.5 if W > 30 else 2.0
 for i, (sx, key) in enumerate(C["statues"]):
     build_statue(f"st{i}", sx, TOP + DH, -D / 2 + DD * 0.5, SC, SPECS[key])
 
