@@ -1036,8 +1036,8 @@ export async function createWorld(container, hooks = {}) {
   [[-17, 6], [8, 4], [-37, 20], [37, 20], [-24, 122], [24, 122], [-9, 86], [-20, 66], [26, 66], [-9, -50], [9, -50]]
     .forEach(([x, z]) => place(makeBush(0.75 + Math.random() * 0.3), x, z, 0.8));
   [[-35, 58.5], [-21, 58.5]].forEach(([x, z]) => place(makeIngots(), x, z, 0.7));
-  [[-26, 112, 10, 8], [24, 100, 8, 6], [-34, 50, 6, 12], [34, 36, 6, 12], [-28, -20, 8, 14], [34, -12, 6, 10], [-10, -70, 6, 6], [10, -82, 6, 6]]
-    .forEach(([x, z, w, d]) => { const gp = grassPatch(w, d, x, z); gp.position.y = groundY(x, z) + 0.06; scene.add(gp); });
+  [[-26, 112, 10, 8], [17, 108, 7, 5], [-34, 50, 6, 12], [34, 36, 6, 12], [-28, -20, 8, 14], [34, -12, 6, 10], [-10, -70, 6, 6], [10, -82, 6, 6]]
+    .forEach(([x, z, w, d]) => { const gp = grassPatch(w, d, x, z); gp.position.y = groundY(x, z) + 0.02; scene.add(gp); });
 
   // ---------- Vườn, đá, mây mù: lấp những khoảng sân và sườn núi còn trống ----------
   // Bồn cây trên sân các tầng [x, z, rộng, sâu, màu tán cây]; có va chạm.

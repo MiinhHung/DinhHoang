@@ -645,11 +645,80 @@ export function makeMoonBridge(len, width, deckY, archR = 1.45) {
 }
 
 // Thảm cỏ thấp trên mặt sân (hình elip).
-export function grassPatch(w, d, x, z) {
-  const m = mesh(new THREE.CircleGeometry(1, 20), lam("#5f9a45"), x, 0.03, z);
-  m.rotation.x = -Math.PI / 2;
-  m.scale.set(w / 2, d / 2, 1);
-  return m;
+// Thảm cỏ trên sân: viền lượn tự nhiên (không còn hình elip trơn), nền cỏ có vân ảnh, mép đất sẫm hơi gồ,
+// hàng nghìn ngọn cỏ cao thấp nhiều tông xanh, vài khóm hoa dại, đá nhỏ và mấy phiến đá bước chân.
+let grassTex = null;
+export function grassPatch(w, d, x, z, seed = Math.round(x * 13 + z * 7)) {
+  const rnd = prng(Math.abs(seed) + 101);
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  const ph = [rnd() * 6, rnd() * 6, rnd() * 6];
+  const R = a => 1 + 0.1 * Math.sin(3 * a + ph[0]) + 0.06 * Math.sin(5 * a + ph[1]) + 0.04 * Math.sin(9 * a + ph[2]);
+  const inside = (px, pz) => { const a = Math.atan2(pz / (d / 2), px / (w / 2)); return Math.hypot(px / (w / 2), pz / (d / 2)) < R(a); };
+  // Nền cỏ (mặt) và mép đất (vành ngoài thấp hơn).
+  const N = 72, top = [0, 0.1, 0], rim = [], idx = [], ridx = [];
+  for (let i = 0; i < N; i++) {
+    const a = i / N * Math.PI * 2, r = R(a);
+    top.push(Math.cos(a) * w / 2 * r, 0.1, Math.sin(a) * d / 2 * r);
+    idx.push(0, 1 + (i + 1) % N, 1 + i);
+    rim.push(Math.cos(a) * w / 2 * r, 0.1, Math.sin(a) * d / 2 * r, Math.cos(a) * (w / 2 * r + 0.18), 0.0, Math.sin(a) * (d / 2 * r + 0.18));
+    const j = i * 2, nj = ((i + 1) % N) * 2;
+    ridx.push(j, nj, j + 1, nj, nj + 1, j + 1);
+  }
+  const tg = new THREE.BufferGeometry();
+  tg.setAttribute("position", new THREE.Float32BufferAttribute(top, 3));
+  tg.setAttribute("uv", new THREE.Float32BufferAttribute(top.flatMap((v, i) => i % 3 === 0 ? [v / 3] : i % 3 === 2 ? [v / 3] : []), 2));
+  tg.setIndex(idx);
+  tg.computeVertexNormals();
+  if (!grassTex) { grassTex = texLoader.load("assets/textures/grass_detail.jpg"); grassTex.wrapS = grassTex.wrapT = THREE.RepeatWrapping; grassTex.colorSpace = THREE.SRGBColorSpace; }
+  g.add(new THREE.Mesh(tg, new THREE.MeshLambertMaterial({ map: grassTex, color: "#9fd27a", side: THREE.DoubleSide })));
+  const rg = new THREE.BufferGeometry();
+  rg.setAttribute("position", new THREE.Float32BufferAttribute(rim, 3));
+  rg.setIndex(ridx);
+  rg.computeVertexNormals();
+  g.add(new THREE.Mesh(rg, new THREE.MeshLambertMaterial({ color: "#6b5a3e", side: THREE.DoubleSide })));
+  // Ngọn cỏ: khóm dày ở mép và rải đều bên trong, nghiêng ngả ngẫu nhiên.
+  const nb = Math.round(w * d * 28), blades = new THREE.InstancedMesh(new THREE.ConeGeometry(0.035, 1, 3).translate(0, 0.5, 0), new THREE.MeshLambertMaterial(), nb);
+  const o = new THREE.Object3D(), c = new THREE.Color(), tones = ["#5d9a3c", "#6fae46", "#4f8a34", "#86bc52", "#7aa83e"];
+  let k = 0;
+  for (let tries = 0; k < nb && tries < nb * 3; tries++) {
+    const px = (rnd() - 0.5) * w * 1.2, pz = (rnd() - 0.5) * d * 1.2;
+    if (!inside(px, pz)) continue;
+    const h = 0.18 + rnd() * rnd() * 0.45;
+    o.position.set(px, 0.08, pz);
+    o.rotation.set((rnd() - 0.5) * 0.6, rnd() * 6, (rnd() - 0.5) * 0.6);
+    o.scale.set(1, h, 1);
+    o.updateMatrix();
+    blades.setMatrixAt(k, o.matrix);
+    blades.setColorAt(k, c.set(tones[Math.floor(rnd() * tones.length)]).multiplyScalar(0.85 + rnd() * 0.3));
+    k++;
+  }
+  blades.count = k;
+  g.add(blades);
+  // Hoa dại thành từng khóm nhỏ.
+  const fl = [], fc = ["#ffffff", "#f6d34a", "#f4a6c0", "#b9a2e8"];
+  for (let i = 0; i < Math.round(w * d / 6); i++) {
+    const cx = (rnd() - 0.5) * w * 0.8, cz = (rnd() - 0.5) * d * 0.8, col = fc[Math.floor(rnd() * fc.length)];
+    for (let j = 0; j < 7; j++) { const px = cx + (rnd() - 0.5) * 0.8, pz = cz + (rnd() - 0.5) * 0.8; if (inside(px, pz)) fl.push([px, pz, col]); }
+  }
+  if (fl.length) {
+    const fm = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.055, 0), new THREE.MeshLambertMaterial(), fl.length);
+    fl.forEach(([px, pz, col], i) => { o.position.set(px, 0.3 + rnd() * 0.12, pz); o.rotation.set(0, 0, 0); o.scale.set(1, 0.6, 1); o.updateMatrix(); fm.setMatrixAt(i, o.matrix); fm.setColorAt(i, c.set(col)); });
+    g.add(fm);
+  }
+  // Đá nhỏ và phiến đá bước chân băng qua thảm cỏ.
+  const rocks = [];
+  for (let i = 0; i < 3; i++) { const a = rnd() * 6.28, r = 0.75 * R(a); rocks.push([Math.cos(a) * w / 2 * r, 0.1, Math.sin(a) * d / 2 * r, 0.2 + rnd() * 0.25, 0.6]); }
+  g.add(makeBoulders(rocks, { seed: Math.abs(seed) % 97 + 1, moss: 0.4 }));
+  const steps = Math.max(2, Math.round(Math.max(w, d) / 1.3) - 1), along = w > d;
+  for (let i = 0; i < steps; i++) {
+    const t = (i + 0.5) / steps - 0.5, sx = along ? t * w * 0.8 : Math.sin(i * 1.7) * 0.25, sz = along ? Math.sin(i * 1.7) * 0.25 : t * d * 0.8;
+    const st = mesh(new THREE.CylinderGeometry(0.32 + rnd() * 0.08, 0.36, 0.06, 9), lam("#cfc6b5"), sx, 0.12, sz);
+    st.scale.set(1.2, 1, 0.85);
+    st.rotation.y = rnd() * 3;
+    g.add(st);
+  }
+  return g;
 }
 
 export function makeBush(r = 0.7, color = "#3f8a3a") {
