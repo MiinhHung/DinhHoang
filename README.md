@@ -81,6 +81,7 @@ blender --background --factory-startup --python tools/blender/build_hall.py -- a
 blender --background --factory-startup --python tools/blender/build_gate.py -- assets/models/gate.glb gate
 blender --background --factory-startup --python tools/blender/build_gate.py -- assets/models/chuong.glb chuong
 blender --background --factory-startup --python tools/blender/build_altar.py -- assets/models/boc-dich.glb
+blender --background --factory-startup --python tools/blender/build_tree.py -- assets/models/cay-da.glb
 blender --background --factory-startup --python tools/blender/preview.py -- assets/models/tam-thanh.glb xem-truoc.png
 ```
 

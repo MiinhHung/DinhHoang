@@ -6,7 +6,7 @@ import {
   makeWaterPath, makeWaterMaterials, makeStreamBanks, makeBoulders, makeCrag, terrainMaterial, makeNaturalPond, makeGardenBed, makeRockField, makeMist, makeFoam, makeMoonBridge, makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate, makePavilionLamp, makeTeaPavilion
 } from "./landscape.js";
 import {
-  LEVELS, STAIRS, HALL, ALTAR, WATER, POND, BRIDGE, bridgeDeckY, BRIDGE2, bridge2DeckY, BRIDGE3, bridge3DeckY, chuteY, TEA, GATE_Z, SPAWN as SPAWN_XZ, hallFloor, altarBase,
+  LEVELS, STAIRS, HALL, ALTAR, WATER, POND, BRIDGE, bridgeDeckY, BRIDGE2, bridge2DeckY, BRIDGE3, bridge3DeckY, chuteY, TEA, BIG_TREE, GATE_Z, SPAWN as SPAWN_XZ, hallFloor, altarBase,
   terrainY, heightAt, walkable, canStep, hallObstacles, interiorColumns, hallInterior, inPoly
 } from "./map.js";
 import { makeNight } from "./night.js";
@@ -303,7 +303,7 @@ function loadTexture(url, repeat = 1) {
 
 // ---------- Mô hình dựng từ Blender ----------
 // Tải các file .glb trong assets/models (nén Draco). Thiếu file hay lỗi mạng thì trả về null để dùng khung đơn giản.
-const MODELS = Object.fromEntries(["gate", "chuong", "boc-dich", "tam-thanh", "tai-than", "nguyet-lao"].map(k => [k, `assets/models/${k}.glb`]));
+const MODELS = Object.fromEntries(["gate", "chuong", "boc-dich", "tam-thanh", "tai-than", "nguyet-lao", "cay-da"].map(k => [k, `assets/models/${k}.glb`]));
 async function loadModels() {
   let GLTFLoader, DRACOLoader;
   try {
@@ -959,6 +959,26 @@ export async function createWorld(container, hooks = {}) {
 
   // ---------- Vật cản ----------
   const obstacles = [], circles = [];
+  // Cây đa cổ thụ giữa sân tầng 2 (mô hình Blender): bồn đá tròn, bàn hương phía trước, đèn lồng treo dưới tán.
+  if (models["cay-da"]) {
+    const T = BIG_TREE, ty = LEVELS.find(l => l.id === T.level).y, k = T.scale;
+    const tree = models["cay-da"];
+    tree.position.set(T.x, ty, T.z);
+    tree.scale.setScalar(k);
+    scene.add(tree);
+    walkMeshes.push(tree);
+    circles.push({ x: T.x, z: T.z, r: T.r * k + 0.3 });
+    obstacles.push({ x0: T.x - 0.85 * k - 0.1, x1: T.x + 0.85 * k + 0.1, z0: T.z + 5.55 * k - 0.1, z1: T.z + 6.45 * k + 0.1 });
+    const lc = [["#e0362c", "#b01a12"], ["#ffb32c", "#a85a00"]];
+    for (let i = 0; i < 8; i++) {
+      const a = (i + 0.5) / 8 * Math.PI * 2, r = (5.6 + (i % 2) * 1.3) * k, x = T.x + Math.cos(a) * r, z = T.z + Math.sin(a) * r;
+      const l = makeLantern(...lc[i % 2]);
+      l.scale.setScalar(0.75);
+      l.position.set(x, ty + (6.1 + (i % 3) * 0.35) * k, z);
+      scene.add(l);
+      scene.add(cyl(0.012, 0.012, 2.2, lam("#3a2a20"), x, l.position.y + 1.4, z, 4));
+    }
+  }
   Object.keys(HALL).forEach(k => { const o = hallObstacles(k); obstacles.push(...o.boxes); circles.push(...o.circles); });
   Object.keys(burners).forEach(k => circles.push({ x: BURNER[k].x, z: BURNER[k].z, r: k === "tam-thanh" ? 1.2 : 0.95 }));
   const rectOf = (p, pad = 0.4) => ({ x0: p.x - p.w / 2 - pad, x1: p.x + p.w / 2 + pad, z0: p.z - p.d / 2 - pad, z1: p.z + p.d / 2 + pad });
@@ -1023,7 +1043,7 @@ export async function createWorld(container, hooks = {}) {
   // Bồn cây trên sân các tầng [x, z, rộng, sâu, màu tán cây]; có va chạm.
   const BEDS = [
     [-25, 90, 5, 3, "#f4a6c0"], [-18, 118, 5, 3, "#f4a6c0"], [18, 118, 5, 3, "#f4a6c0"], [-26, 104, 3, 6, "#3f7a3a"],
-    [-6, 50, 4, 9, "#3f7a3a"], [6, 46, 4, 6, null], [-22, 62, 6, 3, "#f2c14e"], [30, 64, 5, 3, "#f4a6c0"], [-30, 28, 8, 3, "#f2c14e"], [30, 28, 8, 3, "#f4a6c0"],
+    [-22, 62, 6, 3, "#f2c14e"], [30, 64, 5, 3, "#f4a6c0"], [-30, 28, 8, 3, "#f2c14e"], [30, 28, 8, 3, "#f4a6c0"],
     [-24, -6, 6, 4, "#3f7a3a"], [-27, -26, 4, 10, "#3f7a3a"], [34.5, -24, 4, 9, "#3f7a3a"], [-10, -2, 5, 3, "#f4a6c0"], [33, -5, 5, 3, "#f4a6c0"],
     [-8, -64, 4, 3, null], [8, -64, 4, 3, null]
   ];

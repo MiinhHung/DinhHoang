@@ -30,6 +30,8 @@ export const HALL = {
   "tai-than": { x: -28, z: 44, w: 22, d: 16, h: 8.5, base: 0.6, cols: 7, door: 5, level: 2 },
   "nguyet-lao": { x: 28, z: 44, w: 22, d: 16, h: 8.5, base: 0.6, cols: 7, door: 5, level: 2 }
 };
+// Cây đa cổ thụ giữa sân tầng 2: tâm gốc, bán kính bồn đá; bàn hương ở phía +z (hướng lối lên từ tầng 1).
+export const BIG_TREE = { x: 0, z: 45, r: 5.15, scale: 1.3, level: 2 };
 export const ALTAR = { x: 0, z: -76, r: 9, h: 1.6, stairW: 2.1, stairLen: 3.6, level: 4 };
 
 // Dòng nước: suối nguồn trên tầng 3 → thác 2 → ao tầng 2 → suối (qua cầu) → thác 1 → ao thác tầng 1.
