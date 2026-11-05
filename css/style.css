@@ -277,3 +277,11 @@ body.cine #hud, body.cine .zone-banner, body.cine .toast, body.cine .hint { opac
   background: radial-gradient(circle, rgba(159,195,255,.45), rgba(159,195,255,.06)); transform: scale(1); transition: transform linear; }
 .breath-ring.big { transform: scale(2.1); }
 .breath b { position: absolute; font-size: 18px; color: var(--gold-2); text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+
+/* Nhãn nhỏ cạnh con trỏ khi rê lên điện, lư hương, ghế đá… */
+#hover-tip { position: fixed; left: 0; top: 0; z-index: 40; pointer-events: none; opacity: 0; transition: opacity .15s;
+  background: rgba(24, 16, 12, .82); color: #f6e7c4; border: 1px solid rgba(231, 183, 90, .55); border-radius: 10px;
+  padding: 6px 10px; font-size: 13px; line-height: 1.3; display: flex; flex-direction: column; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
+#hover-tip.on { opacity: 1; }
+#hover-tip b { font-weight: 700; }
+#hover-tip span { color: #e7b75a; font-size: 12px; }

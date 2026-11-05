@@ -123,6 +123,8 @@ function openSheet(html, tall = false) {
 }
 function closeSheet() {
   flow++;
+  // Rời bảng trà thì đứng dậy khỏi bồ đoàn.
+  if (world?.seated() === "tra-dinh") world.stand();
   sheet.classList.add("enter");
   setTimeout(() => { if (sheet.classList.contains("enter")) sheet.classList.add("hidden"); }, 460);
   world?.setPaused(false);
@@ -646,6 +648,9 @@ const TEAS = [["sen", "🪷 Trà sen"], ["olong", "🍵 Ô long"], ["cuc", "🌼
 const TEA_BONUS = 5;
 function sitTea() {
   const id = ++flow;
+  // Ngồi xếp bằng trên bồ đoàn bên bàn trà.
+  if (world.seated() !== "tra-dinh") world.sit("tra-dinh");
+  world.tea("rest");
   openSheet(`${stepDots(3, 0)}<h2>Trà Đình Định Tâm</h2>
     <p class="sub">Ngồi bên thác lớn, pha một ấm trà, thở chậm cùng tiếng nước. Ba nhịp thở là đủ để lòng lắng lại.</p>
     <div class="field"><span>Chọn trà</span>${chips("f-tea", TEAS, "sen")}</div>
@@ -656,7 +661,10 @@ function sitTea() {
     const k = $("#f-tea").dataset.val, tea = (TEAS.find(t => t[0] === k) || TEAS[0])[1];
     world.fx.steam("tra-dinh");
     audio.chime();
-    setTimeout(() => id === flow && breathe(id, tea), 700);
+    // Rót trà, rồi nâng chén nhấp một ngụm, đặt xuống mới bắt đầu thở.
+    world.tea("pour");
+    setTimeout(() => id === flow && world.tea("sip"), 1300);
+    setTimeout(() => id === flow && (world.tea("rest"), breathe(id, tea)), 3300);
   });
 }
 function breathe(id, tea) {
@@ -676,6 +684,7 @@ function breathe(id, tea) {
     }
     const [txt, ms] = PH[k++];
     $("#br-txt").textContent = txt;
+    world.tea(txt === "Hít vào" ? "in" : txt === "Giữ hơi" ? "hold" : "out", ms);
     ring.style.transitionDuration = ms + "ms";
     ring.classList.toggle("big", txt !== "Thở ra");
     if (txt === "Hít vào") audio.mo(0.12);
@@ -686,6 +695,9 @@ function breathe(id, tea) {
 }
 function finishTea(id, tea) {
   if (id !== flow) return;
+  // Thở xong, nâng chén uống nốt.
+  world.tea("sip");
+  setTimeout(() => world.tea("rest"), 2200);
   const list = content.dao.teachings;
   const teach = list[(dayIdx(list.length) + 1 + Math.floor(Math.random() * (list.length - 1))) % list.length];
   const res = progress.dailyBonus("tea", TEA_BONUS);
@@ -886,9 +898,32 @@ function onZone(z) {
   audio.setZone(z);
   if (z !== "san") { banner(z); track("zone_enter", { zone: z }); }
 }
+// Bấm vào điện / lư hương… rồi đi tới nơi: mở luôn nghi lễ.
+function onArrive(z) {
+  if (!entered || sheetOpen() || !ZONES[z]) return;
+  openRitual(z);
+}
+// Ngồi ghế đá ngắm cảnh: nút hành động thành "Đứng dậy".
+let seatedAt = null;
+function onSit(z) {
+  seatedAt = z;
+  if (z && z.startsWith("ghe")) toast("Ngồi ngắm cảnh… đi tiếp hoặc bấm “Đứng dậy” khi muốn.");
+  onNear(near);
+}
+// Nhãn nhỏ cạnh con trỏ khi rê lên chỗ bấm được.
+function onHover(z, x, y, seated) {
+  let tip = $("#hover-tip");
+  if (!tip) { tip = document.createElement("div"); tip.id = "hover-tip"; document.body.appendChild(tip); }
+  const info = z && (ZONES[z] ? [ZONES[z].name, ZONES[z].act] : z.startsWith("ghe") ? ["Ghế đá", seated ? "Đứng dậy" : "Ngồi ngắm cảnh"] : null);
+  if (!info || sheetOpen()) { tip.classList.remove("on"); return; }
+  tip.innerHTML = `<b>${esc(info[0])}</b><span>${esc(info[1])}</span>`;
+  tip.style.transform = `translate(${Math.round(x + 16)}px, ${Math.round(y + 14)}px)`;
+  tip.classList.add("on");
+}
 function onNear(z) {
   near = z;
   const b = $("#btn-act");
+  if (seatedAt && seatedAt.startsWith("ghe") && entered && !sheetOpen()) { b.innerHTML = `Đứng dậy${isTouch ? "" : " <kbd>E</kbd>"}`; b.classList.remove("hidden"); return; }
   if (!z || !entered || sheetOpen()) { b.classList.add("hidden"); return; }
   b.innerHTML = `${esc(ZONES[z].act)}${isTouch ? "" : " <kbd>E</kbd>"}`;
   b.classList.remove("hidden");
@@ -960,7 +995,9 @@ function enter() {
 }
 
 function setupHud() {
-  $("#btn-act").addEventListener("click", () => openRitual(near));
+  // Đang ngồi ghế đá: nút (và phím E) để đứng dậy.
+  const actNow = () => { if (seatedAt?.startsWith("ghe")) world.stand(); else openRitual(near); };
+  $("#btn-act").addEventListener("click", actNow);
   $("#merit").addEventListener("click", openLedger);
   $("#fest").addEventListener("click", () => goTo("ao-sen"));
   $("#btn-map").addEventListener("click", () => openModal("map"));
@@ -982,9 +1019,9 @@ function setupHud() {
       return;
     }
     if (/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(e.target?.tagName)) return;
-    if ((e.code === "KeyE" || e.key === "Enter") && near && entered && sheet.classList.contains("hidden") && !document.querySelector(".modal:not(.hidden)")) {
+    if ((e.code === "KeyE" || e.key === "Enter") && (near || seatedAt?.startsWith("ghe")) && entered && sheet.classList.contains("hidden") && !document.querySelector(".modal:not(.hidden)")) {
       e.preventDefault();
-      openRitual(near);
+      actNow();
     }
   });
 }
@@ -1027,7 +1064,7 @@ async function boot() {
   setupJoystick();
   const btn = $("#gate-enter");
   try {
-    const [, w] = await Promise.all([loadContent(), createWorld($("#scene"), { onZone, onNear })]);
+    const [, w] = await Promise.all([loadContent(), createWorld($("#scene"), { onZone, onNear, onArrive, onSit, onHover })]);
     world = w;
     // ?gio=14 để xem thử cảnh vào giờ khác (dùng khi kiểm thử, chụp ảnh quảng bá).
     const gio = new URLSearchParams(location.search).get("gio");

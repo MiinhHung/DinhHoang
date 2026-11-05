@@ -433,28 +433,70 @@ function makeLabel(text) {
   return s;
 }
 
+// Nhân vật có khớp: hông, đùi, gối, vai, khuỷu, cổ. poseAvatar() đặt tư thế mỗi khung hình (đi, đứng thở,
+// ngồi ghế, ngồi xếp bằng, rót trà, nâng chén, hít thở, vái).
 function makeAvatar(color, name, tex) {
   const group = new THREE.Group();
   const body = new THREE.Group();
   group.add(body);
-  const robe = lam(color);
-  body.add(cyl(0.3, 0.5, 1.15, robe, 0, 0.58, 0));
-  body.add(cyl(0.32, 0.32, 0.1, lam("#e7b75a"), 0, 1.15, 0));
-  const upper = new THREE.Group();
-  upper.position.y = 1.15;
-  body.add(upper);
-  upper.add(cyl(0.24, 0.3, 0.5, robe, 0, 0.25, 0));
-  [-1, 1].forEach(s => {
-    const sl = cyl(0.09, 0.17, 0.6, robe, s * 0.33, 0.2, 0.05, 8);
-    sl.rotation.z = s * 0.35;
-    upper.add(sl);
+  const robe = lam(color), skin = lam("#f1c9a0"), dark = lam("#1d1612"), pant = lam("#3a3430"), shoe = lam("#2a2420");
+  const robeMeshes = [];
+  const R = m => (robeMeshes.push(m), m);
+  // Hông (gốc của thân trên và hai chân).
+  const hips = new THREE.Group();
+  hips.position.y = 0.62;
+  body.add(hips);
+  const skirt = R(cyl(0.34, 0.48, 0.46, robe, 0, -0.23, 0, 14));
+  const skirtPivot = new THREE.Group();
+  skirtPivot.add(skirt);
+  hips.add(skirtPivot);
+  hips.add(R(cyl(0.3, 0.35, 0.5, robe, 0, 0.25, 0, 14)));
+  hips.add(cyl(0.32, 0.32, 0.1, lam("#e7b75a"), 0, 0.5, 0, 14));
+  const legs = [-1, 1].map(side => {
+    const thigh = new THREE.Group();
+    thigh.position.set(side * 0.13, 0, 0);
+    thigh.rotation.order = "YXZ";
+    thigh.add(cyl(0.085, 0.095, 0.33, pant, 0, -0.165, 0, 8));
+    const knee = new THREE.Group();
+    knee.position.y = -0.33;
+    knee.add(cyl(0.07, 0.085, 0.27, pant, 0, -0.135, 0, 8));
+    knee.add(box(0.13, 0.08, 0.25, shoe, 0, -0.29, 0.05));
+    thigh.add(knee);
+    hips.add(thigh);
+    return { side, thigh, knee };
   });
-  upper.add(ball(0.24, lam("#f1c9a0"), 0, 0.72, 0));
-  const hair = ball(0.255, lam("#1d1612"), 0, 0.77, -0.03);
+  // Thân trên, cổ và đầu.
+  const upper = new THREE.Group();
+  upper.position.y = 0.53;
+  hips.add(upper);
+  upper.add(R(cyl(0.24, 0.3, 0.5, robe, 0, 0.25, 0, 14)));
+  const head = new THREE.Group();
+  head.position.y = 0.52;
+  upper.add(head);
+  head.add(ball(0.24, skin, 0, 0.2, 0));
+  const hair = ball(0.255, dark, 0, 0.25, -0.03);
   hair.scale.set(1, 0.85, 1);
-  upper.add(hair);
-  upper.add(ball(0.11, lam("#1d1612"), 0, 0.98, -0.08, 8));
-  [-1, 1].forEach(s => upper.add(ball(0.03, lam("#1d1612"), s * 0.08, 0.74, 0.215, 6)));
+  head.add(hair);
+  head.add(ball(0.11, dark, 0, 0.46, -0.08, 8));
+  [-1, 1].forEach(s => head.add(ball(0.03, dark, s * 0.08, 0.22, 0.215, 6)));
+  // Tay: vai → ống tay trên → khuỷu → ống tay áo rộng → bàn tay.
+  const arms = [-1, 1].map(side => {
+    const shoulder = new THREE.Group();
+    shoulder.position.set(side * 0.3, 0.42, 0.02);
+    shoulder.add(R(cyl(0.085, 0.12, 0.32, robe, 0, -0.16, 0, 8)));
+    const elbow = new THREE.Group();
+    elbow.position.y = -0.31;
+    elbow.add(R(cyl(0.11, 0.17, 0.3, robe, 0, -0.15, 0, 8)));
+    const hand = ball(0.065, skin, 0, -0.33, 0.01, 8);
+    elbow.add(hand);
+    shoulder.add(elbow);
+    upper.add(shoulder);
+    return { side, shoulder, elbow, hand };
+  });
+  // Chén trà cầm tay phải (chỉ hiện khi ngồi uống trà).
+  const cup = cyl(0.055, 0.04, 0.08, lam("#f2ece0"), 0, -0.36, 0.08, 10);
+  cup.visible = false;
+  arms[1].elbow.add(cup);
   const sh = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.3), new THREE.MeshBasicMaterial({ map: tex.shadow, transparent: true, depthWrite: false }));
   sh.rotation.x = -Math.PI / 2;
   sh.position.y = 0.02;
@@ -462,7 +504,7 @@ function makeAvatar(color, name, tex) {
   let label = makeLabel(name);
   group.add(label);
   return {
-    group, body, upper, name,
+    group, body, hips, upper, head, legs, arms, skirtPivot, cup, name,
     setName(n) {
       if (n === this.name) return;
       group.remove(label);
@@ -473,10 +515,50 @@ function makeAvatar(color, name, tex) {
     },
     setColor(c) {
       const m = lam(c);
-      body.children[0].material = m;
-      upper.children.slice(0, 3).forEach(x => (x.material = m));
+      robeMeshes.forEach(x => (x.material = m));
     }
   };
+}
+
+// p: { speed 0–1, phase (nhịp bước), sit 0–1, seat (độ cao mặt ngồi so với đất), cross 0–1 (xếp bằng),
+//      pour 0–1, sip 0–1, breath −1–1 (thở ra → hít vào), bow 0–1 }, t: thời gian (giây).
+const mix = (a, b, k) => a + (b - a) * k;
+function poseAvatar(av, p, t) {
+  const s = p.speed || 0, ph = p.phase || 0, sit = p.sit || 0, cross = p.cross || 0, walk = s * (1 - sit);
+  const sw = Math.sin(ph);
+  const idleBreath = Math.sin(t * 1.7) * 0.5 * (1 - walk);
+  const br = p.breath ?? idleBreath;
+  // Ngồi: hạ hông xuống ngang mặt ghế; đi: nhún theo bước.
+  const hipH = (p.seat ?? 0.42) + 0.06;
+  av.body.position.y = mix(Math.abs(Math.cos(ph)) * 0.05 * walk, hipH - 0.62, sit);
+  av.hips.rotation.z = Math.sin(ph) * 0.04 * walk;
+  // Vạt áo đung đưa theo bước; khi ngồi thì xếp gọn lại phủ lên đùi.
+  av.skirtPivot.rotation.x = mix(Math.sin(ph * 2) * 0.05 * walk, -0.42, sit);
+  av.skirtPivot.scale.set(1, mix(1, 0.62, sit), mix(1, 1.1, sit));
+  av.legs.forEach(L => {
+    const k = L.side < 0 ? 1 : -1, swing = sw * 0.6 * walk * k;
+    const lift = Math.max(0, Math.sin(ph + (k > 0 ? 0 : Math.PI))) * 0.75 * walk;
+    L.thigh.rotation.x = mix(-swing, -1.48, sit);
+    L.thigh.rotation.y = L.side * 0.55 * sit * cross;
+    L.knee.rotation.x = mix(lift, 1.5 * (1 - cross), sit);
+    L.knee.rotation.z = -L.side * 2.45 * sit * cross;
+  });
+  // Thân trên: hơi nghiêng tới khi đi, vái, phồng nhẹ theo hơi thở.
+  av.upper.rotation.x = 0.07 * walk + (p.bow || 0) * 0.75 + (p.pour || 0) * 0.18;
+  av.upper.scale.set(1 + br * 0.025, 1 + br * 0.02, 1 + br * 0.03);
+  av.head.rotation.x = -br * 0.08 * (p.breath != null ? 1 : 0.3) + (p.sip || 0) * -0.25;
+  av.head.rotation.y = Math.sin(t * 0.37) * 0.12 * (1 - walk) * (1 - (p.pour || 0));
+  av.arms.forEach(A => {
+    const k = A.side < 0 ? -1 : 1, swing = sw * 0.5 * walk * k;
+    // Ngồi: tay đặt trên đùi. Rót trà: hai tay đưa ra trước. Nâng chén (tay phải) lên miệng.
+    let sx = mix(swing, -0.55, sit), ex = mix(-0.15 * walk - 0.08, -0.75, sit), sz = A.side * (0.12 + 0.06 * br);
+    const pour = p.pour || 0;
+    sx = mix(sx, -1.0, pour); ex = mix(ex, -0.5, pour); sz = mix(sz, -A.side * 0.25, pour);
+    if (A.side > 0) { const sp = p.sip || 0; sx = mix(sx, -1.25, sp); ex = mix(ex, -1.85, sp); sz = mix(sz, -0.45, sp); }
+    A.shoulder.rotation.set(sx, 0, sz);
+    A.shoulder.position.y = 0.42 + br * 0.02;
+    A.elbow.rotation.x = ex;
+  });
 }
 
 // ---------- Điểm tương tác trong sân ----------
@@ -951,7 +1033,7 @@ export async function createWorld(container, hooks = {}) {
   });
 
   // ---------- Vật cản ----------
-  const obstacles = [], circles = [];
+  const obstacles = [], circles = [], benches = [];
   // Cây đa cổ thụ giữa sân tầng 2 (mô hình Blender): bồn đá tròn, bàn hương phía trước, đèn lồng treo dưới tán.
   if (models["cay-da"]) {
     const T = BIG_TREE, ty = LEVELS.find(l => l.id === T.level).y, k = T.scale;
@@ -1029,7 +1111,7 @@ export async function createWorld(container, hooks = {}) {
   [[-17, 6], [8, 4], [-37, 20], [37, 20], [-24, 122], [24, 122], [-9, 86], [-20, 66], [26, 66], [-9, -50], [9, -50]]
     .forEach(([x, z]) => place(makeBush(0.75 + Math.random() * 0.3), x, z, 0.8));
   [[-35, 58.5], [-21, 58.5]].forEach(([x, z]) => place(makeIngots(), x, z, 0.7));
-  [[-26, 112, 10, 8], [17, 108, 7, 5], [-34, 50, 6, 12], [34, 36, 6, 12], [-28, -20, 8, 14], [34, -12, 6, 10], [-10, -70, 6, 6], [10, -82, 6, 6]]
+  [[-26, 112, 10, 8], [17, 108, 7, 5], [-41.5, 37, 3.5, 13], [41.5, 37, 3.5, 13], [-28, -20, 8, 14], [34, -12, 6, 10], [-10, -70, 6, 6], [10, -82, 6, 6]]
     .forEach(([x, z, w, d]) => { const gp = grassPatch(w, d, x, z); gp.position.y = groundY(x, z) + 0.02; scene.add(gp); });
 
   // ---------- Vườn, đá, mây mù: lấp những khoảng sân và sườn núi còn trống ----------
@@ -1181,6 +1263,35 @@ export async function createWorld(container, hooks = {}) {
       effects.push(dt => { life += dt; rib.scale.setScalar(Math.min(1, life / 0.6)); return life < 0.6; });
     }
   }
+
+  // Ghế đá ngắm cảnh ở những góc yên tĩnh: bấm vào ghế để đi tới ngồi. [x, z, hướng nhìn khi ngồi]
+  // SEATS[k]: chỗ ngồi (mặt ghế cao h), front: chỗ đứng trước ghế, cam: góc camera so với hướng ngồi.
+  const SEATS = {};
+  const benchMat = lam("#b8b0a2"), benchDark = lam("#958d80");
+  [[30.4, 106, Math.PI / 2], [-31, 96, -Math.PI / 2], [-6.5, 55.5, Math.PI], [6.5, 55.5, Math.PI], [20, -31, 2.57], [-37, -12, -Math.PI / 2], [0, -91, 0]]
+    .forEach(([x, z, yaw], i) => {
+      const b = new THREE.Group();
+      [-0.62, 0.62].forEach(lx => {
+        b.add(box(0.26, 0.36, 0.44, benchDark, lx, 0.18, 0));
+        b.add(box(0.32, 0.05, 0.5, benchMat, lx, 0.375, 0));
+      });
+      b.add(box(1.8, 0.09, 0.52, benchMat, 0, 0.445, 0));
+      b.add(box(1.74, 0.03, 0.46, lam("#c9c1b3"), 0, 0.5, 0));
+      // Rêu loang ở chân ghế.
+      [-0.62, 0.62].forEach(lx => b.add(box(0.28, 0.05, 0.46, lam("#6f8a52"), lx, 0.025, 0)));
+      const k = "ghe-" + i;
+      b.userData.zone = k;
+      b.position.set(x, groundY(x, z), z);
+      b.rotation.y = yaw;
+      scene.add(b);
+      benches.push(b);
+      const fx = Math.sin(yaw), fz = Math.cos(yaw), ax = Math.cos(yaw), az = -Math.sin(yaw);
+      [-0.5, 0.5].forEach(o => circles.push({ x: x + ax * o, z: z + az * o, r: 0.42 }));
+      SEATS[k] = { zone: k, x: x - fx * 0.04, z: z - fz * 0.04, yaw, h: 0.5, front: V(x + fx * 0.95, 0, z + fz * 0.95), cam: Math.PI - 0.55 };
+    });
+  // Chỗ ngồi uống trà: bồ đoàn bên bàn trà, ngồi xếp bằng quay mặt vào bàn; camera nhìn chếch từ phía trước.
+  const TEA_SEAT = { zone: "tra-dinh", x: PROP["tra-dinh"].x - 0.4, z: PROP["tra-dinh"].z - 0.7, yaw: Math.PI / 2, h: 0.17, cross: true,
+    front: V(PROP["tra-dinh"].x - 1.3, 0, PROP["tra-dinh"].z - 0.4), cam: 1.05, camPitch: 0.16, camZoom: 0.42 };
 
   // Đèn đá dọc lối vào và hai bên chân, đầu mỗi bậc thang.
   [[-3.2, 132], [3.2, 132], [-3.2, 138], [3.2, 138], [-5.6, 87.5], [5.6, 87.5], [-5.6, 66.5], [5.6, 66.5], [-5.6, 24.5], [5.6, 24.5],
@@ -1412,10 +1523,37 @@ export async function createWorld(container, hooks = {}) {
   // Thêm ?debug vào địa chỉ để xem vị trí nhân vật và thử tìm đường từ console (dùng khi kiểm thử).
   let debugView = null;
   if (new URLSearchParams(location.search).has("debug")) {
-    window.__dbg = () => ({ pos: pos.toArray(), h: heightAt(pos.x, pos.z), target: target?.toArray(), route: route.length, paused, camYaw });
+    window.__dbg = () => ({ seat: seat?.zone || null, sitW, pos: pos.toArray(), h: heightAt(pos.x, pos.z), target: target?.toArray(), route: route.length, paused, camYaw });
     window.__go = (x, z) => routeTo(V(x, 0, z));
+    // Giả lập bấm vào một điểm (điện, ghế đá…): đi tới rồi tự mở / ngồi.
+    window.__tap = z => { arriveZone = z; routeTo(SEATS[z] ? SEATS[z].front.clone() : SPOT[z].clone()); };
     // Đặt camera cố định để chụp cảnh: __view([x, y, z], [lx, ly, lz]); __view(null) để trả lại.
     window.__view = (p, l) => { debugView = p ? [p, l] : null; };
+  }
+  // Vận tốc làm mượt (tăng tốc, giảm tốc), nhịp bước theo quãng đường đi được.
+  const vel = new THREE.Vector2();
+  let speedK = 0;
+  // Ngồi: seat = { x, z, yaw, h (mặt ngồi so với đất), cross, front: Vector3 (chỗ đứng trước ghế), zone, cam }.
+  let seat = null, sitW = 0, sitMove = 0, sitFrom = null, standing = null;
+  const act = { pour: 0, sip: 0, breath: null, pourW: 0, sipW: 0, breathV: 0 };
+  let arriveZone = null, camSaved = null;
+  function sitAt(st) {
+    if (seat === st) return;
+    seat = st; sitMove = 0; sitFrom = pos.clone(); standing = null; target = null; route = [];
+    vel.set(0, 0);
+    if (st.cam != null) camYawWant = st.yaw + st.cam;
+    // Hạ camera xuống thấp, lại gần (nhìn rõ dáng ngồi, không bị mái che); đứng dậy thì trả lại.
+    if (!camSaved) camSaved = { pitch: camPitchWant, zoom: zoomWant };
+    camPitchWant = st.camPitch ?? 0.3;
+    zoomWant = st.camZoom ?? 0.7;
+    hooks.onSit?.(st.zone);
+  }
+  function standUp() {
+    if (!seat) return;
+    standing = seat; seat = null; sitMove = 0; sitFrom = pos.clone();
+    if (camSaved) { camPitchWant = camSaved.pitch; zoomWant = camSaved.zoom; camSaved = null; }
+    act.pour = act.sip = 0; act.breath = null;
+    hooks.onSit?.(null);
   }
   function updatePlayer(dt) {
     let mx = 0, mz = 0;
@@ -1424,37 +1562,83 @@ export async function createWorld(container, hooks = {}) {
       mz = (keys.has("d") ? 1 : 0) - (keys.has("u") ? 1 : 0) + joy.y;
     }
     let len = Math.hypot(mx, mz);
-    if (len > 0.12) {
-      target = null;
+    // Đang ngồi mà bấm đi: đứng dậy trước.
+    if (seat && len > 0.12) standUp();
+    const busy = seat || standing;
+    if (busy) len = 0;
+    else if (len > 0.12) {
+      target = null; arriveZone = null;
       if (len > 1) { mx /= len; mz /= len; len = 1; }
       // Phím và cần điều khiển đi theo hướng camera đang nhìn.
       const c = Math.cos(camYaw), s = Math.sin(camYaw);
       [mx, mz] = [mx * c + mz * s, -mx * s + mz * c];
     } else if (target && !paused) {
       const dx = target.x - pos.x, dz = target.z - pos.z, dd = Math.hypot(dx, dz);
-      if (dd < 0.25) { target = route.shift() || null; len = 0; }
-      else { mx = dx / dd; mz = dz / dd; len = 1; }
+      // Cua sớm ở điểm rẽ để không khựng; điểm cuối thì chậm dần rồi dừng đúng chỗ.
+      if (route.length && dd < 0.9) target = route.shift();
+      else if (!route.length && dd < 0.12) { target = null; len = 0; }
+      else { mx = dx / dd; mz = dz / dd; len = route.length ? 1 : Math.min(1, dd / 1.2 + 0.25); }
     } else len = 0;
-    if (len > 0) {
+    const kv = 1 - Math.exp(-dt * (len > 0 ? 7 : 10));
+    vel.x += (mx * SPEED * len - vel.x) * kv;
+    vel.y += (mz * SPEED * len - vel.y) * kv;
+    const sp = vel.length();
+    if (sp > 0.02 && !busy) {
       const prev = pos.clone();
-      pos.x += mx * SPEED * len * dt;
-      pos.z += mz * SPEED * len * dt;
+      pos.x += vel.x * dt;
+      pos.z += vel.y * dt;
       collide(pos, prev);
-      wantYaw = Math.atan2(mx, mz);
       const moved = Math.hypot(pos.x - prev.x, pos.z - prev.z);
-      if (target) { stuck = moved < SPEED * dt * 0.2 ? stuck + dt : 0; if (stuck > 0.35) { target = null; route = []; stuck = 0; } }
-      walkPhase += dt * 10 * len;
-    }
+      if (sp > 0.3) wantYaw = Math.atan2(vel.x, vel.y);
+      if (target) { stuck = moved < SPEED * dt * 0.15 && len > 0 ? stuck + dt : 0; if (stuck > 0.4) { target = null; route = []; stuck = 0; } }
+      walkPhase += moved * 1.85;
+    } else if (!busy) vel.set(0, 0);
+    speedK += (Math.min(1, sp / SPEED) - speedK) * (1 - Math.exp(-dt * 10));
     if (!target) route = [];
-    yaw = angleLerp(yaw, wantYaw, 1 - Math.exp(-dt * 12));
-    player.group.position.set(pos.x, heightAt(pos.x, pos.z), pos.z);
+    // Tới nơi đã bấm (điện, lư hương, ghế đá…): quay mặt về đó và tự mở.
+    if (arriveZone && !target && sp < 0.4) {
+      const z = arriveZone;
+      arriveZone = null;
+      if (SEATS[z]) { if (Math.hypot(pos.x - SEATS[z].front.x, pos.z - SEATS[z].front.z) < 1.2) sitAt(SEATS[z]); }
+      else if (near === z) { if (FOCUS[z]) wantYaw = faceYaw(z); hooks.onArrive?.(z); }
+    }
+    // Ngồi xuống / đứng dậy: trượt từ chỗ đứng vào mặt ghế rồi hạ người (và ngược lại).
+    if (seat) {
+      sitMove = Math.min(1, sitMove + dt / 0.6);
+      const e = sitMove * sitMove * (3 - 2 * sitMove);
+      pos.x = mix(sitFrom.x, seat.x, e); pos.z = mix(sitFrom.z, seat.z, e);
+      wantYaw = seat.yaw;
+      if (sitMove > 0.35) sitW = Math.min(1, sitW + dt / 0.55);
+    } else {
+      sitW = Math.max(0, sitW - dt / 0.5);
+      if (standing && sitW < 0.4) {
+        sitMove = Math.min(1, sitMove + dt / 0.45);
+        const e = sitMove * sitMove * (3 - 2 * sitMove);
+        pos.x = mix(sitFrom.x, standing.front.x, e); pos.z = mix(sitFrom.z, standing.front.z, e);
+        if (sitMove >= 1) standing = null;
+      }
+    }
+    yaw = angleLerp(yaw, wantYaw, 1 - Math.exp(-dt * (seat ? 6 : 9)));
+    const st = seat || standing;
+    player.group.position.set(pos.x, st ? groundY(st.x, st.z) : heightAt(pos.x, pos.z), pos.z);
     player.group.rotation.y = yaw;
-    player.body.position.y = len > 0 ? Math.abs(Math.sin(walkPhase)) * 0.08 : player.body.position.y * 0.8;
+    let bow = 0;
     if (bowT >= 0) {
       bowT += dt / 0.9;
-      player.upper.rotation.x = Math.sin(Math.min(bowT, 1) * Math.PI) * 0.75;
-      if (bowT >= 1) { bowT = -1; player.upper.rotation.x = 0; }
+      bow = Math.sin(Math.min(bowT, 1) * Math.PI);
+      if (bowT >= 1) bowT = -1;
     }
+    // Động tác trà: chuyển mượt giữa rót, nâng chén, hít thở.
+    const ka = 1 - Math.exp(-dt * 4);
+    act.pourW += (act.pour - act.pourW) * ka;
+    act.sipW += (act.sip - act.sipW) * ka;
+    if (act.breath != null) act.breathV += (act.breath - act.breathV) * (1 - Math.exp(-dt * act.breathRate));
+    player.cup.visible = !!(seat && seat.zone === "tra-dinh") || act.sipW > 0.05;
+    const T = performance.now() / 1000;
+    poseAvatar(player, {
+      speed: speedK, phase: walkPhase, sit: sitW * sitW * (3 - 2 * sitW), seat: (st?.h ?? 0.42), cross: st?.cross ? 1 : 0,
+      pour: act.pourW, sip: act.sipW, breath: act.breath != null ? act.breathV : undefined, bow
+    }, T);
     marker.material.opacity = target ? 0.5 + Math.sin(performance.now() / 150) * 0.2 : Math.max(0, marker.material.opacity - dt * 2);
 
     const z = zoneAt(pos.x, pos.z);
@@ -1610,10 +1794,11 @@ export async function createWorld(container, hooks = {}) {
       const dx = r.tx - r.x, dz = r.tz - r.z, moving = Math.hypot(dx, dz) > 0.05;
       r.x += dx * k; r.z += dz * k;
       if (moving) r.ry = angleLerp(r.ry, Math.atan2(dx, dz), k);
-      r.phase += moving ? dt * 10 : 0;
+      r.phase += Math.hypot(dx, dz) * k * 1.85;
+      r.spd = (r.spd || 0) + ((moving ? Math.min(1, Math.hypot(dx, dz) * k / dt / SPEED) : 0) - (r.spd || 0)) * k;
       r.av.group.position.set(r.x, groundY(r.x, r.z), r.z);
       r.av.group.rotation.y = r.ry;
-      r.av.body.position.y = moving ? Math.abs(Math.sin(r.phase)) * 0.08 : 0;
+      poseAvatar(r.av, { speed: r.spd, phase: r.phase }, now / 1000 + r.x);
     }
   }
 
@@ -1712,7 +1897,7 @@ export async function createWorld(container, hooks = {}) {
 
   // ---------- Chạm để đi ----------
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), plane = new THREE.Plane(V(0, 1, 0), 0), hit = V();
-  const clickables = [...Object.values(halls), ...Object.values(burners), altar, bagua, bellTower, pond, toHong, kimTien, daoSi.group, teaHouse];
+  const clickables = [...Object.values(halls), ...Object.values(burners), altar, bagua, bellTower, pond, toHong, kimTien, daoSi.group, teaHouse, ...benches];
   // Một ngón / chuột: chạm nhanh để đi, kéo để xoay góc nhìn. Hai ngón: chụm để phóng to thu nhỏ.
   const cv = renderer.domElement, ptrs = new Map(), ROT = 0.006;
   const clampPitch = p => Math.min(PITCH_MAX, Math.max(PITCH_MIN, p));
@@ -1726,6 +1911,22 @@ export async function createWorld(container, hooks = {}) {
     if (ptrs.size === 1) { down = { x: e.clientX, y: e.clientY, t: performance.now(), button: e.button }; dragging = false; }
     else { down = null; pinch = pinchDist(); }
   });
+  // Rê chuột lên chỗ bấm được: đổi con trỏ và báo tên (main hiện nhãn cạnh con trỏ).
+  let hoverAt = 0, hoverZone = null;
+  cv.addEventListener("pointermove", e => {
+    if (e.pointerType !== "mouse" || ptrs.size || !entered || paused) return;
+    const now = performance.now();
+    if (now - hoverAt < 70) return;
+    hoverAt = now;
+    const r = cv.getBoundingClientRect();
+    ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    let z = null;
+    for (let o = ray.intersectObjects(clickables, true)[0]?.object; o && !z; o = o.parent) z = o.userData?.zone || null;
+    cv.style.cursor = z ? "pointer" : "";
+    if (z !== hoverZone || z) { hoverZone = z; hooks.onHover?.(z, e.clientX - r.left, e.clientY - r.top, z && seat?.zone === z); }
+  });
+  cv.addEventListener("pointerleave", () => { hoverZone = null; cv.style.cursor = ""; hooks.onHover?.(null); });
   cv.addEventListener("pointermove", e => {
     const p = ptrs.get(e.pointerId);
     if (!p) return;
@@ -1770,13 +1971,23 @@ export async function createWorld(container, hooks = {}) {
     let z = null;
     for (let o = hits[0]?.object; o && !z; o = o.parent) z = o.userData?.zone || null;
     let t = null;
-    if (z) t = SPOT[z].clone();
+    if (z && SEATS[z]) {
+      // Ghế đá: đang ngồi chính ghế này thì đứng dậy, không thì đi tới trước ghế rồi ngồi.
+      if (seat === SEATS[z]) { standUp(); return; }
+      t = SEATS[z].front.clone();
+    } else if (z) {
+      // Đứng sẵn ở đó thì mở luôn, không cần đi.
+      if (near === z && !seat) { if (FOCUS[z]) wantYaw = faceYaw(z); hooks.onArrive?.(z); return; }
+      t = SPOT[z].clone();
+    }
     else {
       // Chạm xuống mặt sân các tầng, bậc thang hay sườn núi: lấy điểm chạm nếu đứng được ở đó.
       const gh = ray.intersectObjects(walkMeshes.filter(m => !m.userData.zone), true)[0];
       if (gh && walkable(gh.point.x, gh.point.z)) t = V(gh.point.x, 0, gh.point.z);
     }
     if (!t) return;
+    if (seat) standUp();
+    arriveZone = z;
     routeTo(t);
     stuck = 0;
     marker.position.set(t.x, 0.04 + heightAt(t.x, t.z), t.z);
@@ -1852,6 +2063,8 @@ export async function createWorld(container, hooks = {}) {
       pos.copy(s);
       target = null;
       route = [];
+      seat = standing = null; sitW = 0; arriveZone = null; camSaved = null;
+      act.pour = act.sip = 0; act.breath = null;
       if (FOCUS[z]) {
         yaw = wantYaw = faceYaw(z);
         camYaw = camYawWant = yawToward(pos, FOCUS[z]);
@@ -1883,6 +2096,20 @@ export async function createWorld(container, hooks = {}) {
     },
     setHour(h) { hourOverride = Number.isFinite(h) ? ((h % 24) + 24) % 24 : null; applySky(); },
     bow() { bowT = 0; },
+    // Ngồi uống trà (bồ đoàn ở Trà Đình) / đứng dậy; isSeated: đang ngồi ở đâu (zone hoặc null).
+    sit(z) { if (z === "tra-dinh") sitAt(TEA_SEAT); else if (SEATS[z]) sitAt(SEATS[z]); },
+    stand() { standUp(); },
+    seated() { return seat?.zone || null; },
+    // Động tác khi ngồi trà: "pour" rót, "sip" nâng chén uống, "in"/"hold"/"out" hít – giữ – thở (ms: độ dài nhịp), "rest".
+    tea(kind, ms = 1000) {
+      act.pour = kind === "pour" ? 1 : 0;
+      act.sip = kind === "sip" ? 1 : 0;
+      if (kind === "in" || kind === "hold" || kind === "out") {
+        if (act.breath == null) act.breathV = 0;
+        act.breath = kind === "out" ? -1 : 1;
+        act.breathRate = kind === "hold" ? 0.5 : 3.2 / (ms / 1000);
+      } else if (kind === "rest") act.breath = null;
+    },
     getState() { return { x: +pos.x.toFixed(2), z: +pos.z.toFixed(2), ry: +yaw.toFixed(2) }; },
     fx: {
       // Hơi trà (Trà Đình) hoặc khói hương bốc mạnh lên.
