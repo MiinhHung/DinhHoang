@@ -6,7 +6,7 @@ import {
   makeWaterPath, makeWaterMaterials, makeChannel, makeNaturalPond, makeGardenBed, makeRockField, makeMist, makeFoam, makeMoonBridge, makeBanner, makeMedallion, makeIngots, makePondRect, makeAltarPlatform, makeSign, makeGate, makePavilionLamp, makeTeaPavilion
 } from "./landscape.js";
 import {
-  LEVELS, STAIRS, HALL, ALTAR, WATER, POND, BRIDGE, bridgeDeckY, GATE_Z, SPAWN as SPAWN_XZ, hallFloor, altarBase,
+  LEVELS, STAIRS, HALL, ALTAR, WATER, POND, BRIDGE, bridgeDeckY, BRIDGE2, bridge2DeckY, TEA, GATE_Z, SPAWN as SPAWN_XZ, hallFloor, altarBase,
   terrainY, heightAt, walkable, canStep, hallObstacles, interiorColumns, hallInterior, inPoly
 } from "./map.js";
 import { makeNight } from "./night.js";
@@ -38,7 +38,7 @@ const SPOT = {
   "tam-thanh": inHall("tam-thanh", 2.6), "tai-than": inHall("tai-than", 3), "nguyet-lao": inHall("nguyet-lao", 3),
   "boc-dich": V(ALTAR.x, 0, ALTAR.z + 5.2),
   "dao-si": V(3.4, 0, 119.6), chuong: V(27, 0, 116), "ao-sen": V(POND.x, 0, POND.z + POND.d / 2 + 1.7),
-  "to-hong": V(36, 0, 62.6), "kim-tien": V(-36, 0, 62.6), "tra-dinh": V(23.2, 0, 90.5)
+  "to-hong": V(36, 0, 62.6), "kim-tien": V(-36, 0, 62.6), "tra-dinh": V(27.1, 0, 90.5)
 };
 const PROP = { "dao-si": V(5, 0, 118), chuong: V(27, 0, 112), "ao-sen": V(POND.x, 0, POND.z), "to-hong": V(38, 0, 60), "kim-tien": V(-38, 0, 60), "tra-dinh": V(28, 0, 90.5) };
 // Chỗ nhân vật quay mặt về khi làm nghi lễ ở mỗi điểm.
@@ -834,6 +834,12 @@ export async function createWorld(container, hooks = {}) {
     foams.push(makeFoam(tex.glow, src.x, y3 + 0.3, src.z + 2.8, 1));
   }
   foams.forEach(f => scene.add(f.points));
+  // Cầu vòm nhỏ qua dòng tràn tầng 1 (nhịp theo trục z: dựng theo trục x rồi xoay 90°).
+  const bridge2 = makeMoonBridge(BRIDGE2.len, BRIDGE2.width, x => bridge2DeckY(x), 0.75);
+  bridge2.position.set(BRIDGE2.x, lv(1), BRIDGE2.z);
+  bridge2.rotation.y = Math.PI / 2;
+  scene.add(bridge2);
+  walkMeshes.push(bridge2);
   const bridge = makeMoonBridge(BRIDGE.len, BRIDGE.width, bridgeDeckY);
   bridge.position.set(BRIDGE.x, lv(2), BRIDGE.z);
   scene.add(bridge);
@@ -912,7 +918,11 @@ export async function createWorld(container, hooks = {}) {
   const pondPad = p => Math.max(p.w, p.d) * 0.18 + 0.4;
   obstacles.push(rectOf(POND), rectOf(WATER.spring, pondPad(WATER.spring)), rectOf(WATER.pool2, pondPad(WATER.pool2)), rectOf(WATER.pool1, pondPad(WATER.pool1)));
   // Dòng tràn ra mép núi và mỏm đá đầu nguồn.
-  obstacles.push({ x0: WATER.pool1.x, x1: 40, z0: WATER.outflow.z - 1.9, z1: WATER.outflow.z + 1.9 });
+  // Dòng tràn chặn hai đoạn, chừa chỗ cầu vòm nhỏ (BRIDGE2) để vào khu Trà Đình.
+  [[WATER.pool1.x, BRIDGE2.x - BRIDGE2.width / 2], [BRIDGE2.x + BRIDGE2.width / 2, 40]].forEach(([x0, x1]) =>
+    obstacles.push({ x0, x1, z0: WATER.outflow.z - 1.9, z1: WATER.outflow.z + 1.9 }));
+  // Hai thành cầu.
+  [-1, 1].forEach(s => obstacles.push({ x0: BRIDGE2.x + s * BRIDGE2.width / 2 - 0.15, x1: BRIDGE2.x + s * BRIDGE2.width / 2 + 0.15, z0: BRIDGE2.z - BRIDGE2.len / 2, z1: BRIDGE2.z + BRIDGE2.len / 2 }));
   circles.push({ x: WATER.source.x, z: WATER.source.z - 0.6, r: 3.2 });
   const wx0 = WATER.x - 1.4, wx1 = WATER.x + 1.4;
   obstacles.push({ x0: wx0, x1: wx1, z0: WATER.spring.z, z1: 8.6 }, { x0: wx0, x1: wx1, z0: 21.5, z1: WATER.pool2.z },
@@ -1140,7 +1150,11 @@ export async function createWorld(container, hooks = {}) {
   teaHouse.position.copy(PROP["tra-dinh"]);
   teaHouse.userData.zone = "tra-dinh";
   scene.add(teaHouse);
-  obstacles.push({ x0: PROP["tra-dinh"].x - 1.6, x1: PROP["tra-dinh"].x + 2.9, z0: PROP["tra-dinh"].z - 2.4, z1: PROP["tra-dinh"].z + 2.4 });
+  // Đi vào được: chỉ chặn ở lan can ba mặt (lối vào phía tây), bốn cột và bàn trà.
+  obstacles.push({ x0: TEA.x - 2.2, x1: TEA.x + 2.2, z0: TEA.z + 1.8, z1: TEA.z + 2.1 }, { x0: TEA.x - 2.2, x1: TEA.x + 2.2, z0: TEA.z - 2.1, z1: TEA.z - 1.8 },
+    { x0: TEA.x + 2.2, x1: TEA.x + 2.5, z0: TEA.z - 2, z1: TEA.z + 2 });
+  [[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(([sx, sz]) => circles.push({ x: TEA.x + sx * 2.2, z: TEA.z + sz * 1.8, r: 0.2 }));
+  circles.push({ x: TEA.x + 0.6, z: TEA.z, r: 0.55 });
   const teaLabel = makeLabel("Trà Đình Định Tâm");
   teaLabel.position.set(PROP["tra-dinh"].x, 5.8, PROP["tra-dinh"].z);
   scene.add(teaLabel);

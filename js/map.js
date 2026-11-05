@@ -47,6 +47,11 @@ export const WATER = {
 export const BRIDGE = { x: WATER.x, z: (WATER.bridge.z0 + WATER.bridge.z1) / 2, len: 8.4, width: WATER.bridge.z1 - WATER.bridge.z0, rise: 1.9 };
 // Mặt cầu cong parabol: dốc nhất ở hai đầu (≈ 0.9), vẫn đi bộ được.
 export const bridgeDeckY = dx => BRIDGE.rise * Math.max(0, 1 - (2 * dx / BRIDGE.len) ** 2);
+// Cầu vòm nhỏ bắc qua dòng tràn tầng 1 (nhịp theo trục z) để vào khu Trà Đình phía bắc dòng tràn.
+export const BRIDGE2 = { x: 24, z: WATER.outflow.z, len: 6, width: 3, rise: 0.7 };
+export const bridge2DeckY = dz => BRIDGE2.rise * Math.max(0, 1 - (2 * dz / BRIDGE2.len) ** 2);
+// Trà Đình: nền đình gần ngang mặt sân để bước vào ngồi được; lối vào ở phía tây (-x).
+export const TEA = { x: 28, z: 90.5, w: 4.8, d: 4, floor: 0.12 };
 export const POND = { x: -14, z: 98, w: 10, d: 7 }; // Ao Sen thả hoa đăng
 export const GATE_Z = 125;
 export const SPAWN = { x: 0, z: 142 };
@@ -96,6 +101,8 @@ const levelAt = (x, z) => LEVELS.find(l => inPoly(l.poly, x, z));
 // Phần nền nổi trên mặt tầng: nền điện và bậc trước điện, Bốc Dịch Đài và bậc của đài.
 function featureY(x, z) {
   if (Math.abs(z - BRIDGE.z) <= BRIDGE.width / 2 - 0.15 && Math.abs(x - BRIDGE.x) <= BRIDGE.len / 2) return bridgeDeckY(x - BRIDGE.x);
+  if (Math.abs(x - BRIDGE2.x) <= BRIDGE2.width / 2 - 0.15 && Math.abs(z - BRIDGE2.z) <= BRIDGE2.len / 2) return bridge2DeckY(z - BRIDGE2.z);
+  if (Math.abs(x - TEA.x) <= TEA.w / 2 && Math.abs(z - TEA.z) <= TEA.d / 2) return TEA.floor;
   for (const k in HALL) {
     const h = HALL[k], hw = h.w / 2 + 1.5, hd = h.d / 2 + 1.5;
     const dx = x - h.x, dz = z - h.z;
@@ -144,7 +151,7 @@ export function canStep(ax, az, bx, bz) {
   let hp = heightAt(ax, az);
   for (let k = 1; k <= n; k++) {
     const h = heightAt(ax + (bx - ax) * k / n, az + (bz - az) * k / n);
-    if (Number.isNaN(h) || (!Number.isNaN(hp) && Math.abs(h - hp) > 1.2 * Math.max(d / n, 0.05))) return false;
+    if (Number.isNaN(h) || (!Number.isNaN(hp) && Math.abs(h - hp) > Math.max(1.2 * d / n, 0.15))) return false;
     hp = h;
   }
   return true;
