@@ -155,9 +155,12 @@ export function makeStairs({ x, hw, z0, y0, z1, y1 }) {
 const WATER_VS = `
 varying vec2 vUv;
 varying vec3 vWPos;
+attribute float aCut;
+varying float vCut;
 #include <fog_pars_vertex>
 void main() {
   vUv = uv;
+  vCut = aCut;
   vWPos = (modelMatrix * vec4(position, 1.0)).xyz;
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mvPosition;
@@ -168,6 +171,7 @@ uniform float uTime, uSpeed, uFoam, uLight, uFlat;
 uniform vec3 uDeep, uShallow, uSky, uSunDir;
 varying vec2 vUv;
 varying vec3 vWPos;
+varying float vCut;
 #include <fog_pars_fragment>
 float h(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float n(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
@@ -191,7 +195,8 @@ void main() {
   float spec = pow(max(dot(reflect(-V, N), uSunDir), 0.0), 120.0) * uFlat;
   col = mix(col, vec3(0.95, 0.98, 1.0), foam) + spec * 1.4;
   float alpha = smoothstep(0.0, 0.22, side) * (0.8 + foam * 0.2 + fres * 0.15 * uFlat);
-  gl_FragColor = vec4(col * uLight, min(alpha, 1.0));
+  // vCut: mờ dần ở hai đầu dải nước để nối êm vào ao, suối khác (không thấy mép cắt thẳng).
+  gl_FragColor = vec4(col * uLight, min(alpha, 1.0) * (1.0 - vCut));
   #include <fog_fragment>
 }`;
 // sky: màu trời phản chiếu (một THREE.Color dùng chung, cảnh cập nhật theo giờ).
@@ -212,8 +217,8 @@ export function makeWaterMaterials(sky = new THREE.Color("#a3c8ea")) {
 
 // path: các điểm [x, y, z] dọc dòng chảy (từ nguồn xuống); width: bề rộng (số, hoặc hàm theo t ∈ [0, 1] dọc dòng);
 // bulge: độ phồng mặt cắt về phía trước (thác rơi tự do là một màn nước cong, nhìn nghiêng vẫn có độ dày).
-export function makeWaterPath(path, width, material, { bulge = 0, across = 1 } = {}) {
-  const pos = [], uv = [], idx = [], K = bulge ? Math.max(across, 4) : across, last = path.length - 1;
+export function makeWaterPath(path, width, material, { bulge = 0, across = 1, fadeStart = 0, fadeEnd = 0 } = {}) {
+  const pos = [], uv = [], idx = [], cut = [], K = bulge ? Math.max(across, 4) : across, last = path.length - 1;
   let acc = 0;
   path.forEach(([x, y, z], i) => {
     if (i) acc += Math.hypot(x - path[i - 1][0], y - path[i - 1][1], z - path[i - 1][2]);
@@ -230,9 +235,16 @@ export function makeWaterPath(path, width, material, { bulge = 0, across = 1 } =
       idx.push(a, a + 1, c, a + 1, c + 1, c);
     }
   });
+  // Độ mờ hai đầu theo quãng đường dọc dòng (mét).
+  const total = acc;
+  for (let i = 0; i < uv.length; i += 2) {
+    const d = uv[i + 1] * 6, a = fadeStart ? Math.max(0, 1 - d / fadeStart) : 0, b = fadeEnd ? Math.max(0, 1 - (total - d) / fadeEnd) : 0;
+    cut.push(Math.max(a, b) ** 1.5);
+  }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  geo.setAttribute("aCut", new THREE.Float32BufferAttribute(cut, 1));
   geo.setIndex(idx);
   geo.computeVertexNormals();
   const m = new THREE.Mesh(geo, material);

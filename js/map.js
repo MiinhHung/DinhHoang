@@ -56,7 +56,10 @@ export const WATER = {
 // Độ cao lòng khe theo z: rơi gần thẳng đứng ở 18% đầu (mép vách), sau đó dốc thoải dần (ghềnh).
 export function chuteY(c, z) {
   const t = Math.min(1, Math.max(0, (z - c.z0) / (c.z1 - c.z0))), H = c.y0 - c.y1;
-  return c.y0 - H * (t < 0.18 ? Math.pow(t / 0.18, 1.6) * 0.58 : 0.58 + 0.42 * Math.pow((t - 0.18) / 0.82, 0.85));
+  const f = u => u < 0.18 ? Math.pow(u / 0.18, 1.6) * 0.58 : 0.58 + 0.42 * Math.pow((u - 0.18) / 0.82, 0.85);
+  // Làm tròn khúc gãy giữa mép vách và ghềnh (trung bình trượt quanh điểm gãy).
+  const w = 0.05 * Math.max(0, 1 - Math.abs(t - 0.18) / 0.08);
+  return c.y0 - H * (w ? (f(Math.max(0, t - w)) + f(t) + f(Math.min(1, t + w))) / 3 : f(t));
 }
 // Cầu vòm bắc qua suối tầng 3 (nhịp theo trục x) để sang khu phía đông của tầng.
 export const BRIDGE3 = { x: 27, z: -22, len: 7, width: 3, rise: 0.8 };
@@ -133,9 +136,9 @@ export function terrainY(x, z) {
     if (z < c.z0 - 0.5 || z > c.z1 + 0.5) continue;
     const dx = Math.abs(x - c.x);
     if (dx > 14) continue;
-    const cy = chuteY(c, z), bed = cy - 0.4;
+    const cy = chuteY(c, z), bed = cy - 1.0;
     // Vách khe cao dần từ hai đầu (không nhô lên khỏi mặt sân hai tầng).
-    const wallH = 1.9 * Math.max(0, Math.min(1, (z - c.z0) / 1.5, (c.z1 - z) / 1.5));
+    const wallH = 2.5 * Math.max(0, Math.min(1, (z - c.z0) / 1.5, (c.z1 - z) / 1.5));
     if (dx < 1.7) y = bed;
     else if (dx < 3.8) { const s = (dx - 1.7) / 2.1; y = Math.max(z >= c.z0 && z <= c.z1 ? -99 : y, bed + wallH * s * s * (3 - 2 * s)); if (wallH === 0) y = Math.min(y, bed + 0.3); }
     else if (z >= c.z0 && z <= c.z1) y = Math.max(y, bed + wallH - (dx - 3.8) * 0.6 + rough * 0.2 * Math.min(1, (dx - 3.8) / 3));

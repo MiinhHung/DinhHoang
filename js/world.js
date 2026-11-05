@@ -772,7 +772,7 @@ export async function createWorld(container, hooks = {}) {
     (Math.abs(x - BRIDGE2.x) < BRIDGE2.width / 2 + 0.5 && Math.abs(z - BRIDGE2.z) < 3);
   const stream = (ctrl, y, seed, walk = true) => {
     const path = smooth(ctrl);
-    scene.add(makeWaterPath(path.map(([x, z]) => [x, y + WY, z]), HW * 2, waterMats.stream, { across: 3 }));
+    scene.add(makeWaterPath(path.map(([x, z]) => [x, y + WY, z]), HW * 2, waterMats.stream, { across: 3, fadeStart: 1.2, fadeEnd: 1.2 }));
     scene.add(makeStreamBanks(path, y, HW, { seed, skip: nearBridge }));
     if (walk) streamPaths.push(path);
     return path;
@@ -831,7 +831,7 @@ export async function createWorld(container, hooks = {}) {
       if (landed === null && free <= bed + 0.05 && z > c.z0) landed = z;
       pts.push([c.x, landed === null ? Math.max(free, bed) : bed, z]);
     }
-    scene.add(makeWaterPath(pts, t => 2.3 + 0.6 * Math.min(1, t * 3), waterMats.fall, { across: 4 }));
+    scene.add(makeWaterPath(pts, t => 2.3 + 0.6 * Math.min(1, t * 3), waterMats.fall, { across: 4, fadeStart: 1.0, fadeEnd: 1.6 }));
     // Đá hai bờ lòng khe, vài tảng nằm giữa dòng tạo bọt.
     const rocks = [];
     for (let z = landed + 0.4; z < c.z1 + 0.6; z += 0.7) {
