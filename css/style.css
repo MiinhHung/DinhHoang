@@ -353,3 +353,32 @@ body.cine #hud, body.cine .zone-banner, body.cine .toast, body.cine .hint { opac
 #hover-tip.on { opacity: 1; }
 #hover-tip b { font-weight: 700; }
 #hover-tip span { color: #e7b75a; font-size: 12px; }
+
+/* Gói trà: túi giấy dó, băng nhãn đỏ, chữ Hán dọc; màu trà làm điểm nhấn. */
+.tea-packs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px 0 6px; }
+.pack { position: relative; text-align: left; padding: 12px 12px 12px 54px; min-height: 92px; border-radius: 10px 10px 16px 16px; border: 0; cursor: pointer;
+  color: #4a2a12; background: linear-gradient(180deg, rgba(255,255,255,.35), transparent 30%), repeating-linear-gradient(90deg, rgba(110,70,30,.05) 0 3px, transparent 3px 7px), linear-gradient(180deg, #e9d3a2, #d2b077);
+  box-shadow: 0 6px 16px rgba(0,0,0,.35), inset 0 0 0 1px rgba(110,70,30,.35); transition: transform .25s, opacity .3s, box-shadow .25s; }
+.pack::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 9px; border-radius: 10px 10px 0 0;
+  background: repeating-linear-gradient(90deg, #b98a4c 0 4px, #a4763a 4px 8px); }
+.pack-han { position: absolute; left: 10px; top: 16px; bottom: 10px; width: 34px; display: grid; place-items: center; font-style: normal; writing-mode: vertical-rl;
+  font-family: var(--han); font-size: 17px; letter-spacing: 2px; color: #fff1d0; background: #a82a22; border-radius: 4px; box-shadow: inset 0 0 0 2px #a82a22, inset 0 0 0 3px #f4d9a8; }
+.pack b { display: block; font-size: 15px; margin-top: 4px; }
+.pack small { display: block; font-size: 12px; opacity: .8; margin-top: 3px; line-height: 1.35; }
+.pack::after { content: ""; position: absolute; right: 10px; bottom: 10px; width: 16px; height: 16px; border-radius: 50%; background: var(--tea); box-shadow: 0 0 0 3px rgba(255,255,255,.4); }
+.pack:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,.4), inset 0 0 0 1px rgba(110,70,30,.35); }
+.pack.on { animation: packTip 1.6s ease-in-out forwards; box-shadow: 0 0 0 2px var(--gold-2), 0 10px 26px rgba(0,0,0,.45); }
+.pack.off { opacity: .35; pointer-events: none; }
+@keyframes packTip { 30% { transform: translateY(-10px) rotate(-6deg); } 60% { transform: translateY(-14px) rotate(-28deg); } 100% { transform: translateY(-6px) rotate(-12deg); } }
+
+/* Đợi trà ngấm: vòng đếm lùi, chén trà ngả màu dần. */
+.steep { display: grid; place-items: center; padding: 10px 0 6px; }
+.steep-ring { --p: 0; position: relative; width: 170px; height: 170px; border-radius: 50%; display: grid; place-items: center; align-content: center;
+  background: radial-gradient(circle, rgba(28,20,30,.95) 62%, transparent 63%), conic-gradient(var(--tea) calc(var(--p) * 360deg), rgba(255,255,255,.1) 0);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--tea) 30%, transparent); }
+.steep-ring b { font-size: 34px; color: var(--gold-2); line-height: 1; margin-top: 6px; }
+.steep-ring span { font-size: 12px; color: var(--muted); }
+.steep-cup { width: 54px; height: 30px; border-radius: 0 0 28px 28px; background: #f2ece0; position: relative; overflow: hidden; box-shadow: inset 0 -3px 0 rgba(0,0,0,.08); }
+.steep-cup::after { content: ""; position: absolute; left: 4px; right: 4px; top: 4px; bottom: 4px; border-radius: 0 0 24px 24px;
+  background: color-mix(in srgb, var(--tea) calc(var(--p) * 100%), #e8f3f6); }
+.steep.ready .steep-ring b, .steep.ready .steep-ring span { display: none; }

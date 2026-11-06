@@ -127,7 +127,7 @@ function openSheet(html, tall = false) {
 function closeSheet() {
   flow++;
   // Rời bảng trà thì đứng dậy khỏi bồ đoàn.
-  if (world?.seated() === "tra-dinh") world.stand();
+  if (world?.seated() === "tra-dinh") { world.stand(); world.tea("reset"); }
   sheet.classList.add("enter");
   setTimeout(() => { if (sheet.classList.contains("enter")) sheet.classList.add("hidden"); }, 460);
   world?.setPaused(false);
@@ -194,7 +194,8 @@ function readNameYear() {
 }
 
 // ---------- Nút giữ (thắp hương) ----------
-function mountHold(el, label, ms, onDone) {
+// onHold(true/false): báo lúc bắt đầu / thôi giữ (vd. nghiêng ấm rót nước theo tay giữ).
+function mountHold(el, label, ms, onDone, onHold) {
   const C = 2 * Math.PI * 76;
   el.innerHTML = `<div class="hold-wrap"><button class="hold" type="button" aria-label="Nhấn giữ để thắp hương">
     <svg viewBox="0 0 170 170"><circle class="ring-bg" cx="85" cy="85" r="76" fill="none" stroke-width="6"/>
@@ -207,7 +208,7 @@ function mountHold(el, label, ms, onDone) {
     last = now;
     p = holding ? p + dt / ms : Math.max(0, p - dt / ms * 1.5);
     ring.style.strokeDashoffset = C * (1 - Math.min(p, 1));
-    if (p >= 1 && !done) { done = true; holding = false; btn.classList.remove("active"); buzz(40); onDone(); raf = 0; return; }
+    if (p >= 1 && !done) { done = true; holding = false; btn.classList.remove("active"); buzz(40); onHold?.(false); onDone(); raf = 0; return; }
     raf = holding || p > 0 ? requestAnimationFrame(loop) : 0;
   };
   const start = e => {
@@ -215,10 +216,11 @@ function mountHold(el, label, ms, onDone) {
     e.preventDefault();
     if (e.pointerId != null) btn.setPointerCapture?.(e.pointerId);
     holding = true;
+    onHold?.(true);
     btn.classList.add("active");
     if (!raf) { last = performance.now(); raf = requestAnimationFrame(loop); }
   };
-  const stop = () => { holding = false; btn.classList.remove("active"); };
+  const stop = () => { if (holding) onHold?.(false); holding = false; btn.classList.remove("active"); };
   btn.addEventListener("pointerdown", start);
   btn.addEventListener("pointerup", stop);
   btn.addEventListener("pointercancel", stop);
@@ -647,31 +649,85 @@ function harvestLoc() {
 
 // ---------- Trà Đình Định Tâm ----------
 // Chọn trà, giữ để pha (hơi trà bốc lên), ba nhịp thở theo vòng tròn (hít 4 giây, giữ 2, thở ra 6), rồi một lời dạy.
-const TEAS = [["sen", "🪷 Trà sen"], ["olong", "🍵 Ô long"], ["cuc", "🌼 Trà hoa cúc"]];
-const TEA_BONUS = 5;
+// Gói trà: [khoá, tên, chữ Hán trên gói, màu nước trà, mô tả].
+const TEAS = [
+  ["sen", "Trà sen", "蓮花", "#d8b45a", "Ướp trong gương sen, thơm thanh"],
+  ["olong", "Ô long", "烏龍", "#b0662a", "Hương mật ong, hậu ngọt sâu"],
+  ["cuc", "Trà hoa cúc", "菊花", "#e3c64a", "Dịu nhẹ, mát lòng"],
+  ["xanh", "Trà xanh", "綠茶", "#a7b53e", "Chát nhẹ, tỉnh táo"]
+];
+const TEA_BONUS = 5, TEA_STEPS = 5;
+// Bước 1: chọn gói trà, thả lá trà vào ấm.
 function sitTea() {
   const id = ++flow;
-  // Ngồi xếp bằng trên bồ đoàn bên bàn trà.
   if (world.seated() !== "tra-dinh") world.sit("tra-dinh");
-  world.tea("rest");
-  openSheet(`${stepDots(3, 0)}<h2>Trà Đình Định Tâm</h2>
-    <p class="sub">Ngồi bên thác lớn, pha một ấm trà, thở chậm cùng tiếng nước. Ba nhịp thở là đủ để lòng lắng lại.</p>
-    <div class="field"><span>Chọn trà</span>${chips("f-tea", TEAS, "sen")}</div>
-    <div id="hold"></div><p class="note">${isTouch ? "Chạm và giữ" : "Nhấn giữ chuột (hoặc phím cách)"} để pha trà.</p>${ent}`);
-  bindChips("f-tea");
-  mountHold($("#hold"), "<b>Giữ</b>để pha trà", 2200, () => {
-    if (id !== flow) return;
-    const k = $("#f-tea").dataset.val, tea = (TEAS.find(t => t[0] === k) || TEAS[0])[1];
-    world.fx.steam("tra-dinh");
+  world.tea("reset");
+  openSheet(`${stepDots(TEA_STEPS, 0)}<h2>Trà Đình Định Tâm</h2>
+    <p class="sub">Ngồi bên thác lớn, tự tay pha một ấm trà, thở chậm cùng tiếng nước. Chọn một gói trà để thả vào ấm.</p>
+    <div class="tea-packs">${TEAS.map(([k, n, han, col, d]) => `<button class="pack" data-k="${k}" style="--tea:${col}"><i class="pack-han">${han}</i>
+      <b>${esc(n)}</b><small>${esc(d)}</small></button>`).join("")}</div>
+    <p class="note" id="tea-note">Bấm vào gói trà để cho trà vào ấm.</p>${ent}`);
+  sheetBody.querySelectorAll(".pack").forEach(b => b.addEventListener("click", () => {
+    if (id !== flow || sheetBody.querySelector(".pack.on")) return;
+    b.classList.add("on");
+    sheetBody.querySelectorAll(".pack:not(.on)").forEach(x => x.classList.add("off"));
+    const t = TEAS.find(x => x[0] === b.dataset.k);
+    world.tea("leaves", 0, { color: t[3] });
     audio.chime();
-    // Rót trà, rồi nâng chén nhấp một ngụm, đặt xuống mới bắt đầu thở.
-    world.tea("pour");
-    setTimeout(() => id === flow && world.tea("sip"), 1300);
-    setTimeout(() => id === flow && (world.tea("rest"), breathe(id, tea)), 3300);
+    $("#tea-note").textContent = "Lá trà rơi xuống đáy ấm…";
+    setTimeout(() => id === flow && pourWater(id, t), 1900);
+  }));
+}
+// Bước 2: giữ để rót nước sôi (ấm đồng nghiêng theo tay giữ).
+function pourWater(id, t) {
+  openSheet(`${stepDots(TEA_STEPS, 1)}<h2>Rót nước sôi</h2>
+    <p class="sub">Nước vừa sôi, rót từ cao xuống cho lá trà xoay tròn trong ấm. Giữ cho tới khi ấm đầy.</p>
+    <div id="hold"></div><p class="note">${isTouch ? "Chạm và giữ" : "Nhấn giữ chuột (hoặc phím cách)"} để rót nước.</p>`);
+  mountHold($("#hold"), "<b>Giữ</b>để rót nước sôi", 2600, () => {
+    if (id !== flow) return;
+    world.tea("steep");
+    world.fx.steam("tra-dinh");
+    setTimeout(() => id === flow && steepTea(id, t), 500);
+  }, on => id === flow && world.tea(on ? "water" : "water-stop"));
+}
+// Bước 3: đậy nắp, đợi trà ngấm (vòng đếm lùi, hơi trà bốc lên).
+function steepTea(id, t) {
+  const MS = 6000;
+  openSheet(`${stepDots(TEA_STEPS, 2)}<h2>Đợi trà ngấm</h2>
+    <p class="sub">Đậy nắp ấm. Trong lúc chờ, nghe tiếng thác, để vai thả lỏng.</p>
+    <div class="steep" style="--tea:${t[3]}"><div class="steep-ring"><i class="steep-cup"></i><b id="st-s">6</b><span>giây</span></div></div>
+    <div class="btn-row"><button class="btn ghost" id="st-skip">Rót luôn</button></div>`);
+  const ring = $(".steep-ring"), t0 = performance.now();
+  let timer = 0;
+  const tick = () => {
+    if (id !== flow) return;
+    const k = Math.min(1, (performance.now() - t0) / MS);
+    ring.style.setProperty("--p", k);
+    $("#st-s").textContent = Math.ceil((1 - k) * MS / 1000);
+    if (k >= 1) return serveTea(id, t);
+    timer = requestAnimationFrame(tick);
+  };
+  world.fx.steam("tra-dinh");
+  timer = requestAnimationFrame(tick);
+  $("#st-skip").addEventListener("click", () => { cancelAnimationFrame(timer); serveTea(id, t); });
+}
+// Bước 4: rót trà ra chén, nâng chén nhấp một ngụm, rồi sang thở.
+function serveTea(id, t) {
+  if (id !== flow) return;
+  openSheet(`${stepDots(TEA_STEPS, 3)}<h2>Rót trà ra chén</h2>
+    <p class="sub">Nước trà đã ngả màu. Rót một chén, hai tay nâng chén, ngửi hương trước khi uống.</p>
+    <div class="steep ready" style="--tea:${t[3]}"><div class="steep-ring" style="--p:1"><i class="steep-cup"></i></div></div>
+    <button class="btn primary big" id="serve">Rót trà ra chén</button>`);
+  $("#serve").addEventListener("click", () => {
+    $("#serve").disabled = true;
+    world.tea("serve");
+    audio.chime();
+    setTimeout(() => id === flow && world.tea("sip"), 2300);
+    setTimeout(() => id === flow && (world.tea("rest"), breathe(id, t[1])), 4400);
   });
 }
 function breathe(id, tea) {
-  openSheet(`${stepDots(3, 1)}<h2>Ba nhịp thở</h2>
+  openSheet(`${stepDots(TEA_STEPS, 4)}<h2>Ba nhịp thở</h2>
     <p class="sub">Nhìn vòng tròn: nở ra thì hít vào, dừng thì giữ hơi, co lại thì thở ra thật chậm.</p>
     <div class="breath"><div class="breath-ring"></div><b id="br-txt">Hít vào</b></div>
     <p class="note" id="br-n">Nhịp 1 / 3</p>
@@ -707,7 +763,7 @@ function finishTea(id, tea) {
   if (res) announce(res, `+${res.gained} công đức · Một ấm trà định tâm`);
   audio.bell(174, 0.35);
   track("tea", { tea });
-  openSheet(`${stepDots(3, 2)}<div class="reveal">${lotCard("tra-dinh", { head: "定心茶 · 一盞", tag: `${esc(tea)} · Trà Đình Định Tâm`, title: "Lòng đã lắng", body: `<div class="poem">${esc(teach.text)}</div>`, foot: `<div class="cdn">— ${esc(teach.src)}</div>` })}</div>
+  openSheet(`${stepDots(TEA_STEPS, 4)}<div class="reveal">${lotCard("tra-dinh", { head: "定心茶 · 一盞", tag: `${esc(tea)} · Trà Đình Định Tâm`, title: "Lòng đã lắng", body: `<div class="poem">${esc(teach.text)}</div>`, foot: `<div class="cdn">— ${esc(teach.src)}</div>` })}</div>
     <p class="sub" style="text-align:center;margin-top:12px">${esc(teach.giang)}</p>
     <p class="note">${res ? "" : "Hôm nay thí chủ đã nhận công đức uống trà rồi, cứ ngồi thêm bao lâu tuỳ thích."}</p>
     <div class="btn-row"><button class="btn primary" id="tea-again">Pha ấm khác</button><button class="btn ghost" id="tea-close">Đứng dậy</button></div>${ent}`);

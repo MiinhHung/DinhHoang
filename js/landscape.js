@@ -1206,16 +1206,44 @@ export function makeTeaPavilion() {
   g.add(box(1.4, 0.08, 0.9, lam("#5a3420"), 0.6, 0.48, 0));
   [[-0.5, -0.3], [-0.5, 0.3], [0.5, -0.3], [0.5, 0.3]].forEach(([x, z]) => g.add(box(0.08, 0.32, 0.08, lam("#4a2a18"), 0.6 + x, 0.29, z)));
   [[-0.4, -0.7], [-0.4, 0.7]].forEach(([x, z]) => g.add(cyl(0.38, 0.4, 0.14, lam("#c8a060"), x, 0.22, z, 16)));
+  // Ấm trà tử sa: thân, quai, vòi; nắp tách riêng (mở ra khi cho trà vào). Gốc xoay ấm ở đáy để nghiêng rót.
+  const clay = lam("#6a3a2a"), clay2 = lam("#55301f");
   const pot = new THREE.Group();
-  pot.add(ball(0.17, lam("#6a3a2a"), 0, 0.15, 0, 12));
-  pot.add(cyl(0.05, 0.07, 0.08, lam("#6a3a2a"), 0, 0.31, 0, 8));
-  const spout = cyl(0.025, 0.035, 0.2, lam("#6a3a2a"), 0.16, 0.18, 0, 6);
-  spout.rotation.z = -0.9;
+  const body = ball(0.17, clay, 0, 0.15, 0, 16); body.scale.set(1, 0.85, 1); pot.add(body);
+  pot.add(cyl(0.08, 0.1, 0.04, clay2, 0, 0.29, 0, 14));
+  const spout = cyl(0.022, 0.036, 0.2, clay, 0.17, 0.2, 0, 8);
+  spout.rotation.z = -0.95;
   pot.add(spout);
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.018, 6, 14, Math.PI * 1.3), clay);
+  handle.position.set(-0.19, 0.17, 0); handle.rotation.z = Math.PI * 0.35;
+  pot.add(handle);
+  const lid = new THREE.Group();
+  lid.position.y = 0.31;
+  lid.add(cyl(0.085, 0.09, 0.03, clay, 0, 0.0, 0, 14), ball(0.025, clay2, 0, 0.035, 0, 8));
+  pot.add(lid);
   pot.position.set(0.6, 0.52, 0);
   g.add(pot);
-  [[0.4, -0.25], [0.85, 0.22], [0.35, 0.28]].forEach(([x, z]) => g.add(cyl(0.05, 0.035, 0.07, lam("#f2ece0"), x, 0.56, z, 10)));
+  // Ấm đồng đun nước sôi bên cạnh, trên lò than nhỏ.
+  const kettle = new THREE.Group();
+  const brass = lam("#a8763a", "#1a0e02");
+  const kb = ball(0.13, brass, 0, 0.14, 0, 14); kb.scale.set(1, 0.8, 1); kettle.add(kb);
+  const ks = cyl(0.016, 0.03, 0.2, brass, 0.13, 0.18, 0, 8); ks.rotation.z = -1.0; kettle.add(ks);
+  const kh = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.012, 6, 16, Math.PI), lam("#3a2a1a"));
+  kh.position.y = 0.22; kettle.add(kh);
+  kettle.position.set(1.05, 0.52, -0.3);
+  g.add(kettle);
+  g.add(cyl(0.1, 0.12, 0.06, lam("#3a3430"), 1.05, 0.55, -0.3, 10));
+  // Chén trà: chén trước mặt người ngồi có nước trà (mặt nước dâng lên khi rót).
+  const cups = [[0.4, -0.25], [0.85, 0.22], [0.35, 0.28]].map(([x, z]) => {
+    const c = cyl(0.05, 0.035, 0.07, lam("#f2ece0"), x, 0.56, z, 12);
+    g.add(c);
+    return c;
+  });
+  const tea = cyl(0.044, 0.044, 0.006, new THREE.MeshLambertMaterial({ color: "#c58a2e", emissive: "#2a1500" }), 0.4, 0.53, -0.25, 12);
+  tea.visible = false;
+  g.add(tea);
   g.userData.teapot = new THREE.Vector3(0.6, 0.96, 0);
+  g.userData.tea = { pot, lid, spout, kettle, cups, liquid: tea };
   return g;
 }
 

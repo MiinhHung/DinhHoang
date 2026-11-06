@@ -1434,6 +1434,80 @@ export async function createWorld(container, hooks = {}) {
     { x0: TEA.x + 2.2, x1: TEA.x + 2.5, z0: TEA.z - 2, z1: TEA.z + 2 });
   [[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(([sx, sz]) => circles.push({ x: TEA.x + sx * 2.2, z: TEA.z + sz * 1.8, r: 0.2 }));
   circles.push({ x: TEA.x + 0.6, z: TEA.z, r: 0.55 });
+  // ---------- Pha trà: lá trà rơi vào ấm, rót nước sôi, đợi ngấm, rót trà ra chén ----------
+  const TS = teaHouse.userData.tea;
+  TS.kettle.rotation.y = Math.PI;
+  TS.pot.rotation.order = "YXZ";
+  const kettleHome = TS.kettle.position.clone(), potHome = TS.pot.position.clone();
+  const brew = { lid: 0, kettle: 0, pot: 0, fill: 0, lidW: 0, kettleW: 0, potW: 0, fillW: 0, leaves: 0, color: new THREE.Color("#c58a2e") };
+  const mkStream = (color, op) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.015, 1, 6).translate(0, -0.5, 0),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, depthWrite: false }));
+    m.visible = false; m.renderOrder = 3; scene.add(m); return m;
+  };
+  const waterStream = mkStream(0xe6f6ff, 0.55), teaStream = mkStream(0xc58a2e, 0.85);
+  // Lá trà khô rơi từ tay xuống miệng ấm.
+  const NL = 36, leafArr = new Float32Array(NL * 3), leafV = new Float32Array(NL), leafGeo = new THREE.BufferGeometry();
+  leafGeo.setAttribute("position", new THREE.BufferAttribute(leafArr, 3));
+  const leafPts = new THREE.Points(leafGeo, new THREE.PointsMaterial({ color: 0x4b5a24, size: 0.035, depthWrite: false }));
+  leafPts.visible = false;
+  scene.add(leafPts);
+  const tmpA = V(), tmpB = V(), DOWN = V(0, -1, 0);
+  // Đặt dòng chảy từ điểm a xuống điểm b.
+  const aimStream = (m, a, b) => {
+    m.position.copy(a);
+    const d = tmpB.copy(b).sub(a), L = d.length();
+    m.scale.set(1, Math.max(0.01, L), 1);
+    m.quaternion.setFromUnitVectors(DOWN, d.normalize());
+  };
+  const potMouth = () => TS.lid.parent.localToWorld(tmpA.set(0, 0.3, 0)).clone();
+  function teaBrew(dt) {
+    const k = 1 - Math.exp(-dt * 5);
+    brew.lidW += (brew.lid - brew.lidW) * k;
+    brew.kettleW += (brew.kettle - brew.kettleW) * k;
+    brew.potW += (brew.pot - brew.potW) * k;
+    brew.fillW += (brew.fill - brew.fillW) * (1 - Math.exp(-dt * 1.2));
+    // Nắp ấm nhấc lên, dịch sang bên.
+    TS.lid.position.set(-0.12 * brew.lidW, 0.31 + 0.12 * brew.lidW, 0.1 * brew.lidW);
+    TS.lid.rotation.z = 0.5 * brew.lidW;
+    // Ấm đun: nhấc lên, đưa tới trên ấm trà, nghiêng vòi xuống.
+    const kw = brew.kettleW;
+    TS.kettle.position.set(mix(kettleHome.x, 0.86, kw), kettleHome.y + 0.42 * kw, mix(kettleHome.z, -0.04, kw));
+    TS.kettle.rotation.set(0, Math.PI, -0.75 * kw);
+    // Ấm trà: nhấc lên, quay vòi về phía chén trước mặt, nghiêng rót.
+    const pw = brew.potW;
+    TS.pot.position.set(mix(potHome.x, 0.56, pw), potHome.y + 0.16 * pw, mix(potHome.z, -0.08, pw));
+    TS.pot.rotation.set(0, 2.24 * Math.min(1, pw * 1.6), -0.8 * pw);
+    teaHouse.updateMatrixWorld(true);
+    // Dòng nước sôi / nước trà khi đã nghiêng đủ.
+    waterStream.visible = brew.kettle > 0.5 && kw > 0.85;
+    if (waterStream.visible) aimStream(waterStream, TS.kettle.children[1].localToWorld(tmpA.set(0, 0.1, 0)).clone(), potMouth());
+    teaStream.visible = brew.pot > 0.5 && pw > 0.85;
+    if (teaStream.visible) {
+      const c = TS.liquid.position, cupTop = teaHouse.localToWorld(tmpA.set(c.x, 0.58, c.z)).clone();
+      aimStream(teaStream, TS.spout.localToWorld(V(0, 0.1, 0)), cupTop);
+      brew.fill = 1;
+    }
+    TS.liquid.visible = brew.fillW > 0.02 && act.sipW < 0.3;
+    TS.cups[0].visible = act.sipW < 0.3;
+    TS.liquid.position.y = 0.53 + 0.055 * brew.fillW;
+    // Lá trà rơi.
+    if (brew.leaves > 0) {
+      brew.leaves -= dt;
+      const m = potMouth();
+      for (let i = 0; i < NL; i++) {
+        const j = i * 3;
+        leafV[i] += dt * 4.5;
+        leafArr[j + 1] -= leafV[i] * dt;
+        if (leafArr[j + 1] < m.y) {
+          if (brew.leaves > 0.4) { leafArr[j] = m.x + (Math.random() - 0.5) * 0.06; leafArr[j + 1] = m.y + 0.25 + Math.random() * 0.2; leafArr[j + 2] = m.z + (Math.random() - 0.5) * 0.06; leafV[i] = Math.random(); }
+          else leafArr[j + 1] = -999;
+        }
+      }
+      leafGeo.attributes.position.needsUpdate = true;
+      leafPts.visible = brew.leaves > 0;
+    }
+  }
   const teaLabel = makeLabel("Trà Đình Định Tâm");
   teaLabel.position.set(PROP["tra-dinh"].x, 5.8, PROP["tra-dinh"].z);
   scene.add(teaLabel);
@@ -1738,7 +1812,7 @@ export async function createWorld(container, hooks = {}) {
     act.pourW += (act.pour - act.pourW) * ka;
     act.sipW += (act.sip - act.sipW) * ka;
     if (act.breath != null) act.breathV += (act.breath - act.breathV) * (1 - Math.exp(-dt * act.breathRate));
-    player.cup.visible = !!(seat && seat.zone === "tra-dinh") || act.sipW > 0.05;
+    player.cup.visible = act.sipW > 0.05;
     const T = performance.now() / 1000;
     poseAvatar(player, {
       speed: speedK, phase: walkPhase, sit: sitW * sitW * (3 - 2 * sitW), seat: (st?.h ?? 0.42), cross: st?.cross ? 1 : 0,
@@ -1895,6 +1969,7 @@ export async function createWorld(container, hooks = {}) {
     bagua.userData.ring.material.opacity = 0.2 + spinBoost * 0.6 + (zone === "boc-dich" ? 0.15 : 0);
     banners.forEach(b => b.userData.wave(t));
     waterMats.update(dt);
+    teaBrew(dt);
     updateFestival(dt, t);
     koi(t);
     cranes(t);
@@ -2281,7 +2356,22 @@ export async function createWorld(container, hooks = {}) {
     stand() { standUp(); },
     seated() { return seat?.zone || null; },
     // Động tác khi ngồi trà: "pour" rót, "sip" nâng chén uống, "in"/"hold"/"out" hít – giữ – thở (ms: độ dài nhịp), "rest".
-    tea(kind, ms = 1000) {
+    tea(kind, ms = 1000, opt = {}) {
+      // Các bước pha: "leaves" cho trà vào ấm (opt.color: màu nước trà), "water" rót nước sôi, "steep" đậy nắp đợi ngấm,
+      // "serve" rót trà ra chén, "reset" dọn lại bàn trà.
+      if (kind === "leaves") {
+        brew.lid = 1; brew.leaves = 1.6; brew.fill = 0; brew.fillW = 0;
+        if (opt.color) { brew.color.set(opt.color); teaStream.material.color.set(opt.color); TS.liquid.material.color.set(opt.color); }
+        for (let i = 0; i < NL; i++) { leafArr[i * 3 + 1] = -999; leafV[i] = 0; }
+      }
+      if (kind === "water") brew.kettle = 1;
+      if (kind === "water-stop" || kind === "steep") brew.kettle = 0;
+      if (kind === "steep") brew.lid = 0;
+      if (kind === "serve") { brew.pot = 1; brew.lid = 0; }
+      if (kind === "sip" || kind === "rest" || kind === "reset") brew.pot = 0;
+      if (kind === "reset") { brew.fill = 0; brew.lid = 0; brew.kettle = 0; }
+      if (kind === "water" || kind === "serve" || kind === "leaves") kind = "pour";
+      if (kind === "water-stop" || kind === "steep") kind = "rest";
       act.pour = kind === "pour" ? 1 : 0;
       act.sip = kind === "sip" ? 1 : 0;
       if (kind === "in" || kind === "hold" || kind === "out") {
