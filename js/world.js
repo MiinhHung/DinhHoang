@@ -435,66 +435,168 @@ function makeLabel(text) {
 
 // Nhân vật có khớp: hông, đùi, gối, vai, khuỷu, cổ. poseAvatar() đặt tư thế mỗi khung hình (đi, đứng thở,
 // ngồi ghế, ngồi xếp bằng, rót trà, nâng chén, hít thở, vái).
+// Trang phục đạo bào: áo dài cổ chéo viền màu, vạt áo xếp nếp, tay áo rộng có viền, đai lưng thắt nút treo ngọc bội;
+// vải có vân dệt (không bóng nhựa). Mặt: mắt có lòng trắng và ánh sáng, lông mày, miệng, má hồng. Tóc mái, tóc mai, búi cài trâm.
+let fabricTex = null;
+function fabricTexture() {
+  if (fabricTex) return fabricTex;
+  fabricTex = canvasTex(128, 128, (g, w, h) => {
+    g.fillStyle = "#e9e9e9"; g.fillRect(0, 0, w, h);
+    // Sợi dọc, sợi ngang đan nhau.
+    for (let y = 0; y < h; y += 2) { g.fillStyle = `rgba(255,255,255,${0.25 + Math.random() * 0.2})`; g.fillRect(0, y, w, 1); }
+    for (let x = 0; x < w; x += 2) { g.fillStyle = `rgba(0,0,0,${0.04 + Math.random() * 0.05})`; g.fillRect(x, 0, 1, h); }
+    for (let i = 0; i < 260; i++) { g.fillStyle = `rgba(0,0,0,${Math.random() * 0.06})`; g.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 3, 1); }
+  });
+  fabricTex.wrapS = fabricTex.wrapT = THREE.RepeatWrapping;
+  fabricTex.repeat.set(3, 3);
+  return fabricTex;
+}
+const fabricMats = new Map();
+const fabric = color => {
+  if (!fabricMats.has(color)) fabricMats.set(color, new THREE.MeshLambertMaterial({ color, map: fabricTexture() }));
+  return fabricMats.get(color);
+};
+// Màu viền áo theo màu áo: sẫm hơn cho áo sáng, sáng hơn cho áo sẫm.
+const trimOf = color => {
+  const c = new THREE.Color(color), hsl = {};
+  c.getHSL(hsl);
+  // Áo sáng viền sẫm (đen ánh màu áo), áo sẫm viền kem vàng — như viền đạo bào.
+  return hsl.l > 0.58 ? "#" + new THREE.Color().setHSL(hsl.h, Math.min(0.5, hsl.s), 0.2).getHexString() : "#efe0b8";
+};
+// Vạt áo dưới: hình nón cụt mở, mép dưới gợn nếp gấp vải.
+const fold = (a, t) => 1 + t * (0.055 * Math.sin(a * 9) + 0.03 * Math.sin(a * 5 + 1.3));
+function skirtGeo() {
+  const geo = new THREE.CylinderGeometry(0.33, 0.5, 0.48, 36, 6, true);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i), k = fold(Math.atan2(z, x), (0.24 - y) / 0.48);
+    p.setXYZ(i, x * k, y, z * k);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+// Viền gấu áo uốn theo đúng nếp vạt áo.
+function hemGeo() {
+  const geo = new THREE.CylinderGeometry(0.497, 0.5, 0.055, 36, 1, true);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), k = fold(Math.atan2(z, x), 1) * 1.008; p.setXYZ(i, x * k, p.getY(i), z * k); }
+  geo.computeVertexNormals();
+  return geo;
+}
+let hemGeoCache = null;
+let skirtGeoCache = null;
 function makeAvatar(color, name, tex) {
   const group = new THREE.Group();
   const body = new THREE.Group();
   group.add(body);
-  const robe = lam(color), skin = lam("#f1c9a0"), dark = lam("#1d1612"), pant = lam("#3a3430"), shoe = lam("#2a2420");
-  const robeMeshes = [];
-  const R = m => (robeMeshes.push(m), m);
+  const robe = fabric(color), trim = fabric(trimOf(color)), inner = fabric("#f4efe4");
+  const skin = lam("#f3cfae"), hairM = lam("#1a1310"), pant = fabric("#3a3430"), shoe = lam("#221c18"), sole = lam("#e8e0d0"), gold = lam("#e2b04a", "#2a1a00");
+  const robeMeshes = [], trimMeshes = [];
+  const R = m => (robeMeshes.push(m), m), T = m => (trimMeshes.push(m), m);
   // Hông (gốc của thân trên và hai chân).
   const hips = new THREE.Group();
   hips.position.y = 0.62;
   body.add(hips);
-  const skirt = R(cyl(0.34, 0.48, 0.46, robe, 0, -0.23, 0, 14));
   const skirtPivot = new THREE.Group();
+  const skirt = R(new THREE.Mesh(skirtGeoCache ||= skirtGeo(), robe));
+  skirt.material.side = THREE.DoubleSide;
+  skirt.position.y = -0.24;
   skirtPivot.add(skirt);
+  // Viền gấu áo.
+  const hem = T(new THREE.Mesh(hemGeoCache ||= hemGeo(), trim));
+  hem.material.side = THREE.DoubleSide;
+  hem.position.y = -0.455;
+  skirtPivot.add(hem);
   hips.add(skirtPivot);
-  hips.add(R(cyl(0.3, 0.35, 0.5, robe, 0, 0.25, 0, 14)));
-  hips.add(cyl(0.32, 0.32, 0.1, lam("#e7b75a"), 0, 0.5, 0, 14));
+  // Thân áo: eo nhỏ, ngực đầy hơn (tiện quanh trục).
+  const torsoGeo = new THREE.LatheGeometry([[0.001, 0], [0.31, 0], [0.29, 0.12], [0.27, 0.28], [0.29, 0.42], [0.25, 0.52], [0.13, 0.58], [0.001, 0.58]].map(([x, y]) => new THREE.Vector2(x, y)), 28);
   const legs = [-1, 1].map(side => {
     const thigh = new THREE.Group();
     thigh.position.set(side * 0.13, 0, 0);
     thigh.rotation.order = "YXZ";
-    thigh.add(cyl(0.085, 0.095, 0.33, pant, 0, -0.165, 0, 8));
+    thigh.add(cyl(0.085, 0.095, 0.33, pant, 0, -0.165, 0, 10));
     const knee = new THREE.Group();
     knee.position.y = -0.33;
-    knee.add(cyl(0.07, 0.085, 0.27, pant, 0, -0.135, 0, 8));
-    knee.add(box(0.13, 0.08, 0.25, shoe, 0, -0.29, 0.05));
+    knee.add(cyl(0.07, 0.085, 0.27, pant, 0, -0.135, 0, 10));
+    const sh = new THREE.Mesh(new THREE.CapsuleGeometry(0.065, 0.14, 4, 10), shoe);
+    sh.rotation.x = Math.PI / 2; sh.position.set(0, -0.29, 0.05);
+    knee.add(sh);
+    knee.add(box(0.13, 0.025, 0.27, sole, 0, -0.345, 0.05));
     thigh.add(knee);
     hips.add(thigh);
     return { side, thigh, knee };
   });
   // Thân trên, cổ và đầu.
   const upper = new THREE.Group();
-  upper.position.y = 0.53;
+  upper.position.y = 0.0;
   hips.add(upper);
-  upper.add(R(cyl(0.24, 0.3, 0.5, robe, 0, 0.25, 0, 14)));
+  const torso = R(new THREE.Mesh(torsoGeo, robe));
+  upper.add(torso);
+  // Cổ chéo (giao lĩnh): áo trong trắng lộ ở cổ, hai vạt viền màu bắt chéo phải đè trái.
+  upper.add(cyl(0.12, 0.15, 0.1, inner, 0, 0.6, 0, 16));
+  // Vạt phải ngắn (nằm dưới), vạt trái dài chéo từ cổ trái xuống eo phải (đè lên).
+  [[0.05, 0.49, 0.21, -0.5, 0.272], [0.03, 0.35, 0.53, 0.51, 0.288]].forEach(([x, y, L, rz, z]) => {
+    const band = T(box(0.075, L, 0.025, trim, x, y, z));
+    band.rotation.set(-0.1, 0, rz);
+    upper.add(band);
+  });
+  // Đai lưng bản to, nút thắt trước bụng, hai dải buông, ngọc bội xanh treo dây đỏ.
+  upper.add(T(cyl(0.315, 0.32, 0.11, trim, 0, 0.05, 0, 24)));
+  upper.add(cyl(0.322, 0.322, 0.025, gold, 0, 0.1, 0, 24), cyl(0.322, 0.322, 0.025, gold, 0, 0.0, 0, 24));
+  const knot = ball(0.05, trim, 0.06, 0.05, 0.31, 10); knot.scale.set(1.4, 1, 0.7); upper.add(T(knot));
+  [-1, 1].forEach(s => { const tail = T(box(0.06, 0.32, 0.015, trim, 0.06 + s * 0.035, -0.12, 0.315)); tail.rotation.z = s * 0.12; upper.add(tail); });
+  upper.add(cyl(0.006, 0.006, 0.22, lam("#b3242a"), -0.12, -0.06, 0.3, 4));
+  const jade = cyl(0.045, 0.045, 0.018, lam("#5fae86", "#0a2a1a"), -0.12, -0.19, 0.3, 14); jade.rotation.x = Math.PI / 2; upper.add(jade);
+  // Đầu.
   const head = new THREE.Group();
-  head.position.y = 0.52;
+  head.position.y = 0.62;
   upper.add(head);
-  head.add(ball(0.24, skin, 0, 0.2, 0));
-  const hair = ball(0.255, dark, 0, 0.25, -0.03);
-  hair.scale.set(1, 0.85, 1);
-  head.add(hair);
-  head.add(ball(0.11, dark, 0, 0.46, -0.08, 8));
-  [-1, 1].forEach(s => head.add(ball(0.03, dark, s * 0.08, 0.22, 0.215, 6)));
-  // Tay: vai → ống tay trên → khuỷu → ống tay áo rộng → bàn tay.
+  head.add(cyl(0.075, 0.085, 0.1, skin, 0, 0.0, 0, 10));
+  const face = ball(0.235, skin, 0, 0.2, 0, 24); face.scale.set(1, 1.04, 0.98); head.add(face);
+  [-1, 1].forEach(s => { const ear = ball(0.045, skin, s * 0.225, 0.19, -0.01, 8); ear.scale.set(0.6, 1, 0.8); head.add(ear); });
+  // Mắt: lòng trắng, tròng đen, chấm sáng; lông mày; má hồng; miệng.
+  const white = lam("#ffffff"), iris = lam("#2a1a14"), blushM = new THREE.MeshBasicMaterial({ color: "#f29a9a", transparent: true, opacity: 0.35, depthWrite: false });
+  [-1, 1].forEach(s => {
+    const e = ball(0.042, white, s * 0.085, 0.205, 0.198, 12); e.scale.set(1, 1.15, 0.45); head.add(e);
+    const ir = ball(0.03, iris, s * 0.085, 0.2, 0.214, 12); ir.scale.set(1, 1.2, 0.45); head.add(ir);
+    head.add(ball(0.009, white, s * 0.085 + 0.01, 0.215, 0.228, 6));
+    const brow = box(0.07, 0.014, 0.01, hairM, s * 0.088, 0.27, 0.205); brow.rotation.z = -s * 0.12; head.add(brow);
+    const bl = mesh(new THREE.CircleGeometry(0.035, 12), blushM, s * 0.135, 0.145, 0.196); bl.rotation.y = s * 0.55; head.add(bl);
+  });
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.006, 5, 12, Math.PI), lam("#a8423a"));
+  mouth.position.set(0, 0.125, 0.222); mouth.rotation.z = Math.PI; head.add(mouth);
+  head.add(ball(0.014, skin, 0, 0.17, 0.235, 8));
+  // Tóc: phủ sau gáy và đỉnh đầu, mái lượn hai bên trán, tóc mai rủ, búi tóc cài trâm vàng.
+  const back = ball(0.252, hairM, 0, 0.235, -0.035, 22); back.scale.set(1.02, 1.0, 1.0); head.add(back);
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.255, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.42), hairM);
+  cap.position.set(0, 0.22, 0.012); cap.rotation.x = -0.25; head.add(cap);
+  [-1, 1].forEach(s => {
+    const bang = ball(0.11, hairM, s * 0.1, 0.36, 0.14, 12); bang.scale.set(1.15, 0.55, 0.6); bang.rotation.z = s * 0.5; head.add(bang);
+    const lock = new THREE.Mesh(new THREE.CapsuleGeometry(0.03, 0.16, 4, 8), hairM); lock.position.set(s * 0.215, 0.12, 0.06); lock.rotation.z = s * 0.08; head.add(lock);
+  });
+  const bun = ball(0.1, hairM, 0, 0.47, -0.07, 14); bun.scale.set(1, 0.85, 1); head.add(bun);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.016, 6, 16), gold); ring.position.set(0, 0.43, -0.07); ring.rotation.x = Math.PI / 2; head.add(ring);
+  const pin = cyl(0.008, 0.008, 0.34, gold, 0, 0.48, -0.07, 6); pin.rotation.z = Math.PI / 2 - 0.25; head.add(pin);
+  head.add(ball(0.022, lam("#c0281f"), 0.165, 0.52, -0.07, 8));
+  // Tay: vai tròn → ống tay trên → khuỷu → ống tay áo loe rộng có viền → bàn tay.
   const arms = [-1, 1].map(side => {
     const shoulder = new THREE.Group();
-    shoulder.position.set(side * 0.3, 0.42, 0.02);
-    shoulder.add(R(cyl(0.085, 0.12, 0.32, robe, 0, -0.16, 0, 8)));
+    shoulder.position.set(side * 0.29, 0.45, 0.0);
+    shoulder.add(R(ball(0.088, robe, 0, -0.01, 0, 12)));
+    shoulder.add(R(cyl(0.09, 0.115, 0.32, robe, 0, -0.16, 0, 12)));
     const elbow = new THREE.Group();
     elbow.position.y = -0.31;
-    elbow.add(R(cyl(0.11, 0.17, 0.3, robe, 0, -0.15, 0, 8)));
-    const hand = ball(0.065, skin, 0, -0.33, 0.01, 8);
+    elbow.add(R(cyl(0.11, 0.18, 0.3, robe, 0, -0.15, 0, 14)));
+    elbow.add(T(cyl(0.182, 0.185, 0.05, trim, 0, -0.29, 0, 14)));
+    const hand = ball(0.06, skin, 0, -0.34, 0.01, 10);
+    hand.scale.set(0.9, 1.15, 0.8);
     elbow.add(hand);
     shoulder.add(elbow);
     upper.add(shoulder);
     return { side, shoulder, elbow, hand };
   });
-  // Chén trà cầm tay phải (chỉ hiện khi ngồi uống trà).
-  const cup = cyl(0.055, 0.04, 0.08, lam("#f2ece0"), 0, -0.36, 0.08, 10);
+  // Chén trà cầm tay phải (chỉ hiện khi nâng lên uống).
+  const cup = cyl(0.055, 0.04, 0.08, lam("#f2ece0"), 0, -0.38, 0.08, 12);
   cup.visible = false;
   arms[1].elbow.add(cup);
   const sh = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.3), new THREE.MeshBasicMaterial({ map: tex.shadow, transparent: true, depthWrite: false }));
@@ -514,8 +616,9 @@ function makeAvatar(color, name, tex) {
       this.name = n;
     },
     setColor(c) {
-      const m = lam(c);
+      const m = fabric(c), t = fabric(trimOf(c));
       robeMeshes.forEach(x => (x.material = m));
+      trimMeshes.forEach(x => (x.material = t));
     }
   };
 }
