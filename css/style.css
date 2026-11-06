@@ -382,3 +382,7 @@ body.cine #hud, body.cine .zone-banner, body.cine .toast, body.cine .hint { opac
 .steep-cup::after { content: ""; position: absolute; left: 4px; right: 4px; top: 4px; bottom: 4px; border-radius: 0 0 24px 24px;
   background: color-mix(in srgb, var(--tea) calc(var(--p) * 100%), #e8f3f6); }
 .steep.ready .steep-ring b, .steep.ready .steep-ring span { display: none; }
+
+/* Khung tối nhẹ quanh viền màn hình cho cảnh có chiều sâu (không chặn chuột). */
+#scene::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: radial-gradient(ellipse 80% 75% at 50% 48%, transparent 62%, rgba(14, 8, 24, .32) 100%); }

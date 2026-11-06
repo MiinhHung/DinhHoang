@@ -811,6 +811,9 @@ export async function createWorld(container, hooks = {}) {
   renderer.setSize(W(), H());
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
+  // Bóng đổ mềm từ nắng (ban đêm là trăng); tắt được khi máy yếu (xem "tự giảm chất lượng" ở vòng lặp).
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
@@ -824,8 +827,23 @@ export async function createWorld(container, hooks = {}) {
   const amb = new THREE.AmbientLight(0x8a7aa8, 0.55);
   scene.add(amb);
   const moonLight = new THREE.DirectionalLight(0xffe2c0, 1.5);
-  moonLight.position.set(-30, 50, 20);
-  scene.add(moonLight);
+  // Nắng chiếu chếch từ đông nam, trên cao: mặt tiền các điện (nhìn về nam) sáng, bóng đổ về tây bắc.
+  const SUN_DIR = V(0.5, 0.78, 0.38).normalize();
+  moonLight.position.copy(SUN_DIR).multiplyScalar(120);
+  moonLight.castShadow = true;
+  moonLight.shadow.mapSize.set(2048, 2048);
+  Object.assign(moonLight.shadow.camera, { left: -34, right: 34, top: 34, bottom: -34, near: 1, far: 260 });
+  moonLight.shadow.bias = -0.0005;
+  moonLight.shadow.normalBias = 0.05;
+  moonLight.shadow.radius = 3;
+  scene.add(moonLight, moonLight.target);
+  // Vùng bóng đổ đi theo điểm nhìn, bước theo đúng cỡ một điểm ảnh bóng để bóng không rung khi di chuyển.
+  const SH_STEP = 68 / 2048;
+  const followShadow = c => {
+    const x = Math.round(c.x / SH_STEP) * SH_STEP, z = Math.round(c.z / SH_STEP) * SH_STEP;
+    moonLight.target.position.set(x, c.y, z);
+    moonLight.position.set(x, c.y, z).addScaledVector(SUN_DIR, 120);
+  };
 
   const sky = skyDome();
   scene.add(sky);
@@ -851,7 +869,7 @@ export async function createWorld(container, hooks = {}) {
   // Ngày và đêm theo giờ trên máy người chơi: nội suy giữa các mốc trong ngày.
   const NIGHT = { top: "#070818", mid: "#1c1c48", low: "#5a3a5a", fog: "#1a1a36", hs: "#7f8cd8", hg: "#2a2030", hi: 0.75, ai: 0.28, dc: "#b8c8ff", di: 0.75, star: 1, sun: 0, exp: 1.05 };
   const DAWN = { top: "#27346a", mid: "#9a7aa8", low: "#f6a878", fog: "#6e5c7e", hs: "#ffd0c0", hg: "#5a4030", hi: 1.6, ai: 0.6, dc: "#ffc49a", di: 1.6, star: 0.25, sun: 0.6, exp: 1.05 };
-  const DAY = { top: "#3d78c4", mid: "#a3c8ea", low: "#f4e6c8", fog: "#b4c4d4", hs: "#e6eeff", hg: "#6e5c40", hi: 1.5, ai: 0.7, dc: "#fff4dc", di: 2.3, star: 0, sun: 1, exp: 0.95 };
+  const DAY = { top: "#3d78c4", mid: "#a3c8ea", low: "#f4e6c8", fog: "#b4c4d4", hs: "#e6eeff", hg: "#6e5c40", hi: 1.35, ai: 0.55, dc: "#fff1d6", di: 2.75, star: 0, sun: 1, exp: 0.95 };
   const DUSK = { top: "#232458", mid: "#b0607a", low: "#ffa25a", fog: "#5e405e", hs: "#ffc2a8", hg: "#4a3426", hi: 1.6, ai: 0.55, dc: "#ffb27a", di: 1.6, star: 0.35, sun: 0.5, exp: 1.05 };
   const SKY_KEYS = [[0, NIGHT], [4.8, NIGHT], [6, DAWN], [8, DAY], [16.3, DAY], [18, DUSK], [19.4, NIGHT], [24, NIGHT]];
   const ca = new THREE.Color(), cb = new THREE.Color();
@@ -2373,11 +2391,40 @@ export async function createWorld(container, hooks = {}) {
   });
   night.setNight(nightLevel);
 
+  // ---------- Đổ bóng: vật đặc đổ bóng và nhận bóng; nước, mây, sương, hạt, nhãn chữ thì không ----------
+  scene.traverse(o => {
+    if (!o.isMesh || o.isSprite) return;
+    const m = Array.isArray(o.material) ? o.material[0] : o.material;
+    if (!m || m.transparent || m.isShaderMaterial || m.isMeshBasicMaterial || o.userData.noShadow) return;
+    o.receiveShadow = true;
+    // Cỏ (rất nhiều ngọn) chỉ nhận bóng cho nhẹ.
+    o.castShadow = !(o.isInstancedMesh && o.count > 1500);
+  });
+  terrain.receiveShadow = true;
+  // Nhân vật (dựng sau khi vào đình) và người chơi khác: đổ bóng.
+  const castAll = g => g.traverse(o => { if (o.isMesh && !o.material.transparent && !o.material.isMeshBasicMaterial) { o.castShadow = true; o.receiveShadow = true; } });
+
   // ---------- Vòng lặp ----------
   const clock = new THREE.Clock();
+  // Tự giảm chất lượng: 4 giây đầu sau khi vào đình, nếu trung bình dưới 26 khung hình/giây thì tắt bóng đổ
+  // và hạ độ phân giải để chơi mượt trên máy yếu.
+  let perf = { t: 0, n: 0, done: false };
   renderer.setAnimationLoop(() => {
     const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
     if (player && entered) updatePlayer(dt);
+    if (entered && !perf.done && !intro) {
+      perf.t += dt; perf.n++;
+      if (perf.t > 4) {
+        perf.done = true;
+        if (perf.n / perf.t < 26) {
+          moonLight.castShadow = false;
+          renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1));
+          renderer.setSize(W(), H());
+          console.info("Máy hơi yếu: tắt bóng đổ, hạ độ phân giải cho mượt.");
+        }
+      }
+    }
+    followShadow(player && entered ? player.group.position : look);
     updateCamera(dt, t);
     updateAmbient(dt, t);
     updateRemotes(dt);
@@ -2398,6 +2445,7 @@ export async function createWorld(container, hooks = {}) {
   return {
     enter({ name, color }) {
       player = makeAvatar(color, name, tex);
+      castAll(player.group);
       scene.add(player.group);
       pos.copy(SPAWN);
       yaw = wantYaw = Math.PI;
@@ -2511,6 +2559,7 @@ export async function createWorld(container, hooks = {}) {
         let r = remotes.get(id);
         if (!r) {
           const av = makeAvatar(d.color || "#e7b75a", (d.name || "Thí chủ").slice(0, 20), tex);
+          castAll(av.group);
           const x = Number.isFinite(d.x) ? d.x : SPAWN.x, z = Number.isFinite(d.z) ? d.z : SPAWN.z;
           r = { av, x, z, tx: x, tz: z, ry: d.ry || 0, phase: 0, seen: 0, color: d.color };
           scene.add(av.group);
