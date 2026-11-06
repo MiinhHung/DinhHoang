@@ -1310,7 +1310,9 @@ export async function createWorld(container, hooks = {}) {
   // Ghế đá ngắm cảnh ở những góc yên tĩnh: bấm vào ghế để đi tới ngồi. [x, z, hướng nhìn khi ngồi]
   // SEATS[k]: chỗ ngồi (mặt ghế cao h), front: chỗ đứng trước ghế, cam: góc camera so với hướng ngồi.
   const SEATS = {};
-  const benchMesh = new THREE.MeshLambertMaterial({ vertexColors: true }), benchGeo = stoneBenchGeometry();
+  // Ghế dài 3.4 m: mỗi mặt ba chỗ ngồi (cho nhiều người cùng ngồi khi chơi online).
+  const BENCH_LEN = 3.4, SLOTS = [-1.05, 0, 1.05];
+  const benchMesh = new THREE.MeshLambertMaterial({ vertexColors: true }), benchGeo = stoneBenchGeometry(BENCH_LEN);
   // Còn trống đủ chỗ cho ghế (và chỗ đứng trước ghế)? Tránh điện, cây, bồn hoa, suối, hồ, đèn, bậc thang, điểm nghi lễ.
   const roomFor = (x, z, r) => walkable(x, z) &&
     !obstacles.some(b => x > b.x0 - r && x < b.x1 + r && z > b.z0 - r && z < b.z1 + r) &&
@@ -1318,10 +1320,13 @@ export async function createWorld(container, hooks = {}) {
     !STAIRS.some(st => Math.abs(x - st.x) < st.hw + 3 && z > Math.min(st.z0, st.z1) - 4 && z < Math.max(st.z0, st.z1) + 4) &&
     !Object.values(SPOT).some(sp => Math.hypot(x - sp.x, z - sp.z) < 3.2);
   const addBench = (x, z, yaw, check = true) => {
-    const fx = Math.sin(yaw), fz = Math.cos(yaw), ax = Math.cos(yaw), az = -Math.sin(yaw);
-    const front = V(x + fx * 0.95, 0, z + fz * 0.95);
-    if (check && !(roomFor(x, z, 1.1) && roomFor(x + ax * 0.9, z + az * 0.9, 0.7) && roomFor(x - ax * 0.9, z - az * 0.9, 0.7) && (roomFor(front.x, front.z, 0.8) || roomFor(x - fx * 0.95, z - fz * 0.95, 0.8))
-      && Math.abs(groundY(x, z) - groundY(front.x, front.z)) < 0.05)) return false;
+    const fx = Math.sin(yaw), fz = Math.cos(yaw), ax = Math.cos(yaw), az = -Math.sin(yaw), H = BENCH_LEN / 2;
+    if (check) {
+      for (let o = -H; o <= H + 0.01; o += H / 2) if (!roomFor(x + ax * o, z + az * o, 0.75)) return false;
+      const sideOK = sd => SLOTS.some(o => roomFor(x + ax * o + fx * 0.95 * sd, z + az * o + fz * 0.95 * sd, 0.6));
+      if (!sideOK(1) && !sideOK(-1)) return false;
+      if (Math.abs(groundY(x + ax * H, z + az * H) - groundY(x - ax * H, z - az * H)) > 0.05) return false;
+    }
     const b = new THREE.Mesh(benchGeo, benchMesh);
     const k = "ghe-" + Object.keys(SEATS).length;
     b.userData.zone = k;
@@ -1329,12 +1334,36 @@ export async function createWorld(container, hooks = {}) {
     b.rotation.y = yaw;
     scene.add(b);
     benches.push(b);
-    b.userData.blockers = [-0.5, 0.5].map(o => ({ x: x + ax * o, z: z + az * o, r: 0.42 }));
+    b.userData.blockers = [];
+    for (let o = -H + 0.3; o <= H - 0.29; o += (BENCH_LEN - 0.6) / 4) b.userData.blockers.push({ x: x + ax * o, z: z + az * o, r: 0.4 });
     circles.push(...b.userData.blockers);
-    SEATS[k] = { zone: k, x: x - fx * 0.04, z: z - fz * 0.04, yaw, h: 0.5, front, cam: Math.PI - 0.55 };
-    // Mặt sau của ghế (ghế không tựa, ngồi được cả hai phía): quay mặt ngược lại.
-    SEATS[k].back = { ...SEATS[k], x: x + fx * 0.04, z: z + fz * 0.04, yaw: yaw + Math.PI, front: V(x - fx * 0.95, 0, z - fz * 0.95) };
+    // Chỗ ngồi: ba chỗ mỗi mặt; mặt sau quay ngược lại (ghế không tựa).
+    const slots = [];
+    [1, -1].forEach(sd => SLOTS.forEach(o => slots.push({
+      zone: k, side: sd, x: x + ax * o - fx * 0.04 * sd, z: z + az * o - fz * 0.04 * sd, yaw: sd > 0 ? yaw : yaw + Math.PI, h: 0.5,
+      front: V(x + ax * o + fx * 0.95 * sd, 0, z + az * o + fz * 0.95 * sd), cam: Math.PI - 0.55
+    })));
+    SEATS[k] = { zone: k, x, z, yaw, len: BENCH_LEN, slots };
     return true;
+  };
+  // Chọn chỗ ngồi trên ghế k theo vị trí người chơi: mặt ghế phía người chơi đứng, chỗ gần nhất.
+  const pickSeat = k => {
+    const S = SEATS[k];
+    if (!S || !S.slots.length) return null;
+    const side = (pos.x - S.x) * Math.sin(S.yaw) + (pos.z - S.z) * Math.cos(S.yaw) >= 0 ? 1 : -1;
+    const d = s2 => Math.hypot(pos.x - s2.front.x, pos.z - s2.front.z);
+    const mine = S.slots.filter(s2 => s2.side === side);
+    return (mine.length ? mine : S.slots).reduce((a, b) => (d(b) < d(a) ? b : a));
+  };
+  // Ghế gần nhất trong tầm với (đứng sát ghế): trả về khoá ghế.
+  const benchNear = () => {
+    let best = null, bd = 1e9;
+    for (const k in SEATS) {
+      const S = SEATS[k], dx = pos.x - S.x, dz = pos.z - S.z;
+      const along = Math.abs(dx * Math.cos(S.yaw) - dz * Math.sin(S.yaw)), perp = Math.abs(dx * Math.sin(S.yaw) + dz * Math.cos(S.yaw));
+      if (along < S.len / 2 + 0.6 && perp < 1.7 && perp + along * 0.2 < bd) { bd = perp + along * 0.2; best = k; }
+    }
+    return best;
   };
   // Vòng ghế quanh cây đa, quay mặt vào gốc cây.
   {
@@ -1597,11 +1626,12 @@ export async function createWorld(container, hooks = {}) {
   // Thêm ?debug vào địa chỉ để xem vị trí nhân vật và thử tìm đường từ console (dùng khi kiểm thử).
   let debugView = null;
   if (new URLSearchParams(location.search).has("debug")) {
+    window.__bench = k => SEATS[k] && { x: SEATS[k].x, z: SEATS[k].z, yaw: SEATS[k].yaw, slots: SEATS[k].slots.map(q => [q.side, +q.front.x.toFixed(2), +q.front.z.toFixed(2)]) };
     window.__dbg = () => ({ seats: Object.keys(SEATS).length, seat: seat?.zone || null, sitW, pos: pos.toArray(), h: heightAt(pos.x, pos.z), target: target?.toArray(), route: route.length, paused, camYaw });
     window.__go = (x, z) => routeTo(V(x, 0, z));
-    window.__seatsReach = (i0 = 0, i1 = 999) => Object.values(SEATS).slice(i0, i1).flatMap(st => [st, st.back].filter(Boolean)).filter(st => { const c = findPath(SPAWN, st.front); return !c || Math.hypot(c[c.length - 1].x - st.front.x, c[c.length - 1].z - st.front.z) > 0.8; }).map(st => [st.zone, +st.x.toFixed(1), +st.z.toFixed(1)]);
+    window.__seatsReach = (i0 = 0, i1 = 999) => Object.values(SEATS).slice(i0, i1).flatMap(st => st.slots).filter(st => { const c = findPath(SPAWN, st.front); return !c || Math.hypot(c[c.length - 1].x - st.front.x, c[c.length - 1].z - st.front.z) > 0.8; }).map(st => [st.zone, +st.x.toFixed(1), +st.z.toFixed(1)]);
     // Giả lập bấm vào một điểm (điện, ghế đá…): đi tới rồi tự mở / ngồi.
-    window.__tap = (z, back) => { arriveZone = z; arriveSeat = SEATS[z] ? (back && SEATS[z].back) || SEATS[z] : null; routeTo(arriveSeat ? arriveSeat.front.clone() : SPOT[z].clone()); };
+    window.__tap = (z, back) => { arriveZone = z; arriveSeat = SEATS[z] ? SEATS[z].slots.find(s2 => s2.side === (back ? -1 : 1)) || SEATS[z].slots[0] : null; routeTo(arriveSeat ? arriveSeat.front.clone() : SPOT[z].clone()); };
     // Đặt camera cố định để chụp cảnh: __view([x, y, z], [lx, ly, lz]); __view(null) để trả lại.
     window.__view = (p, l) => { debugView = p ? [p, l] : null; };
   }
@@ -1674,7 +1704,7 @@ export async function createWorld(container, hooks = {}) {
     if (arriveZone && !target && sp < 0.4) {
       const z = arriveZone;
       arriveZone = null;
-      if (SEATS[z]) { const st = arriveSeat || SEATS[z]; if (Math.hypot(pos.x - st.front.x, pos.z - st.front.z) < 1.2) sitAt(st); }
+      if (SEATS[z]) { const st = arriveSeat || pickSeat(z); if (st && Math.hypot(pos.x - st.front.x, pos.z - st.front.z) < 1.2) sitAt(st); }
       else if (near === z) { if (FOCUS[z]) wantYaw = faceYaw(z); hooks.onArrive?.(z); }
     }
     // Ngồi xuống / đứng dậy: trượt từ chỗ đứng vào mặt ghế rồi hạ người (và ngược lại).
@@ -1720,6 +1750,8 @@ export async function createWorld(container, hooks = {}) {
     if (z !== zone) { zone = z; hooks.onZone?.(z); }
     let n = null;
     for (const k in SPOT) if (pos.distanceTo(SPOT[k]) < ACT_R[k]) n = k;
+    // Đứng sát ghế đá (chưa ngồi): hiện nút ngồi.
+    if (!n && !seat && !standing) n = benchNear();
     if (n !== near) { near = n; hooks.onNear?.(n); }
   }
 
@@ -2025,9 +2057,8 @@ export async function createWorld(container, hooks = {}) {
       const b = benches[k], st = SEATS[b.userData.zone];
       // Chỗ đứng trước ghế phải là ô trống thật sự (không lấy ô lân cận), nằm trong vùng đi tới được.
       const ok = q => { const c = cellOf(q.x, q.z); return c >= 0 && c < grid.length && !grid[c] && seen[c] && walkable(q.x, q.z); };
-      const f = ok(st.front), bk = ok(st.back.front);
-      if (!bk) st.back = null;
-      if (f || bk) { if (!f) { SEATS[b.userData.zone] = { ...st.back, back: null }; } continue; }
+      st.slots = st.slots.filter(s2 => ok(s2.front));
+      if (st.slots.length) continue;
       scene.remove(b);
       benches.splice(k, 1);
       delete SEATS[b.userData.zone];
@@ -2111,11 +2142,9 @@ export async function createWorld(container, hooks = {}) {
     let t = null;
     if (z && SEATS[z]) {
       // Ghế đá: đang ngồi chính ghế này thì đứng dậy, không thì đi tới trước ghế rồi ngồi.
-      const S0 = SEATS[z];
       if (seat && seat.zone === z) { standUp(); return; }
-      // Người chơi đang đứng phía nào của ghế thì ngồi quay mặt về phía đó.
-      const side = (pos.x - S0.x) * Math.sin(S0.yaw) + (pos.z - S0.z) * Math.cos(S0.yaw);
-      arriveSeat = side < 0 && S0.back ? S0.back : S0;
+      // Người chơi đang đứng phía nào của ghế thì ngồi quay mặt về phía đó, chỗ gần nhất.
+      arriveSeat = pickSeat(z);
       t = arriveSeat.front.clone();
     } else if (z) {
       // Đứng sẵn ở đó thì mở luôn, không cần đi.
@@ -2241,7 +2270,14 @@ export async function createWorld(container, hooks = {}) {
     setHour(h) { hourOverride = Number.isFinite(h) ? ((h % 24) + 24) % 24 : null; applySky(); },
     bow() { bowT = 0; },
     // Ngồi uống trà (bồ đoàn ở Trà Đình) / đứng dậy; isSeated: đang ngồi ở đâu (zone hoặc null).
-    sit(z) { if (z === "tra-dinh") sitAt(TEA_SEAT); else if (SEATS[z]) sitAt(SEATS[z]); },
+    // Ghế đá: đi tới trước chỗ ngồi gần nhất (phía người chơi đang đứng) rồi ngồi.
+    sit(z) {
+      if (z === "tra-dinh") return sitAt(TEA_SEAT);
+      const st = SEATS[z] && pickSeat(z);
+      if (!st) return;
+      arriveZone = z; arriveSeat = st;
+      if (Math.hypot(pos.x - st.front.x, pos.z - st.front.z) < 0.6) sitAt(st); else routeTo(st.front.clone());
+    },
     stand() { standUp(); },
     seated() { return seat?.zone || null; },
     // Động tác khi ngồi trà: "pour" rót, "sip" nâng chén uống, "in"/"hold"/"out" hít – giữ – thở (ms: độ dài nhịp), "rest".

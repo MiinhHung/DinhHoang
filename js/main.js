@@ -925,6 +925,8 @@ function onNear(z) {
   const b = $("#btn-act");
   if (seatedAt && seatedAt.startsWith("ghe") && entered && !sheetOpen()) { b.innerHTML = `Đứng dậy${isTouch ? "" : " <kbd>E</kbd>"}`; b.classList.remove("hidden"); return; }
   if (!z || !entered || sheetOpen()) { b.classList.add("hidden"); return; }
+  // Đứng sát ghế đá: nút ngồi nghỉ.
+  if (z.startsWith("ghe")) { b.innerHTML = `Ngồi nghỉ${isTouch ? "" : " <kbd>E</kbd>"}`; b.classList.remove("hidden"); return; }
   b.innerHTML = `${esc(ZONES[z].act)}${isTouch ? "" : " <kbd>E</kbd>"}`;
   b.classList.remove("hidden");
 }
@@ -997,7 +999,7 @@ function enter() {
 
 function setupHud() {
   // Đang ngồi ghế đá: nút (và phím E) để đứng dậy.
-  const actNow = () => { if (seatedAt?.startsWith("ghe")) world.stand(); else openRitual(near); };
+  const actNow = () => { if (seatedAt?.startsWith("ghe")) world.stand(); else if (near?.startsWith("ghe")) world.sit(near); else openRitual(near); };
   $("#btn-act").addEventListener("click", actNow);
   $("#merit").addEventListener("click", openLedger);
   $("#fest").addEventListener("click", () => goTo("ao-sen"));

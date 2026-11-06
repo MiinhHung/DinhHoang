@@ -1268,9 +1268,10 @@ export function makeFence(runs, { step = 1.3, h = 0.72, stone = "#ddd5c6", dark 
 }
 
 // Ghế đá ngắm cảnh (một hình khối gộp, màu theo đỉnh): hai chân trụ có gờ, mặt ghế dày bo cạnh, rêu ở chân.
-let benchGeo = null;
-export function stoneBenchGeometry() {
-  if (benchGeo) return benchGeo;
+// len: chiều dài mặt ghế (ghế dài có thêm chân giữa).
+const benchGeos = {};
+export function stoneBenchGeometry(len = 3.4) {
+  if (benchGeos[len]) return benchGeos[len];
   const parts = [];
   const add = (geo, color, x, y, z) => {
     geo.translate(x, y, z);
@@ -1279,14 +1280,17 @@ export function stoneBenchGeometry() {
     geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
     parts.push(geo.toNonIndexed());
   };
-  [-0.62, 0.62].forEach(lx => {
+  const legs = len > 2.4 ? [-len / 2 + 0.35, 0, len / 2 - 0.35] : [-len / 2 + 0.28, len / 2 - 0.28];
+  legs.forEach(lx => {
     add(new THREE.BoxGeometry(0.26, 0.34, 0.42), "#958d80", lx, 0.19, 0);
     add(new THREE.BoxGeometry(0.32, 0.06, 0.48), "#a69e90", lx, 0.03, 0);
     add(new THREE.BoxGeometry(0.32, 0.05, 0.5), "#b8b0a2", lx, 0.38, 0);
     add(new THREE.BoxGeometry(0.33, 0.04, 0.49), "#6f8a52", lx, 0.075, 0);
   });
-  add(new THREE.BoxGeometry(1.8, 0.07, 0.52), "#b8b0a2", 0, 0.44, 0);
-  add(new THREE.BoxGeometry(1.74, 0.04, 0.46), "#cbc3b5", 0, 0.495, 0);
+  add(new THREE.BoxGeometry(len, 0.07, 0.52), "#b8b0a2", 0, 0.44, 0);
+  add(new THREE.BoxGeometry(len - 0.06, 0.04, 0.46), "#cbc3b5", 0, 0.495, 0);
+  // Gờ viền chạy dưới mép mặt ghế.
+  [-1, 1].forEach(sz => add(new THREE.BoxGeometry(len - 0.1, 0.05, 0.04), "#a69e90", 0, 0.39, sz * 0.23));
   // Gộp tay: nối các mảng (cùng thuộc tính position, normal, uv, color).
   const keys = ["position", "normal", "color"], out = new THREE.BufferGeometry();
   keys.forEach(k => {
@@ -1295,5 +1299,5 @@ export function stoneBenchGeometry() {
     parts.forEach(p => { arr.set(p.attributes[k].array, off); off += p.attributes[k].array.length; });
     out.setAttribute(k, new THREE.BufferAttribute(arr, 3));
   });
-  return (benchGeo = out);
+  return (benchGeos[len] = out);
 }
