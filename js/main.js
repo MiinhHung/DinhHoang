@@ -111,6 +111,9 @@ const sheet = $("#sheet"), sheetBody = $("#sheet-body");
 const sheetOpen = () => !sheet.classList.contains("hidden") && !sheet.classList.contains("enter");
 function openSheet(html, tall = false) {
   sheetBody.innerHTML = html;
+  // Con dấu son của nơi đang đứng gắn cạnh tiêu đề bảng.
+  const h2 = sheetBody.querySelector("h2"), seal = LOT_SEAL[document.body.dataset.zone] || (near && LOT_SEAL[near]);
+  if (h2 && seal && !h2.querySelector(".h-seal")) h2.insertAdjacentHTML("afterbegin", `<i class="h-seal" aria-hidden="true">${seal}</i>`);
   sheetBody.scrollTop = 0;
   sheet.classList.toggle("tall", tall);
   if (sheet.classList.contains("hidden") || sheet.classList.contains("enter")) {
@@ -635,7 +638,7 @@ function harvestLoc() {
     buzz([40, 30, 80]);
     announce(res, `+${res.gained} công đức · Hái lộc cây kim tiền`);
   }
-  openSheet(`<div class="reveal"><div class="lot"><span class="lv">Cây Kim Tiền · lộc hôm nay</span><h3>${esc(res.loc.ten)}</h3><div class="poem">${esc(res.loc.text)}</div></div></div>
+  openSheet(`<div class="reveal">${lotCard("kim-tien", { head: "金錢樹 · 福祿", tag: "Cây Kim Tiền · lộc hôm nay", title: esc(res.loc.ten), body: `<div class="poem">${esc(res.loc.text)}</div>`, stick: "祿" })}</div>
     <p class="sub" style="text-align:center;margin-top:12px">${res.again ? "Hôm nay thí chủ đã hái lộc rồi — mai cây lại ra lộc mới." : "Mỗi ngày cây ra một lộc. Mai ghé hái tiếp nhé."}</p>
     <div class="btn-row"><button class="btn primary" id="b-tt">Sang Tài Thần Điện xin quẻ</button></div>${ent}`);
   $("#b-tt").addEventListener("click", () => goTo("tai-than"));
@@ -704,8 +707,7 @@ function finishTea(id, tea) {
   if (res) announce(res, `+${res.gained} công đức · Một ấm trà định tâm`);
   audio.bell(174, 0.35);
   track("tea", { tea });
-  openSheet(`${stepDots(3, 2)}<div class="reveal"><div class="lot"><span class="lv">${esc(tea)} · Trà Đình Định Tâm</span>
-    <h3>Lòng đã lắng</h3><div class="poem">${esc(teach.text)}</div><div class="cdn">— ${esc(teach.src)}</div></div></div>
+  openSheet(`${stepDots(3, 2)}<div class="reveal">${lotCard("tra-dinh", { head: "定心茶 · 一盞", tag: `${esc(tea)} · Trà Đình Định Tâm`, title: "Lòng đã lắng", body: `<div class="poem">${esc(teach.text)}</div>`, foot: `<div class="cdn">— ${esc(teach.src)}</div>` })}</div>
     <p class="sub" style="text-align:center;margin-top:12px">${esc(teach.giang)}</p>
     <p class="note">${res ? "" : "Hôm nay thí chủ đã nhận công đức uống trà rồi, cứ ngồi thêm bao lâu tuỳ thích."}</p>
     <div class="btn-row"><button class="btn primary" id="tea-again">Pha ấm khác</button><button class="btn ghost" id="tea-close">Đứng dậy</button></div>${ent}`);
@@ -766,18 +768,45 @@ async function reveal(r, id, z) {
 // ---------- Kết quả ----------
 const hexHtml = lines => `<div class="hexa">${lines.map(l => `<div class="ln show${l.moving ? " mv" : ""}">${l.yang ? "<i></i>" : "<i></i><i></i>"}</div>`).join("")}</div>`;
 
+// Số viết chữ Hán (1–999) cho đầu thẻ xăm: 第 十 二 籤.
+function hanNum(n) {
+  const D = "〇一二三四五六七八九";
+  if (n < 10) return D[n];
+  if (n < 100) return (n >= 20 ? D[Math.floor(n / 10)] : "") + "十" + (n % 10 ? D[n % 10] : "");
+  const t = n % 100;
+  return D[Math.floor(n / 100)] + "百" + (t ? (t < 10 ? "零" + D[t] : hanNum(t).replace(/^十/, "一十")) : "");
+}
+// Con dấu son và màu riêng của từng nơi trên thẻ.
+const LOT_SEAL = { "tam-thanh": "三清", "tai-than": "財神", "nguyet-lao": "月老", "boc-dich": "周易", "kim-tien": "福祿", "tra-dinh": "茶道" };
+// Thẻ quẻ: que xăm bật lên rồi cuộn giấy mở ra. head: dòng chữ Hán đầu thẻ; tag: nhãn (số quẻ, bậc quẻ); body: nội dung.
+function lotCard(kind, { head = "", tag = "", title = "", body = "", foot = "", stick = "" }) {
+  return `<div class="lot-wrap lot-${kind}">
+    ${stick ? `<div class="lot-stick" aria-hidden="true"><b>${stick}</b></div>` : ""}
+    <div class="lot">
+      <div class="lot-head"><span class="lot-han">${head}</span></div>
+      <div class="lot-paper">
+        ${tag ? `<span class="lv">${tag}</span>` : ""}
+        <h3>${title}</h3>
+        <div class="lot-orn" aria-hidden="true"><i></i><span>❖</span><i></i></div>
+        ${body}
+        ${foot}
+      </div>
+      <i class="lot-seal" aria-hidden="true">${LOT_SEAL[kind] || "道"}</i>
+      <i class="lot-shine" aria-hidden="true"></i>
+    </div></div>`;
+}
 function lotHtml(r) {
   const c = r.card;
   if (r.kind === "tam-thanh") {
-    return `<div class="lot"><span class="lv">Tam Thanh ban phúc</span><h3>Tâm an vạn sự an</h3><div class="poem">${esc(r.blessing)}</div></div>`;
+    return lotCard("tam-thanh", { head: "三清賜福", tag: "Tam Thanh ban phúc", title: "Tâm an vạn sự an", body: `<div class="poem">${esc(r.blessing)}</div>`, stick: "福" });
   }
   if (r.kind === "boc-dich") {
     const ch = r.changed ? `<div class="cdn">Biến sang quẻ ${esc(r.changed.ten)}</div>` : "";
-    return `<div class="lot"><span class="lv">Quẻ số ${c.so} · Thượng ${TRIGRAM_NAME[c.upper]} · Hạ ${TRIGRAM_NAME[c.lower]}</span>
-      ${hexHtml(r.lines)}<h3>${esc(c.ten)}</h3><div class="cd">${esc(c.han)}</div>${ch}</div>`;
+    return lotCard("boc-dich", { head: `第${hanNum(c.so)}卦`, tag: `Quẻ số ${c.so} · Thượng ${TRIGRAM_NAME[c.upper]} · Hạ ${TRIGRAM_NAME[c.lower]}`,
+      title: esc(c.ten), body: `${hexHtml(r.lines)}<div class="cd">${esc(c.han)}</div>`, foot: ch });
   }
-  return `<div class="lot"><span class="lv">${r.kind === "tai-than" ? "Quẻ" : "Xăm"} số ${r.no}/${r.total} · ${esc(c.lv)}</span>
-    <h3>${esc(c.ten)}</h3><div class="poem">${(c.tho || []).map(esc).join("<br>")}</div></div>`;
+  return lotCard(r.kind, { head: `第${hanNum(r.no)}籤`, tag: `${r.kind === "tai-than" ? "Quẻ" : "Xăm"} số ${r.no}/${r.total} · ${esc(c.lv)}`,
+    title: esc(c.ten), body: `<div class="poem">${(c.tho || []).map(esc).join("<br>")}</div>`, stick: hanNum(r.no) });
 }
 
 function showResult(r, id, replay = false, shot = null) {
