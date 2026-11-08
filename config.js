@@ -9,8 +9,8 @@ export default {
   // Người chơi online (thấy nhau trong đình) qua Supabase Realtime.
   // Điền URL và anon key của project Supabase để bật. Để trống = chơi một mình.
   supabase: {
-    url: "",
-    anonKey: "",
+    url: "https://lrugitmnsfkvdpqyvxjf.supabase.co",
+    anonKey: "sb_publishable_PghaVhVXfus1yGACgqBryw_Yd4HTuoR",
     channel: "dinh-hoang-world",
     maxVisiblePlayers: 30
   },

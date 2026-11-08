@@ -1,6 +1,6 @@
 // Người chơi online qua Supabase Realtime (presence + broadcast). Không cần bảng dữ liệu, chỉ cần URL và anon key.
 // Chỉ gửi danh xưng, màu áo và vị trí — không bao giờ gửi họ tên thật hay năm sinh.
-const SUPABASE_ESM = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm";
+const SUPABASE_ESM = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/+esm";
 
 export async function connectOnline(cfg, me, world, onCount) {
   if (!cfg?.url || !cfg?.anonKey) return null;
